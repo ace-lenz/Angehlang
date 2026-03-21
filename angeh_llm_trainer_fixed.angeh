@@ -1,0 +1,162 @@
+"""
+FIXED: Angeh LLM Training System - No Stack Errors
+Simplified version that works reliably
+"""
+
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import Dataset, DataLoader
+import random
+import json
+
+# ============================================================
+# SYNTHETIC DATA GENERATOR (SIMPLIFIED)
+# ============================================================
+
+class SimpleDOTGenerator:
+    """Simplified DOT code generator"""
+    
+    def __init__(self):
+        self.templates = [
+            ("create a matrix", "🔴📊 ⚪🔗 🔴🔢 → 🟢⚡"),
+            ("sum numbers", "🔴🔢 ⚪🔗 🔴💻 → 🟢💖"),
+            ("build array", "🔴💻 ⚪🔗 🔴📝 → 🟢✨"),
+            ("visualize data", "🔴📊 ⚪🔗 🔴🎨 → 🟢🌟"),
+            ("process input", "🔴💻 ⚪🔗 🔴🔢 → 🟢💎"),
+            ("transform data", "🔴📝 ⚪🔗 🔴🎨 → 🟢🎯"),
+        ]
+    
+    def generate_pair(self):
+        """Generate single NL→DOT pair"""
+        return random.choice(self.templates)
+    
+    def generate_batch(self, size):
+        """Generate batch of pairs"""
+        return [self.generate_pair() for _ in range(size)]
+
+# ============================================================
+# SIMPLE DATASET
+# ============================================================
+
+class SimpleDOTDataset(Dataset):
+    """Simple dataset for training"""
+    
+    def __init__(self, num_samples=1000):
+        self.generator = SimpleDOTGenerator()
+        self.data = self.generator.generate_batch(num_samples)
+        
+        # Simple character-level vocabulary
+        all_text = ' '.join([nl + ' ' + dot for nl, dot in self.data])
+        self.vocab = {char: idx for idx, char in enumerate(set(all_text))}
+        self.vocab['<PAD>'] = len(self.vocab)
+    
+    def __len__(self):
+        return len(self.data)
+    
+    def __getitem__(self, idx):
+        nl, dot = self.data[idx]
+        
+        # Convert to indices
+        nl_indices = [self.vocab.get(c, 0) for c in nl[:50]]  # Max 50 chars
+        dot_indices = [self.vocab.get(c, 0) for c in dot[:50]]
+        
+        # Pad
+        nl_indices += [self.vocab['<PAD>']] * (50 - len(nl_indices))
+        dot_indices += [self.vocab['<PAD>']] * (50 - len(dot_indices))
+        
+        return torch.tensor(nl_indices[:50]), torch.tensor(dot_indices[:50])
+
+# ============================================================
+# SIMPLE MODEL
+# ============================================================
+
+class SimpleDOTModel(nn.Module):
+    """Simplified model that actually works"""
+    
+    def __init__(self, vocab_size=256, hidden_size=128):
+        super().__init__()
+        self.embedding = nn.Embedding(vocab_size, hidden_size)
+        self.lstm = nn.LSTM(hidden_size, hidden_size, batch_first=True)
+        self.output = nn.Linear(hidden_size, vocab_size)
+    
+    def forward(self, x):
+        x = self.embedding(x)
+        x, _ = self.lstm(x)
+        x = self.output(x)
+        return x
+
+# ============================================================
+# TRAINING
+# ============================================================
+
+def train_angeh_llm():
+    """Train the LLM - FIXED VERSION"""
+    
+    print("="*70)
+    print("Angeh LLM Training - Simplified & Fixed")
+    print("="*70)
+    
+    # Create dataset
+    print("\n📊 Creating dataset...")
+    dataset = SimpleDOTDataset(num_samples=5000)
+    dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
+    
+    print(f"✅ Dataset ready:")
+    print(f"   Samples: {len(dataset)}")
+    print(f"   Vocabulary size: {len(dataset.vocab)}")
+    
+    # Create model
+    print("\n🧠 Creating model...")
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    model = SimpleDOTModel(vocab_size=len(dataset.vocab)).to(device)
+    
+    print(f"✅ Model created on {device}")
+    print(f"   Parameters: {sum(p.numel() for p in model.parameters()):,}")
+    
+    # Training setup
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    criterion = nn.CrossEntropyLoss()
+    
+    # Train
+    print("\n🔥 Training...")
+    model.train()
+    
+    for epoch in range(5):
+        total_loss = 0
+        for batch_idx, (nl_input, dot_target) in enumerate(dataloader):
+            nl_input = nl_input.to(device)
+            dot_target = dot_target.to(device)
+            
+            # Forward
+            optimizer.zero_grad()
+            output = model(nl_input)
+            
+            # Loss
+            loss = criterion(output.reshape(-1, output.size(-1)), dot_target.reshape(-1))
+            
+            # Backward
+            loss.backward()
+            optimizer.step()
+            
+            total_loss += loss.item()
+            
+            if batch_idx % 50 == 0:
+                print(f"  Epoch {epoch+1}, Batch {batch_idx}/{len(dataloader)}, Loss: {loss.item():.4f}")
+        
+        avg_loss = total_loss / len(dataloader)
+        print(f"✅ Epoch {epoch+1} completed - Avg Loss: {avg_loss:.4f}")
+    
+    # Save
+    print("\n💾 Saving model...")
+    torch.save({
+        'model_state_dict': model.state_dict(),
+        'vocab': dataset.vocab
+    }, 'angeh_llm_trained_simple.pt')
+    
+    print("\n✅ TRAINING COMPLETE!")
+    print("   Saved to: angeh_llm_trained_simple.pt")
+    print("\n🎉 Model is ready to use!")
+
+if __name__ == "__main__":
+    train_angeh_llm()

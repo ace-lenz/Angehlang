@@ -1,0 +1,4 @@
+python3: can't open file '/mnt/c/Users/Lenon/Desktop/77D/AngehLanguages/run_pure_angeh_ide.py': [Errno 2] No such file or directory
+  File "/mnt/c/Users/Lenon/Desktop/77D/angeh_ide/run_pure_angeh_ide.py", line 231
+    print(f"⚡ IDE Request: Execute {lang}...")
+SyntaxError: expected 'except' or 'finally' block

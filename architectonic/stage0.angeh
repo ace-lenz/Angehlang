@@ -1,13 +1,12 @@
 ;; stage0.angeh
 ;; Cryptographic Trust Chain Validation for Architectonic Bootstrapping
-;; Guarantees Stage1 evaluates Stage2 generating absolute byte-identical native closures.
 
 (def-module stage0)
 
-(eval-path "architectonic/lexer.angeh")
-(eval-path "architectonic/parser.angeh")
-(eval-path "architectonic/semantic.angeh")
-(eval-path "architectonic/compiler.angeh")
+(import lexer)
+(import parser)
+(import semantic)
+(import compiler)
 
 (def-fn run-trust-chain ()
   (begin
@@ -15,7 +14,7 @@
     (print ">> [Trust Chain] Initiating Stage0 Bootstrap Matrix")
     (print "==============================================\n")
     
-    (let ((compiler-source (read-file "architectonic/compiler.angeh")))
+    (let ((compiler-source (read-file "compiler.angeh")))
       (begin
         ;; Stage0: Compile Compiler to Stage1
         (print ">> [Trust] Evaluating Base Source targeting Stage1 Output...")

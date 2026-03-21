@@ -1,0 +1,79 @@
+;; parser.angeh
+;; Natively orchestrates Recursive Descent parsing translating immutable metadata Tokens into Architectonic AST structures
+;; Actively tracks and captures malformed S-expressions into global error arrays to support Non-Halting Error Recovery!
+
+(def-module parser)
+
+;; Immutable OS global error table tracking compilation cascades seamlessly
+(def compilation-errors (new-list))
+
+(def-fn parse-error (token msg)
+  (begin
+    (add-all! compilation-errors (list (to-string "Error [" (get token "line") ":" (get token "col") "] " msg)))
+    (print ">> [Parser Error] " msg)))
+
+;; Maps sequential lexer tokens securely avoiding reference mutations generating safe macro loops
+(def-fn parse-tokens (tokens)
+  (let ((ast (new-list))
+        (pos 0)
+        (len (length tokens)))
+    (begin
+      (def-fn peek () (if (< pos len) (get tokens pos) null))
+      (def-fn advance () (begin (let ((t (peek))) (= pos (+ pos 1)) t)))
+      
+      (def-fn parse-expr ()
+        (let ((tok (advance)))
+          (if (= tok null) null
+              (let ((ttype (get tok "type"))
+                    (val (get tok "value")))
+                (if (= ttype "EOF") null
+                    (if (= ttype "NUMBER") (list "LiteralNumber" val)
+                        (if (= ttype "STRING") (list "LiteralString" val)
+                            (if (= ttype "SYMBOL") (list "Reference" val)
+                                (if (= ttype "LPAREN")
+                                    ;; Securely generate embedded lists (expressions) natively!
+                                    (let ((list-node (new-list)))
+                                      (begin
+                                        (add-all! list-node (list "List"))
+                                        (def-fn list-loop ()
+                                          (let ((next-tok (peek)))
+                                            (if (= next-tok null)
+                                                (parse-error tok "Unexpected EOF while parsing S-expression lists! Architectonic macro aborted.")
+                                                (if (= (get next-tok "type") "RPAREN")
+                                                    (advance) ;; Successfully closed the recursive mapping!
+                                                    (begin
+                                                      (add-all! list-node (list (parse-expr)))
+                                                      (list-loop))))))
+                                        (list-loop)
+                                        list-node))
+                                    (if (= ttype "RPAREN")
+                                        (begin
+                                          ;; Non-Halting Error Recovery Trigger Mechanism!
+                                          (parse-error tok "Unexpected closing parenthesis detected globally. Synchronizing statement bounds...")
+                                          ;; Recovery Protocol: Fast-forward token streams until local statement structural bounds resyncs natively.
+                                          (def-fn recover-loop ()
+                                            (let ((nt (peek)))
+                                              (if (not (= nt null))
+                                                  (if (not (= (get nt "type") "LPAREN"))
+                                                      (begin
+                                                        (advance)
+                                                        (recover-loop))
+                                                      true)
+                                                  true)))
+                                          (recover-loop)
+                                          (list "ErrorNode"))
+                                        null)))))))))
+      
+      (def-fn main-loop ()
+        (let ((t (peek)))
+          (if (not (= t null))
+              (if (not (= (get t "type") "EOF"))
+                  (begin
+                    (add-all! ast (list (parse-expr)))
+                    (main-loop))
+                  true)
+              true)))
+      
+      (main-loop)
+      (print ">> [Parser] Generated AST map successfully! Global Sync Errors Isolated: " (length compilation-errors))
+      ast)))

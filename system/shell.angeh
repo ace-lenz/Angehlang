@@ -1,0 +1,11 @@
+
+(def-module system-shell
+  "System Shell: Native Orchestration for CLI")
+
+(import angeh-shell)
+
+(def-fn boot-shell (args)
+  (log-info "⚡ Initializing Native System Shell...")
+  (run-shell args))
+
+(export boot-shell)

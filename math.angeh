@@ -1,58 +1,22 @@
-;; ===========================================================================
-;; Angehlang Math Standard Library
-;; Mathematical constants, functions, and number utilities.
-;; Import with: (import math)
-;; Created by: Longbian Lennon
-;; ===========================================================================
-
 (def-module math)
 
-;; ── Constants ──────────────────────────────────────────────────────────────
-(def PI    3.141592653589793)
-(def E     2.718281828459045)
-(def PHI   1.618033988749895) ;; Golden ratio
-(def TAU   6.283185307179586) ;; 2 * PI
-(def INF   1e308)             ;; Practical positive infinity
+(def sin math.sin)
+(def cos math.cos)
+(def tan math.tan)
+(def asin math.asin)
+(def acos math.acos)
+(def atan math.atan)
+(def sqrt math.sqrt)
+(def log math.log)
+(def exp math.exp)
+(def pi math.pi)
+(def e math.e)
+(def pow math.pow)
+(def floor math.floor)
+(def ceil math.ceil)
+(def abs math.abs)
 
-;; ── Basic Arithmetic ───────────────────────────────────────────────────────
-(def-fn abs (x)   (if (< x 0) (- 0 x) x))
-(def-fn max (a b) (if (> a b) a b))
-(def-fn min (a b) (if (< a b) a b))
-(def-fn mod (a b) (- a (* b (/ a b))))
-(def-fn floor-div (a b) (- (/ a b) (mod (/ a b) 1)))
-
-;; ── Powers and Roots ───────────────────────────────────────────────────────
-(def-fn square  (x) (* x x))
-(def-fn cube    (x) (* x x x))
-(def-fn pow     (base exp)
-  (if (= exp 0)
-    1
-    (* base (pow base (- exp 1)))))
-
-;; ── Factorial and Combinatorics ────────────────────────────────────────────
-(def-fn factorial (n)
-  (if (<= n 1)
-    1
-    (* n (factorial (- n 1)))))
-
-(def-fn fibonacci (n)
-  (if (<= n 1)
-    n
-    (+ (fibonacci (- n 1)) (fibonacci (- n 2)))))
-
-;; ── Statistics ─────────────────────────────────────────────────────────────
-(def-fn sum-list (lst)       (reduce + lst 0))
-(def-fn mean     (lst)       (/ (sum-list lst) (len lst)))
-
-;; ── Clamping and Ranges ────────────────────────────────────────────────────
-(def-fn clamp (v lo hi)
-  (cond
-    ((< v lo) lo)
-    ((> v hi) hi)
-    (else v)))
-
-(def-fn lerp (a b t) (+ a (* (- b a) t)))
-
-;; ── Trigonometry (degree-based) ────────────────────────────────────────────
-(def-fn deg-to-rad (d) (/ (* d PI) 180))
-(def-fn rad-to-deg (r) (/ (* r 180) PI))
+(export
+  sin cos tan asin acos atan
+  sqrt log exp pi e pow
+  floor ceil abs)

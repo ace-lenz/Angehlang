@@ -1,0 +1,37 @@
+;; system/actors.angeh
+;; Native distributed actor framework bridging Angehlang to OmniBus
+
+(def-module actors)
+
+;; Initialize global actor registry for the runtime
+(def global-actor-registry (new-map))
+
+;; Spawns a persistent intelligent actor into the process background
+(def-fn def-actor (name behavior)
+  (begin
+    (print ">> [ActorSystem] Spawning persistent Distributed Actor: " name)
+    (agent-spawn name behavior)
+    (put! global-actor-registry name true)
+    name))
+
+;; Asynchronous non-blocking message dispatch
+(def-fn actor-send (target message)
+  (begin
+    (print ">> [ActorSystem] Dispatching asynchronous message to actor [" target "]: " message)
+    (a2a-broadcast message target "SystemKernel")
+    true))
+
+;; Synchronous request predicting a logical response
+(def-fn actor-receive (actor-name prompt)
+  (begin
+    (print ">> [ActorSystem] Actor " actor-name " is processing a direct request...")
+    (agent-ask actor-name prompt)))
+
+(def-fn run-actor-demo ()
+  (begin
+    (print "\n>> Initializing Distributed Actor Framework Demo...")
+    (let ((act (def-actor "NetworkManager" "You are a backend orchestration coordinator handling packet delivery.")))
+      (begin
+         (actor-send "NetworkManager" "PING. Acknowledgment requested.")
+         ;; Actor will theoretically respond via OmniBus, simulating distributed event loops
+         true))))

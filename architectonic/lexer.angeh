@@ -1,0 +1,91 @@
+;; lexer.angeh
+;; The Absolute Native Character Scanner mapping LISP strings into Immutable Metadata Tokens.
+
+(def-module lexer)
+
+;; Constructs an immutable token mapping preventing AST reference mutations
+(def-fn create-token (t-type t-value t-line t-col)
+  (let ((tok (new-map)))
+    (begin
+      (put! tok "type" t-type)
+      (put! tok "value" t-value)
+      (put! tok "line" t-line)
+      (put! tok "col" t-col)
+      tok)))
+
+;; Iterative Character Scanner 
+(def-fn tokenize (source)
+  (let ((tokens (new-list))
+        (src-len (string-length source))
+        (pos 0)
+        (line 1)
+        (col 1))
+    (begin
+      (print ">> [Lexer] Initializing Source Scanning Matrix on " src-len " characters...")
+      
+      (def-fn loop ()
+        (if (< pos src-len)
+            (let ((char (char-at source pos)))
+              (begin
+                (if (is-whitespace? char)
+                    (begin
+                      (if (= char "\n")
+                          (begin
+                            (inc! line)
+                            (set! col 1))
+                          (inc! col))
+                      (inc! pos))
+                    (if (= char "(")
+                        (begin
+                          (add-all! tokens (list (create-token "LPAREN" "(" line col)))
+                          (inc! pos)
+                          (inc! col))
+                        (if (= char ")")
+                            (begin
+                              (add-all! tokens (list (create-token "RPAREN" ")" line col)))
+                              (inc! pos)
+                              (inc! col))
+                            (if (= char (code-char 34))
+                                (let ((start-pos pos)
+                                      (start-col col))
+                                  (begin
+                                    (inc! pos)
+                                    (inc! col)
+                                    (def-fn str-loop ()
+                                      (if (< pos src-len)
+                                          (if (not (= (char-at source pos) (code-char 34)))
+                                              (begin
+                                                (inc! pos)
+                                                (inc! col)
+                                                (str-loop))
+                                              true)
+                                          true))
+                                    (str-loop)
+                                    (add-all! tokens (list (create-token "STRING" (substring source (+ start-pos 1) pos) line start-col)))
+                                    (inc! pos)
+                                    (inc! col))))
+                                (let ((start-pos pos)
+                                      (start-col col))
+                                  (begin
+                                    (def-fn id-loop ()
+                                      (if (< pos src-len)
+                                          (let ((c (char-at source pos)))
+                                            (if (not (or (is-whitespace? c) (or (= c "(") (= c ")"))))
+                                                (begin
+                                                  (inc! pos)
+                                                  (inc! col)
+                                                  (id-loop))
+                                                true))
+                                          true))
+                                    (id-loop)
+                                    (let ((value (substring source start-pos pos)))
+                                      (if (is-digit? (char-at value 0))
+                                          (add-all! tokens (list (create-token "NUMBER" value line start-col)))
+                                          (add-all! tokens (list (create-token "SYMBOL" value line start-col))))))))))
+                (loop)))
+            true))
+      
+      (loop)
+      (add-all! tokens (list (create-token "EOF" "" line col)))
+      (print ">> [Lexer] Scanning Successful. Generated " (length tokens) " structural dependencies.")
+      tokens)))

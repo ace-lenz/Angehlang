@@ -297,13 +297,35 @@ def _import_form(args, env):
     if module_name in _LOADED_MODULES:
         return module_name  # already loaded, skip re-evaluation
 
-    # Search paths: stdlib/ dir relative to this file, then cwd
+    # Search paths: stdlib/, root, architectonic/, src/, and cwd
     base = os.path.dirname(os.path.abspath(__file__))
-    search_paths = [
-        os.path.join(base, "..", "stdlib", f"{module_name}.angeh"),
-        os.path.join(base, "..", "stdlib", f"{module_name.replace('-','_')}.angeh"),
-        os.path.join(os.getcwd(), f"{module_name}.angeh"),
+    root = os.path.join(base, "..")
+    cwd  = os.getcwd()
+    # Build candidate file paths for the given module name
+    # module_name can contain slashes e.g. "architectonic/refinement" or "src/angeh/smt/z3"
+    candidates = [
+        f"{module_name}.angeh",
+        f"{module_name.replace('-', '_')}.angeh",
     ]
+    search_dirs = [
+        os.path.join(root, "stdlib"),
+        root,
+        cwd,
+        os.path.join(root, "architectonic"),
+        os.path.join(root, "src", "angeh"),
+        os.path.join(root, "src", "angeh", "smt"),
+        os.path.join(root, "src", "angeh", "runtime"),
+        os.path.join(root, "src", "angeh", "std"),
+        os.path.join(root, "neural"),
+        os.path.join(root, "system"),
+    ]
+    search_paths = []
+    for d in search_dirs:
+        for c in candidates:
+            search_paths.append(os.path.join(d, c))
+    # Also try treating the full module_name as a relative path from root/cwd
+    for base_dir in [root, cwd]:
+        search_paths.append(os.path.join(base_dir, f"{module_name}.angeh"))
 
     for path in search_paths:
         if os.path.exists(path):
@@ -674,6 +696,12 @@ def create_global_env():
         'contains?': lambda s, sub: sub in s,
         'to-string': lambda x: str(x),
         'string-length': lambda s: len(s),
+        'string-join': lambda items, sep='': sep.join(str(i) for i in items),
+        'string-trim':  lambda s: str(s).strip(),
+        # null / None sentinel used in z3.angeh cache checks
+        'null': None,
+        # run-process: run an external command, return combined stdout+stderr as string
+        'run-process': lambda cmd, args=None, stdin_str='': _run_external_process(cmd, args or [], str(stdin_str)),
         'char-at': lambda s, i: s[i],
         'substring': lambda s, start, end: s[start:end],
         'is-whitespace?': lambda s: s.isspace() if s else False,
@@ -697,6 +725,20 @@ def create_global_env():
         'range':   lambda *args: list(range(*args)),
         'zip':     lambda *args: [list(t) for t in zip(*args)],
         'type-of': lambda x: type(x).__name__,
+        # class-of maps Python runtime types to Angehlang-friendly class names
+        'class-of': lambda x: (
+            "Map"    if isinstance(x, dict)  else
+            "List"   if isinstance(x, list)  else
+            "String" if isinstance(x, str)   else
+            "Number" if isinstance(x, (int, float)) else
+            "Bool"   if isinstance(x, bool)  else
+            type(x).__name__
+        ),
+        'new-list': lambda: [],
+        # get works for both dicts and lists (dict: key, list: index)
+        'get': lambda obj, key: obj[key] if isinstance(obj, (dict, list)) else None,
+        'keys':   lambda d: list(d.keys())   if isinstance(d, dict) else [],
+        'values': lambda d: list(d.values()) if isinstance(d, dict) else [],
         'input':   input,
         'exit':    sys.exit,
         'None': None,

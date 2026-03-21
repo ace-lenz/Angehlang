@@ -1,0 +1,135 @@
+;; z3.angeh
+;; SMT-LIB 2.0 bridge using Z3 as an external process for refinement type implication checking.
+;; Falls back gracefully if Z3 is not installed (runtime assertion mode).
+
+(def-module z3)
+
+;; ── Predicate → SMT-LIB 2.0 Translation ──────────────────────────────────────
+
+(def-fn smt-op (op) 
+  (if (= op "and")  "and"
+  (if (= op "or")   "or"
+  (if (= op "not")  "not"
+  (if (= op ">")    ">"
+  (if (= op ">=")   ">="
+  (if (= op "<")    "<"
+  (if (= op "<=")   "<="
+  (if (= op "=")    "="
+  (if (= op "+")    "+"
+  (if (= op "-")    "-"
+  (if (= op "*")    "*"
+  (if (= op "/")    "div"  ;; integer division in SMT-LIB
+  op)))))))))))))
+
+;; Collects all free variable names from a predicate expression tree.
+(def-fn collect-vars (expr acc)
+  (if (= (type-of expr) "list")
+      (if (> (length expr) 0)
+          (if (= (get expr 0) "Reference")
+              ;; It's a variable name
+              (let ((name (get expr 1)))
+                (if (not (contains? acc name))
+                    (begin (put! acc name true) acc)
+                    acc))
+              ;; It's a compound expression — recurse into each child
+              (begin
+                (def-fn var-iter (i)
+                  (if (< i (length expr))
+                      (begin
+                        (collect-vars (get expr i) acc)
+                        (var-iter (+ i 1)))
+                      acc))
+                (var-iter 1)
+                acc))
+          acc)
+      acc))
+
+;; Converts an Angehlang predicate AST node into SMT-LIB 2.0 string.
+(def-fn to-smt (expr)
+  (if (= (type-of expr) "list")
+      (if (> (length expr) 0)
+          (let ((tag (get expr 0)))
+            (if (= tag "LiteralNumber") (get expr 1)
+                (if (= tag "LiteralBool")
+                    (if (= (get expr 1) "true") "true" "false")
+                    (if (= tag "Reference") (get expr 1)
+                        (if (= tag "List")
+                            ;; Compound: (op arg1 arg2 ...)
+                            (let ((op   (to-smt (get expr 1)))
+                                  (args (new-list)))
+                              (begin
+                                (def-fn arg-iter (i)
+                                  (if (< i (length expr))
+                                      (begin
+                                        (add-all! args (list (to-smt (get expr i))))
+                                        (arg-iter (+ i 1)))
+                                      true))
+                                (arg-iter 2)
+                                (to-string "(" (smt-op op) " " (string-join args " ") ")")))
+                            "unknown")))))
+          "nil")
+      (to-string expr)))
+
+;; ── SMT-LIB Script Builder ────────────────────────────────────────────────────
+
+;; Generates the full SMT-LIB 2.0 script to check: antecedent => consequent
+;; By checking satisfiability of: antecedent AND NOT(consequent)
+;; unsat → implication holds; sat → implication fails.
+(def-fn build-implication-script (antecedent consequent)
+  (let ((vars (new-map)))
+    (begin
+      (collect-vars antecedent vars)
+      (collect-vars consequent vars)
+      (let ((decls (new-list))
+            (smt-ante (to-smt antecedent))
+            (smt-cons (to-smt consequent)))
+        (begin
+          ;; Declare all free variables as Int (conservative default)
+          (def-fn decl-iter (var-list i)
+            (if (< i (length var-list))
+                (begin
+                  (add-all! decls (list (to-string "(declare-const " (get var-list i) " Int)")))
+                  (decl-iter var-list (+ i 1)))
+                true))
+          (decl-iter (keys vars) 0)
+          (to-string
+            (string-join decls "\n") "\n"
+            "(assert " smt-ante ")\n"
+            "(assert (not " smt-cons "))\n"
+            "(check-sat)\n"))))))
+
+;; ── Z3 Process Invocation ─────────────────────────────────────────────────────
+
+;; Cache to avoid redundant Z3 calls.
+(def z3-cache (new-map))
+
+;; Invokes Z3 with the given SMT-LIB script and returns "sat"/"unsat"/"unknown".
+(def-fn run-z3 (script)
+  (let ((cached (get z3-cache script)))
+    (if (not (= cached null))
+        cached
+        (begin
+          (let ((result (run-process "z3" (list "-in" "-smt2") script)))
+            (let ((trimmed (string-trim result)))
+              (put! z3-cache script trimmed)
+              trimmed))))))
+
+;; ── Public API ───────────────────────────────────────────────────────────────
+
+;; Checks if antecedent-predicate implies consequent-predicate.
+;; Returns: true (implication holds), false (fails), or "unknown".
+(def-fn check-implication (antecedent consequent)
+  (begin
+    (print ">> [Z3] Checking: " (to-smt antecedent) " => " (to-smt consequent))
+    (let ((script (build-implication-script antecedent consequent)))
+      (let ((z3-result (run-z3 script)))
+        (if (= z3-result "unsat")
+            (begin (print ">> [Z3] ✓ Implication holds") true)
+            (if (= z3-result "sat")
+                (begin (print ">> [Z3] ✗ Implication FAILS (counterexample exists)") false)
+                (begin (print ">> [Z3] ? Unknown - fallback to runtime assertion") "unknown")))))))
+
+;; Checks if Z3 is available on this system.
+(def-fn z3-available? ()
+  (let ((result (run-process "z3" (list "--version") "")))
+    (and (not (= result null)) (> (string-length result) 0))))

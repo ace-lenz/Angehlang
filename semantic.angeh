@@ -1,82 +1,226 @@
 ;; semantic.angeh
-;; Natively walks the immutable AST evaluating variable closures, dead-code branches, and topological type constraints strictly
+;; Extended semantic analyzer — integrates Refinement Type checking via refinement.angeh.
+;; Walks the immutable AST evaluating: variable scopes, dead-code branches,
+;; topological type constraints, refined type assignments, and invariant propagation.
 
 (def-module semantic)
 
+(import architectonic/refinement)
+
 (def semantic-warnings (new-list))
+(def refinement-errors (new-list))
+(def runtime-assertions (new-list))
 
 (def-fn warn-semantic (msg)
   (begin
     (add-all! semantic-warnings (list (to-string "Warning: " msg)))
     (print ">> [Semantic Warning] " msg)))
 
-;; Natively maps AST boundaries analyzing scopes recursively without mutating the base AST
+(def-fn error-refinement (msg)
+  (begin
+    (add-all! refinement-errors (list (to-string "RefinementError: " msg)))
+    (print ">> [Refinement ERROR] " msg)))
+
+;; ── Refined Type Environment ─────────────────────────────────────────────────
+
+;; Create a typed env entry: { type: ..., refined: ... }
+(def-fn make-env-entry (base-type refined-type)
+  (let ((e (new-map)))
+    (begin
+      (put! e "type"    base-type)
+      (put! e "refined" refined-type)
+      (put! e "uses"    0)
+      e)))
+
+(def-fn env-get-type (env var-name)
+  (let ((entry (get env var-name)))
+    (if (= entry null) null (get entry "type"))))
+
+(def-fn env-get-refined (env var-name)
+  (let ((entry (get env var-name)))
+    (if (= entry null) null (get entry "refined"))))
+
+(def-fn env-set (env var-name base-type refined-type)
+  (put! env var-name (make-env-entry base-type refined-type)))
+
+(def-fn env-inc-use (env var-name)
+  (let ((entry (get env var-name)))
+    (if (not (= entry null))
+        (put! entry "uses" (+ (get entry "uses") 1))
+        true)))
+
+;; ── AST Node Inspector ───────────────────────────────────────────────────────
+
+;; Extracts optional RefinedType from a let/def type annotation, if present.
+;; Returns (base-type, predicate-expr) or (base-type, null).
+(def-fn extract-type-annotation (type-node)
+  (if (= (type type-node) "List")
+      (if (= (get type-node 0) "RefinedType")
+          (list (get type-node 1) (get type-node 2))
+          (list (get type-node 1) null))
+      (list type-node null)))
+
+;; ── Core Semantic Analysis ───────────────────────────────────────────────────
+
 (def-fn analyze-ast-node (node env block-has-returned)
   (if (= (type node) "List")
       (let ((len (length node)))
         (if (> len 0)
             (let ((head (get node 0)))
               (if (= head "List")
-                  ;; It's a structural LISP execution array (function call or special form)
                   (let ((form-type (get node 1)))
                     (if (= (type form-type) "List")
                         (let ((subtype (get form-type 0)))
                           (if (= subtype "Reference")
                               (let ((ref-name (get form-type 1)))
+
+                                ;; ── def / let with optional type annotation ──
                                 (if (= ref-name "def")
-                                    ;; Tracks variable instantiations
                                     (begin
-                                      (put! env (get (get node 2) 1) 0) ;; usages = 0
+                                      (let ((var-name-node (get node 2))
+                                            (var-name (get (get node 2) 1))
+                                            (val-node  (get node 3)))
+                                        ;; Check for type annotation as 4th element
+                                        (let ((has-annotation (>= len 5)))
+                                          (if has-annotation
+                                              (let ((ann (extract-type-annotation (get node 4))))
+                                                (let ((base-t (get ann 0))
+                                                      (pred   (get ann 1)))
+                                                  (begin
+                                                    (env-set env var-name base-t
+                                                             (if (= pred null) null
+                                                                 (make-refined-type base-t pred)))
+                                                    ;; Verify value satisfies refined type
+                                                    (if (not (= pred null))
+                                                        (let ((result (check-refined-assignment var-name
+                                                                         (make-refined-type base-t (list "LiteralBool" "true"))
+                                                                         (make-refined-type base-t pred))))
+                                                          (if (= result false)
+                                                              (error-refinement (to-string "Variable '" var-name "' assignment violates refinement"))
+                                                              (if (= (type result) "String") ;; runtime assertion
+                                                                  (add-all! runtime-assertions (list result))
+                                                                  true)))
+                                                        true))))
+                                              (begin
+                                                (env-set env var-name "any" null)
+                                                true))))
+                                    false)
+
+                                ;; ── if — guard-based type narrowing ──
+                                (if (= ref-name "if")
+                                    (let ((cond-node (get node 2)))
+                                      (begin
+                                        ;; Dead branch detection (literal 0)
+                                        (if (and (= (type cond-node) "List")
+                                                 (= (get cond-node 0) "LiteralNumber"))
+                                            (if (= (get cond-node 1) "0")
+                                                (warn-semantic "Unreachable 'true' branch — static condition is 0")
+                                                true)
+                                            true)
+                                        ;; Refine types inside then-branch from the guard
+                                        (let ((then-env (new-map)))
+                                          (begin
+                                            ;; Copy base env into then-env
+                                            (def-fn copy-env (keys-list i)
+                                              (if (< i (length keys-list))
+                                                  (begin
+                                                    (put! then-env (get keys-list i)
+                                                          (get env (get keys-list i)))
+                                                    (copy-env keys-list (+ i 1)))
+                                                  true))
+                                            (copy-env (keys env) 0)
+                                            ;; Apply guard refinement to the copied env
+                                            (refine-env-from-guard cond-node then-env)
+                                            ;; Analyze then-branch under refined env
+                                            (if (>= len 4)
+                                                (analyze-ast-node (get node 3) then-env false)
+                                                true)))
+                                        ;; Analyze else-branch under original env
+                                        (if (>= len 5)
+                                            (analyze-ast-node (get node 4) env false)
+                                            true)
+                                        false))
+                                    false)
+
+                                ;; ── #invariant → propagate refinement into scope ──
+                                (if (= ref-name "invariant")
+                                    (begin
+                                      (print ">> [Semantic] Processing #invariant declaration...")
+                                      (let ((inv-expr (get node 2)))
+                                        (apply-invariant inv-expr env))
                                       false)
-                                    (if (= ref-name "if")
-                                        ;; Control flow dead-branch scanning
-                                        (let ((cond-node (get node 2)))
-                                          ;; We assume if conditions are statically analyzable literals for warnings
-                                          (if (= (get cond-node 0) "LiteralNumber")
-                                              (if (= (get cond-node 1) "0")
-                                                  (warn-semantic "Unreachable 'true' branch natively detected on static condition 0")
-                                                  true)
-                                              true))
-                                        (if (= ref-name "return")
-                                            true ;; Returns mark the block as complete
-                                            ;; Iterate standard function call arguments tracking usages
-                                            (begin
-                                              (def-fn iter-args (i)
-                                                (if (< i len)
-                                                    (let ((arg (get node i)))
-                                                      (if (= (type arg) "List")
-                                                          (if (= (get arg 0) "Reference")
-                                                              (let ((used-name (get arg 1)))
-                                                                (if (contains? env used-name)
-                                                                    (put! env used-name (+ (get env used-name) 1))
-                                                                    true))
-                                                              true)
-                                                          true)
-                                                      (iter-args (+ i 1)))
-                                                    true))
-                                              (iter-args 2)
-                                              false)))))
+                                    false)
+
+                                ;; ── Function call — track variable usages ──
+                                (begin
+                                  (def-fn iter-args (i)
+                                    (if (< i len)
+                                        (let ((arg (get node i)))
+                                          (begin
+                                            (if (and (= (type arg) "List")
+                                                     (= (get arg 0) "Reference"))
+                                                (env-inc-use env (get arg 1))
+                                                true)
+                                            (analyze-ast-node arg env false)
+                                            (iter-args (+ i 1))))
+                                        true))
+                                  (iter-args 2)
+                                  false)))
                               true))
                         true))
                   true))
             true))
       true))
 
+;; ── InvariantDecl top-level node ─────────────────────────────────────────────
+
+(def-fn handle-top-level (node env)
+  (if (and (= (type node) "List") (> (length node) 0))
+      (if (= (get node 0) "InvariantDecl")
+          (begin
+            (print ">> [Semantic] Top-level #invariant: " (get node 1))
+            (let ((inv-expr (list "List"
+                              (list "Reference" "invariant")
+                              (list "LiteralString" (get node 1)))))
+              (apply-invariant inv-expr env)))
+          (analyze-ast-node node env false))
+      (analyze-ast-node node env false)))
+
+;; ── Main Entry Point ─────────────────────────────────────────────────────────
+
 (def-fn run-semantic-analysis (ast)
   (begin
-    (print ">> [Semantic] Initiating deep AST constraint validations natively...")
+    (print ">> [Semantic] Initiating deep AST constraint validations + Refinement Type checking...")
     (let ((global-env (new-map)))
       (begin
         (def-fn analyze-all (i)
           (if (< i (length ast))
               (begin
-                (analyze-ast-node (get ast i) global-env false)
+                (handle-top-level (get ast i) global-env)
                 (analyze-all (+ i 1)))
               true))
-        
+
         (analyze-all 0)
-        
-        ;; Verify Unused dependencies
-        ;; Note: In full implementation, we loop through global-env mapping values checking for '0' usages!
-        (print ">> [Semantic] Analysis cleanly evaluated. Architectural Warnings Generated: " (length semantic-warnings))
-        semantic-warnings))))
+
+        ;; Report unused variables
+        (def-fn check-unused (var-list i)
+          (if (< i (length var-list))
+              (begin
+                (let ((vname (get var-list i))
+                      (entry (get global-env (get var-list i))))
+                  (if (and (not (= entry null)) (= (get entry "uses") 0))
+                      (warn-semantic (to-string "Unused variable: '" vname "'"))
+                      true))
+                (check-unused var-list (+ i 1)))
+              true))
+        (check-unused (keys global-env) 0)
+
+        (print ">> [Semantic] Analysis complete.")
+        (print "   Warnings:            " (length semantic-warnings))
+        (print "   Refinement Errors:   " (length refinement-errors))
+        (print "   Runtime Assertions:  " (length runtime-assertions))
+
+        (new-map
+          "warnings"   semantic-warnings
+          "errors"     refinement-errors
+          "assertions" runtime-assertions)))))

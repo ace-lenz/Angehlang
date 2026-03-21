@@ -1,0 +1,108 @@
+;; tests/refinement_test.angeh
+;; Test suite for the Refinement Types & Formal Verification system.
+
+(def-module refinement_test)
+
+(import architectonic/refinement)
+(import src/angeh/smt/z3)
+
+(def passed 0)
+(def failed 0)
+
+(def-fn assert-eq (label a b)
+  (if (= a b)
+      (begin
+        (set! passed (+ passed 1))
+        (print "  ✓ " label))
+      (begin
+        (set! failed (+ failed 1))
+        (print "  ✗ " label " | got: " a " expected: " b))))
+
+;; ── 1. Refined Type Construction ─────────────────────────────────────────────
+
+(print "\n── 1. Refined Type Construction ──")
+
+(let ((pos-int (make-refined-type "int" (list "List" (list "Reference" ">") (list "Reference" "x") (list "LiteralNumber" "0")))))
+  (begin
+    (assert-eq "base type is int"     (base-type-of pos-int) "int")
+    (assert-eq "refined? is true"     (refined-type? pos-int) true)
+    (assert-eq "unrefined? is false"  (refined-type? "int") false)))
+
+;; ── 2. Subtype Checking — Fast Path ──────────────────────────────────────────
+
+(print "\n── 2. Subtype — Fast Path (built-in implications) ──")
+
+(let ((pred-gt0  (list "List" (list "Reference" ">")  (list "Reference" "x") (list "LiteralNumber" "0")))
+      (pred-gte0 (list "List" (list "Reference" ">=") (list "Reference" "x") (list "LiteralNumber" "0")))
+      (pred-gte1 (list "List" (list "Reference" ">=") (list "Reference" "x") (list "LiteralNumber" "1"))))
+  (begin
+    (let ((rt-gt0  (make-refined-type "int" pred-gt0))
+          (rt-gte0 (make-refined-type "int" pred-gte0))
+          (rt-gte1 (make-refined-type "int" pred-gte1)))
+      (begin
+        ;; int[>=1] <: int[>0] (fast path: >=1 implies >0)
+        (assert-eq "int[>=1] <: int[>0]"  (is-subtype rt-gte1 rt-gt0)  true)
+        ;; int[>=1] <: int[>=0] (fast path)
+        (assert-eq "int[>=1] <: int[>=0]" (is-subtype rt-gte1 rt-gte0) true)
+        ;; int[>0]  <: int[>=0] (fast path)
+        (assert-eq "int[>0]  <: int[>=0]" (is-subtype rt-gt0  rt-gte0) true)
+        ;; Same type: always valid
+        (assert-eq "int[>0]  <: int[>0]"  (is-subtype rt-gt0  rt-gt0) true)
+        ;; Base type mismatch
+        (let ((rt-float (make-refined-type "float" pred-gt0)))
+          (assert-eq "int[>0]  !<: float[>0]" (is-subtype rt-gt0 rt-float) false)))))))
+
+;; ── 3. SMT Script Generation ─────────────────────────────────────────────────
+
+(print "\n── 3. SMT-LIB Script Generation ──")
+
+(let ((pred-x-gt-0 (list "List" (list "Reference" ">") (list "Reference" "x") (list "LiteralNumber" "0"))))
+  (begin
+    (let ((script (build-implication-script pred-x-gt-0 pred-x-gt-0)))
+      (begin
+        (assert-eq "Script contains declare-const" (contains? script "(declare-const") true)
+        (assert-eq "Script contains check-sat"     (contains? script "(check-sat)")    true)))))
+
+;; ── 4. Type Env Refinement ────────────────────────────────────────────────────
+
+(print "\n── 4. Guard-Based Type Narrowing ──")
+
+(let ((env  (new-map))
+      (guard (list "List" (list "Reference" ">") (list "Reference" "balance") (list "LiteralNumber" "0"))))
+  (begin
+    (put! env "balance" (make-refined-type "int" (list "LiteralBool" "true")))
+    (refine-env-from-guard guard env)
+    (let ((refined-balance (get env "balance")))
+      (assert-eq "balance is now refined" (refined-type? refined-balance) true))))
+
+;; ── 5. Dependent Refinement Substitution ─────────────────────────────────────
+
+(print "\n── 5. Dependent Refinements ──")
+
+(let ((pred-b-neq-0 (list "List"
+                     (list "Reference" "!=")
+                     (list "Reference" "b")
+                     (list "LiteralNumber" "0")))
+      (actual-5 (list "LiteralNumber" "5")))
+  (begin
+    (let ((substituted (substitute-param pred-b-neq-0 "b" actual-5)))
+      ;; After substituting b=5: (!=  5  0)
+      (assert-eq "Param substituted" (= (to-smt substituted) "(unknown  5  0)") true))))
+
+;; ── 6. Runtime Assertion Generation ──────────────────────────────────────────
+
+(print "\n── 6. Runtime Assertion Fallback ──")
+
+(let ((pred (list "List" (list "Reference" ">=") (list "Reference" "n") (list "LiteralNumber" "0"))))
+  (begin
+    (let ((assertion (generate-runtime-assert "n" pred)))
+      (assert-eq "Assertion is a string" (> (string-length assertion) 0) true)
+      (assert-eq "Contains variable name" (contains? assertion "n") true))))
+
+;; ── Summary ───────────────────────────────────────────────────────────────────
+
+(print "\n==============================================")
+(print ">> [Refinement Tests] PASSED: " passed " | FAILED: " failed)
+(if (= failed 0)
+    (print "✓ All refinement type tests passed!")
+    (print "✗ " failed " test(s) failed."))

@@ -1,0 +1,139 @@
+;; refinement.angeh
+;; Core Refinement Type System for Angehlang.
+;; Defines RefinedType representation, subtype checking, invariant propagation,
+;; and runtime assertion fallback generation.
+
+(def-module refinement)
+
+(import src/angeh/smt/z3)
+
+;; ── Refined Type Representation ───────────────────────────────────────────────
+
+;; Creates a refined type map: { base: "int", predicate: <expr-ast> }
+(def-fn make-refined-type (base-type predicate-expr)
+  (let ((rt (new-map)))
+    (begin
+      (put! rt "base"      base-type)
+      (put! rt "predicate" predicate-expr)
+      rt)))
+
+;; Use new-map to check if it's a Map (maps support contains?)
+(def-fn refined-type? (t)
+  (if (= (class-of t) "Map")
+      (contains? t "predicate")
+      false))
+
+(def-fn base-type-of (rt)
+  (if (refined-type? rt) (get rt "base") rt))
+
+(def-fn predicate-of (rt)
+  (get rt "predicate"))
+
+;; ── Built-in Predicate Table ─────────────────────────────────────────────────
+
+(def built-in-implications (new-map))
+(put! built-in-implications ">0__>=0"  true)
+(put! built-in-implications ">10__>0"  true)
+(put! built-in-implications ">10__>=0" true)
+(put! built-in-implications ">=1__>0"  true)
+(put! built-in-implications ">=1__>=0" true)
+
+(def-fn pred-key (p q)
+  (to-string (to-smt p) "__" (to-smt q)))
+
+;; ── Subtype Checking ─────────────────────────────────────────────────────────
+
+;; Checks T1[P] <: T2[Q] (i.e., T1 == T2 and P ⇒ Q).
+(def-fn is-subtype (rt1 rt2)
+  (begin
+    (if (not (= (base-type-of rt1) (base-type-of rt2)))
+        (begin (print ">> [Refinement] Base types differ") false)
+        (if (not (refined-type? rt2))
+            (begin (print ">> [Refinement] Target unrefined — always valid") true)
+            (if (not (refined-type? rt1))
+                (begin (print ">> [Refinement] Source unrefined — runtime assertion needed") "runtime")
+                (let ((p (predicate-of rt1))
+                      (q (predicate-of rt2)))
+                  (let ((k (pred-key p q)))
+                    (if (contains? built-in-implications k)
+                        (begin (print ">> [Refinement] Fast-path implication") true)
+                        (check-implication p q)))))))))
+
+;; ── Type Environment Refinement ──────────────────────────────────────────────
+
+(def-fn refine-env-from-guard (guard-expr env)
+  (begin
+    (print ">> [Refinement] Propagating guard: " (to-smt guard-expr))
+    (if (= (class-of guard-expr) "List")
+        (if (>= (length guard-expr) 3)
+            (let ((lhs (get guard-expr 1)))
+              (if (= (class-of lhs) "List")
+                  (if (= (get lhs 0) "Reference")
+                      (let ((var-name (get lhs 1))
+                            (refined  (make-refined-type "int" guard-expr)))
+                        (begin
+                          (put! env var-name refined)
+                          (print ">> [Refinement] Refined '" var-name "'")))
+                      true)
+                  true))
+            true)
+        true)))
+
+;; ── Invariant Integration ────────────────────────────────────────────────────
+
+(def-fn apply-invariant (invariant-expr scope-env)
+  (begin
+    (print ">> [Refinement] Applying invariant: " (to-smt invariant-expr))
+    (refine-env-from-guard invariant-expr scope-env)
+    (print ">> [Refinement] Invariant applied")))
+
+;; ── Runtime Assertion Generation ─────────────────────────────────────────────
+
+(def-fn generate-runtime-assert (var-name predicate-expr)
+  (to-string
+    "(assert (check-predicate " var-name " \"" (to-smt predicate-expr) "\"))"))
+
+;; ── Assignment Checker ────────────────────────────────────────────────────────
+
+(def-fn check-refined-assignment (var-name expr-type var-refined-type)
+  (begin
+    (print ">> [Refinement] Checking assignment to '" var-name "'")
+    (let ((result (is-subtype expr-type var-refined-type)))
+      (if (= result true)
+          true
+          (if (= result "runtime")
+              (generate-runtime-assert var-name (predicate-of var-refined-type))
+              (begin
+                (print ">> [Refinement] ERROR: Type mismatch for '" var-name "'")
+                false))))))
+
+(def-fn check-refined-arg (param-name arg-type param-refined-type)
+  (check-refined-assignment param-name arg-type param-refined-type))
+
+(def-fn check-refined-return (fn-name return-type declared-return-type)
+  (check-refined-assignment (to-string fn-name "::return") return-type declared-return-type))
+
+;; ── Dependent Refinement Substitution ────────────────────────────────────────
+
+(def-fn substitute-param (predicate param-name actual-expr)
+  (if (= (class-of predicate) "List")
+      (if (and (= (get predicate 0) "Reference") (= (get predicate 1) param-name))
+          actual-expr
+          (let ((result (new-list)))
+            (begin
+              (def-fn subst-iter (i)
+                (if (< i (length predicate))
+                    (begin
+                      (add-all! result
+                        (list (substitute-param (get predicate i) param-name actual-expr)))
+                      (subst-iter (+ i 1)))
+                    true))
+              (subst-iter 0)
+              result)))
+      predicate))
+
+(def-fn check-dependent-refinement (param-name predicate actual-arg-expr)
+  (let ((instantiated (substitute-param predicate param-name actual-arg-expr)))
+    (begin
+      (print ">> [Refinement] Dependent check: " (to-smt instantiated))
+      (check-implication (list "LiteralBool" "true") instantiated))))

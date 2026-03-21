@@ -1,0 +1,11 @@
+
+(def-module system-runner
+  "System Runner: Native Orchestration for Global Boot")
+
+(import run-standalone-studio)
+
+(def-fn start-global-session ()
+  (log-info "🌌 Starting Global Photonic Session...")
+  (run-native-studio-flow))
+
+(export start-global-session)

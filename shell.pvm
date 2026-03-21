@@ -1,0 +1,21 @@
+
+import sys
+import os
+import angehlang as core
+
+def main():
+    # Bootstrap native shell
+    sys.setrecursionlimit(5000)
+    args = sys.argv[1:]
+    
+    from angehlang import create_global_env, tokenize, parse_from_tokens, evaluate
+    env = create_global_env()
+    
+    if os.path.exists("angeh_shell.angeh"):
+        evaluate(['import', 'angeh-shell'], env)
+        evaluate(['run-shell', ['quote', args]], env)
+    else:
+        print("❌ Native Shell (.angeh) not found.")
+
+if __name__ == '__main__':
+    main()

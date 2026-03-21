@@ -1,0 +1,31 @@
+name: Angehlang Core System Validations
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  verify-os-engine:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Phase 6 - End-to-End Test Suite 
+        run: |
+          cd tests
+          python ../core/interpreter.py run_all.angeh
+
+      - name: Phase 6 - Stage0 Security Trust Chain
+        run: |
+          cd architectonic
+          python ../core/interpreter.py stage0.angeh
+
+      - name: Architectonic Native Bootstrap Execution
+        run: python core/interpreter.py build_bootstrap.angeh

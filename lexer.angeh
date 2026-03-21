@@ -11,7 +11,6 @@
       (put! tok "value" t-value)
       (put! tok "line" t-line)
       (put! tok "col" t-col)
-      ;; Note: We intentionally avoid mapping update/setter references for tokens to ensure structural integrity across phases
       tok)))
 
 ;; Iterative Character Scanner 
@@ -32,42 +31,39 @@
                     (begin
                       (if (= char "\n")
                           (begin
-                            (= line (+ line 1))
-                            (= col 1))
-                          (= col (+ col 1)))
-                      (= pos (+ pos 1)))
+                            (inc! line)
+                            (set! col 1))
+                          (inc! col))
+                      (inc! pos))
                     (if (= char "(")
                         (begin
                           (add-all! tokens (list (create-token "LPAREN" "(" line col)))
-                          (= pos (+ pos 1))
-                          (= col (+ col 1)))
+                          (inc! pos)
+                          (inc! col))
                         (if (= char ")")
                             (begin
                               (add-all! tokens (list (create-token "RPAREN" ")" line col)))
-                              (= pos (+ pos 1))
-                              (= col (+ col 1)))
-                            (if (= char "\"")
-                                ;; String parsing loop
+                              (inc! pos)
+                              (inc! col))
+                            (if (= char (code-char 34))
                                 (let ((start-pos pos)
                                       (start-col col))
                                   (begin
-                                    (= pos (+ pos 1))
-                                    (= col (+ col 1))
-                                    ;; Read until next quote (very rudimentary string capture logic simulating C pointer scans)
+                                    (inc! pos)
+                                    (inc! col)
                                     (def-fn str-loop ()
                                       (if (< pos src-len)
-                                          (if (not (= (char-at source pos) "\""))
+                                          (if (not (= (char-at source pos) (code-char 34)))
                                               (begin
-                                                (= pos (+ pos 1))
-                                                (= col (+ col 1))
+                                                (inc! pos)
+                                                (inc! col)
                                                 (str-loop))
                                               true)
                                           true))
                                     (str-loop)
                                     (add-all! tokens (list (create-token "STRING" (substring source (+ start-pos 1) pos) line start-col)))
-                                    (= pos (+ pos 1))
-                                    (= col (+ col 1))))
-                                ;; Generic Identity/Number matching loop
+                                    (inc! pos)
+                                    (inc! col))))
                                 (let ((start-pos pos)
                                       (start-col col))
                                   (begin
@@ -76,8 +72,8 @@
                                           (let ((c (char-at source pos)))
                                             (if (not (or (is-whitespace? c) (or (= c "(") (= c ")"))))
                                                 (begin
-                                                  (= pos (+ pos 1))
-                                                  (= col (+ col 1))
+                                                  (inc! pos)
+                                                  (inc! col)
                                                   (id-loop))
                                                 true))
                                           true))
@@ -85,7 +81,7 @@
                                     (let ((value (substring source start-pos pos)))
                                       (if (is-digit? (char-at value 0))
                                           (add-all! tokens (list (create-token "NUMBER" value line start-col)))
-                                          (add-all! tokens (list (create-token "SYMBOL" value line start-col)))))))))))
+                                          (add-all! tokens (list (create-token "SYMBOL" value line start-col))))))))))
                 (loop)))
             true))
       

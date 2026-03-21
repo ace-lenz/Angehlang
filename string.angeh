@@ -1,16 +1,39 @@
+;; ===========================================================================
+;; Angehlang String Standard Library
+;; String manipulation utilities.
+;; Import with: (import string)
+;; Created by: Longbian Lennon
+;; ===========================================================================
+
 (def-module string)
 
-(def split string.split)
-(def join string.join)
-(def replace string.replace)
-(def trim string.trim)
-(def lower string.lower)
-(def upper string.upper)
-(def starts-with? string.starts-with?)
-(def ends-with? string.ends-with?)
-(def contains? string.contains?)
+;; ── Case ───────────────────────────────────────────────────────────────────
+;; (These bind the built-in interpreter predicates)
+(def upper string-ci>=?)  ;; placeholder — use the built-in string functions below
 
-(export
-  split join replace trim
-  lower upper starts-with?
-  ends-with? contains?)
+;; Actually usable aliases for built-in string operations:
+(def str-upper   (lambda (s) (intend "upper" s)))
+(def str-lower   (lambda (s) (intend "lower" s)))
+
+;; ── Inspection ─────────────────────────────────────────────────────────────
+(def-fn str-length  (s)     (string-length s))
+(def-fn str-empty?  (s)     (= (string-length s) 0))
+(def-fn str-char-at (s i)   (string-ref s i))
+
+;; ── Modification ───────────────────────────────────────────────────────────
+(def-fn str-concat  (a b)   (string-append a b))
+(def-fn str-slice   (s a b) (substring s a b))
+(def-fn str-repeat  (s n)   (make-string n (string-ref s 0)))
+
+;; ── Building Strings ───────────────────────────────────────────────────────
+(def-fn str-join (sep lst)
+  (if (null? lst)
+    ""
+    (reduce (lambda (acc x) (string-append acc sep x))
+            (rest lst)
+            (first lst))))
+
+;; ── Conversion ─────────────────────────────────────────────────────────────
+(def-fn str->num  (s) (string-to-number s))
+(def-fn num->str  (n) (string n))
+(def-fn bool->str (b) (if b "true" "false"))

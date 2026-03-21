@@ -1,40 +1,51 @@
 ;; ===========================================================================
-;; Angehlang AI Bridge v2
-;; Provides rich abstractions over the native AI agent system.
-;; Created by Longbian Lennon
+;; Angehlang Core Standard Library
+;; Foundational utilities available in every program.
+;; Import with: (import core)
+;; Created by: Longbian Lennon
 ;; ===========================================================================
 
-(def-module ai-bridge)
+(def-module core)
 
-;; Spawn a named AI agent with a custom system prompt and optional model tag.
-;; Usage: (def-agent "Planner" "You are a strategic planner." "llama3")
-(def-macro def-agent (name prompt)
-  (begin
-    (agent-spawn name prompt)
-    (def name name)))
+;; ── Type Predicates ────────────────────────────────────────────────────────
+(def-fn number?   (x) (is-number? x))
+(def-fn string?   (x) (is-string? x))
+(def-fn list?     (x) (is-list? x))
+(def-fn null?     (x) (is-null? x))
+(def-fn boolean?  (x) (is-boolean? x))
+(def-fn callable? (x) (is-procedure? x))
 
-;; Ask a single agent. Maintains full conversation history automatically.
-(def-fn swarm-ask (agent-name question)
-  (agent-ask agent-name question))
+;; ── Logic Helpers ──────────────────────────────────────────────────────────
+(def-fn identity (x) x)
+(def-fn always   (x) (lambda (_) x))
+(def-fn negate?  (f) (lambda (x) (not (f x))))
 
-;; Ask multiple agents and collect responses into a list.
-;; Usage: (swarm-gather (list "Alice" "Bob") "What is your strategy?")
-(def-fn swarm-gather (agent-list question)
-  (map (lambda (agent) (agent-ask agent question)) agent-list))
+;; ── Math Shortcuts ─────────────────────────────────────────────────────────
+(def-fn inc (x) (+ x 1))
+(def-fn dec (x) (- x 1))
+(def-fn square   (x) (* x x))
+(def-fn cube     (x) (* x x x))
+(def-fn abs-val  (x) (if (< x 0) (- 0 x) x))
+(def-fn clamp (v lo hi)
+  (cond
+    ((< v lo) lo)
+    ((> v hi) hi)
+    (else v)))
 
-;; Spawn a team of agents with the same shared system prompt.
-;; Usage: (spawn-team (list "Alpha" "Beta" "Gamma") "You are a member of a reasoning system.")
-(def-fn spawn-team (names shared-prompt)
-  (for-each (lambda (name) (agent-spawn name shared-prompt)) names))
+;; ── List Utilities ─────────────────────────────────────────────────────────
+(def-fn head  (lst)     (first lst))
+(def-fn tail  (lst)     (rest lst))
+(def-fn empty? (lst)    (null? lst))
+(def-fn length (lst)    (len lst))
+(def-fn second (lst)    (first (rest lst)))
+(def-fn third  (lst)    (first (rest (rest lst))))
+(def-fn last   (lst)    (get lst (- (len lst) 1)))
 
-;; Reset all memory for an agent.
-(def-fn agent-reset (name)
-  (agent-forget name 0))
+;; ── Composition ────────────────────────────────────────────────────────────
+(def-fn compose (f g)   (lambda (x) (f (g x))))
+(def-fn pipe    (x f)   (f x))
 
-;; Fork an agent into a new instance and return the clone's name.
-(def-fn fork-agent (source-name new-name)
-  (agent-clone source-name new-name))
-
-;; Print a formatted summary of all active agents.
-(def-fn show-agents ()
-  (print (agent-list)))
+;; ── IO Helpers ─────────────────────────────────────────────────────────────
+(def-fn println (x)        (print x))
+(def-fn print-line (label val)
+  (print (string-append label ": " (string val))))

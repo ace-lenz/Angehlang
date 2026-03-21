@@ -1,0 +1,48 @@
+;; ===========================================================================
+;; Angehlang AI Bridge v2
+;; Provides rich abstractions over the native AI agent system.
+;; Created by Longbian Lennon
+;; ===========================================================================
+
+(def-module ai-bridge)
+
+;; Spawn a named AI agent with a custom system prompt and optional model tag.
+;; Usage: (def-agent "Planner" "You are a strategic planner." "llama3")
+(def-macro def-agent (name prompt)
+  (begin
+    (agent-spawn name prompt)
+    (def name name)))
+
+;; Ask a single agent. Maintains full conversation history automatically.
+(def-fn swarm-ask (agent-name question)
+  (agent-ask agent-name question))
+
+;; Ask multiple agents and collect responses into a list.
+;; Usage: (swarm-gather (list "Alice" "Bob") "What is your strategy?")
+(def-fn swarm-gather (agent-list question)
+  (map (lambda (agent) (agent-ask agent question)) agent-list))
+
+;; Spawn a team of agents with the same shared system prompt.
+;; Usage: (spawn-team (list "Alpha" "Beta" "Gamma") "You are a member of a reasoning system.")
+(def-fn spawn-team (names shared-prompt)
+  (for-each (lambda (name) (agent-spawn name shared-prompt)) names))
+
+;; Reset all memory for an agent.
+(def-fn agent-reset (name)
+  (agent-forget name 0))
+
+;; Fork an agent into a new instance and return the clone's name.
+(def-fn fork-agent (source-name new-name)
+  (agent-clone source-name new-name))
+
+;; Swarm resolve: Queries multiple agents and uses 'intend' to consolidate a single answer.
+;; Usage: (swarm-resolve (list "Alice" "Bob" "Charlie") "Analyze the data.")
+(def-fn swarm-resolve (agents question)
+  (let ((replies (map (lambda (a) (agent-ask a question)) agents)))
+    (intend (string-append "Consolidate these diverse AI responses into one definitive final answer: " 
+                           (string replies)) 
+            replies)))
+
+;; Print a formatted summary of all active agents.
+(def-fn show-agents ()
+  (print (agent-list)))

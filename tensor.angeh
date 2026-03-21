@@ -1,0 +1,47 @@
+;; tensor.angeh
+;; A native implementation of SIMD/Tensor primitives for Architectonic Neural logic.
+(def-module tensor)
+
+;; Create a native tensor (represented as a 1D vector list for SIMD mock)
+(def-fn tensor-create (elements)
+  (let ((t (new-list)))
+    (begin
+      (add-all! t elements)
+      t)))
+
+;; Vectorized addition (SIMD Add)
+;; Recursively adds two tensors element-wise
+(def-fn tensor-add (t1 t2)
+  (let ((result (new-list)))
+    (begin
+      (def-fn loop (i)
+        (if (< i (length t1))
+            (begin
+              (add-all! result (list (+ (get t1 i) (get t2 i))))
+              (loop (+ i 1)))
+            result))
+      (loop 0))))
+
+;; Vectorized multiplication (SIMD Mul)
+(def-fn tensor-mul (t1 t2)
+  (let ((result (new-list)))
+    (begin
+      (def-fn loop (i)
+        (if (< i (length t1))
+            (begin
+              (add-all! result (list (* (get t1 i) (get t2 i))))
+              (loop (+ i 1)))
+            result))
+      (loop 0))))
+
+;; Execute a simple test to ensure native SIMD logic works
+(def-fn tensor-demo ()
+  (let ((vec-a (tensor-create (list 1 2 3)))
+        (vec-b (tensor-create (list 4 5 6))))
+    (begin
+      (print "\n>> Executing native tensor operations (SIMD capabilities in S-Expressions)...")
+      (print "Vector A: " vec-a)
+      (print "Vector B: " vec-b)
+      (print "SIMD Add: " (tensor-add vec-a vec-b))
+      (print "SIMD Mul: " (tensor-mul vec-a vec-b))
+      true)))

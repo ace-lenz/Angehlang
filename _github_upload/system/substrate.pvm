@@ -1,0 +1,642 @@
+
+import sys
+import os
+import time
+import re
+import copy
+
+ENTANGLED_GROUPS = {}
+ENTANGLED_GROUPS_MAP = {}
+CHECKPOINTS = {}
+
+class Token:
+    def __init__(self, value, line, col, file):
+        self.value = value
+        self.line = line
+        self.col = col
+        self.file = file
+    def __repr__(self): return self.value
+    def __str__(self): return self.value
+
+def tokenize(code, filename="<unknown>"):
+    tokens = []
+    line_num = 1
+    line_start = 0
+    token_re = re.compile(r'(\n)|(\s+)|(;.*)|("(?:\\.|[^"])*")|(\()|(\))|(\')|([^\s();"]+)')
+    for match in token_re.finditer(code):
+        newline, whitespace, comment, string, open_p, close_p, quote, symbol = match.groups()
+        if newline:
+            line_num += 1
+            line_start = match.end()
+            continue
+        if whitespace or comment: continue
+        
+        col = match.start() - line_start + 1
+        val = match.group()
+        tokens.append(Token(val, line_num, col, filename))
+    return tokens
+
+class ASTList(list):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.metadata = None
+
+def parse_from_tokens(tokens):
+    if not tokens: return None
+    token_obj = tokens.pop(0)
+    token = token_obj.value
+    
+    res = None
+    if token == "'":
+        inner = parse_from_tokens(tokens)
+        res = ASTList(['quote', inner])
+    elif token == '(':
+        ast = ASTList()
+        while tokens and tokens[0].value != ')':
+            ast.append(parse_from_tokens(tokens))
+        if tokens: tokens.pop(0)
+        res = ast
+    elif token == ')':
+        res = None
+    else:
+        res = atom(token)
+    
+    if isinstance(res, ASTList):
+        res.metadata = token_obj
+    return res
+
+def atom(token):
+    if token.startswith('"') and token.endswith('"'): return token
+    try: return int(token)
+    except ValueError:
+        try: return float(token)
+        except ValueError: return str(token)
+
+class Env(dict):
+    def __init__(self, params=(), args=(), outer=None):
+        if params:
+            for p, a in zip(params, args):
+                if isinstance(p, str): self[p] = a
+        self.outer = outer
+        self._updating_entanglement = False
+
+    def __setitem__(self, key, value):
+        super().__setitem__(key, value)
+        state_key = f"{id(self)}_{key}"
+        if state_key in ENTANGLED_GROUPS and not self._updating_entanglement:
+            self._updating_entanglement = True
+            group_id = ENTANGLED_GROUPS[state_key]
+            for e, k in ENTANGLED_GROUPS_MAP[group_id]:
+                if e is not self or k != key:
+                    e[k] = value
+            self._updating_entanglement = False
+
+    def find(self, var):
+        if not isinstance(var, str): return None
+        if var in self: return self
+        elif self.outer is not None: return self.outer.find(var)
+        else: return None
+
+OP_PUSH = 1
+OP_LOAD = 2
+OP_STORE = 3
+OP_CALL = 4
+OP_JMPF = 5
+OP_JMP = 6
+OP_RET = 7
+OP_POP = 8
+
+class FastVM:
+    def __init__(self, code, constants, global_env):
+        self.code = code
+        self.constants = constants
+        self.global_env = global_env
+        self.stack = []
+        self.locals = {}
+
+    def run(self, args=None):
+        if args:
+            self.locals.update(args)
+        code = self.code
+        consts = self.constants
+        env = self.global_env
+        stack = self.stack
+        locals_ = self.locals
+        pc = 0
+        l = len(code)
+
+        def op_push(pc):
+            stack.append(consts[code[pc+1]])
+            return pc + 2
+
+        def op_load(pc):
+            name = consts[code[pc+1]]
+            if name in locals_:
+                stack.append(locals_[name])
+            else:
+                found = env.find(name)
+                stack.append(found[name] if found else name)
+            return pc + 2
+
+        def op_store(pc):
+            locals_[consts[code[pc+1]]] = stack[-1]
+            return pc + 2
+
+        def op_call(pc):
+            argc = code[pc+1]
+            args_list = [stack.pop() for _ in range(argc)][::-1]
+            func = stack.pop()
+            stack.append(func(*args_list) if callable(func) else None)
+            return pc + 2
+
+        def op_jmpf(pc):
+            if not stack.pop():
+                return code[pc+1]
+            else:
+                return pc + 2
+
+        def op_jmp(pc):
+            return code[pc+1]
+
+        def op_pop(pc):
+            stack.pop()
+            return pc + 1
+
+        def op_ret(pc):
+            return -1
+
+        dispatch = {
+            OP_PUSH: op_push,
+            OP_LOAD: op_load,
+            OP_STORE: op_store,
+            OP_CALL: op_call,
+            OP_JMPF: op_jmpf,
+            OP_JMP: op_jmp,
+            OP_POP: op_pop,
+            OP_RET: op_ret,
+        }
+
+        while pc < l:
+            op = code[pc]
+            handler = dispatch.get(op)
+            if handler:
+                new_pc = handler(pc)
+                if new_pc == -1:
+                    return stack.pop() if stack else None
+                pc = new_pc
+            else:
+                pc += 1
+        return stack[-1] if stack else None
+
+class BytecodeCompiler:
+    def __init__(self):
+        self.code, self.constants, self.const_map = [], [], {}
+        
+    def add_const(self, val):
+        if val not in self.const_map:
+            self.const_map[val] = len(self.constants)
+            self.constants.append(val)
+        return self.const_map[val]
+
+    def emit(self, op, arg=None):
+        self.code.append(op)
+        if arg is not None: self.code.append(arg)
+        return len(self.code) - (2 if arg is not None else 1)
+
+    def compile(self, ast):
+        if isinstance(ast, str):
+            if ast.startswith('"') and ast.endswith('"'): self.emit(OP_PUSH, self.add_const(ast[1:-1]))
+            else: self.emit(OP_LOAD, self.add_const(ast))
+        elif not isinstance(ast, list): self.emit(OP_PUSH, self.add_const(ast))
+        elif not ast: self.emit(OP_PUSH, self.add_const(None))
+        else:
+            op = ast[0]
+            if op == 'if':
+                self.compile(ast[1])
+                jmpf = self.emit(OP_JMPF, 0)
+                self.compile(ast[2])
+                jmp = self.emit(OP_JMP, 0)
+                self.code[jmpf + 1] = len(self.code)
+                if len(ast) > 3: self.compile(ast[3])
+                else: self.emit(OP_PUSH, self.add_const(None))
+                self.code[jmp + 1] = len(self.code)
+            elif op == 'begin':
+                for i, expr in enumerate(ast[1:]):
+                    self.compile(expr)
+                    if i < len(ast) - 2: self.emit(OP_POP)
+            elif op == 'let':
+                for b in ast[1]:
+                    self.compile(b[1])
+                    self.emit(OP_STORE, self.add_const(b[0]))
+                for i, expr in enumerate(ast[2:]):
+                    self.compile(expr)
+                    if i < len(ast) - 3: self.emit(OP_POP)
+            elif op == 'set!':
+                self.compile(ast[2])
+                self.emit(OP_STORE, self.add_const(ast[1]))
+            elif op == 'while':
+                start = len(self.code)
+                self.compile(ast[1])
+                jmpf = self.emit(OP_JMPF, 0)
+                for expr in ast[2:]:
+                    self.compile(expr)
+                    self.emit(OP_POP)
+                self.emit(OP_JMP, start)
+                self.code[jmpf + 1] = len(self.code)
+                self.emit(OP_PUSH, self.add_const(None))
+            else:
+                self.compile(op)
+                for arg in ast[1:]: self.compile(arg)
+                self.emit(OP_CALL, len(ast) - 1)
+
+def compile_to_vm(ast, global_env):
+    c = BytecodeCompiler()
+    c.compile(ast)
+    c.emit(OP_RET)
+    return FastVM(c.code, c.constants, global_env)
+
+def compile_to_vm_lambda(params, body, env):
+    compiled = compile_to_vm(['begin'] + body, env)
+    return lambda *args: compiled.run(dict(zip(params, args)))
+
+def evaluate_path(obj, path):
+    for attr in path:
+        if isinstance(obj, dict): obj = obj.get(attr)
+        elif hasattr(obj, attr): obj = getattr(obj, attr)
+        else: return None
+    return obj
+
+def set_path(obj, path, val):
+    for i, attr in enumerate(path[:-1]):
+        if isinstance(obj, dict): obj = obj.get(attr)
+        elif hasattr(obj, attr): obj = getattr(obj, attr)
+        else: return
+    last = path[-1]
+    if isinstance(obj, dict): obj[last] = val
+    elif hasattr(obj, last): setattr(obj, last, val)
+
+def evaluate(x, env):
+    while True:
+        try:
+            if isinstance(x, str):
+                if x.startswith('"') and x.endswith('"'): return x[1:-1]
+                if x.startswith('.'): return lambda obj: evaluate_path(obj, [x[1:]])
+                if '.' in x:
+                    parts = x.split('.')
+                    # Direct namespaced access (e.g. math.sin)
+                    first_part = env.find(parts[0])
+                    if first_part:
+                        return evaluate_path(first_part[parts[0]], parts[1:])
+                    # Method/Property access (e.g. .field)
+                    return lambda obj: evaluate_path(obj, parts[1:])
+                env_found = env.find(x)
+                if env_found is None: return x
+                return env_found[x]
+            elif not isinstance(x, list): return x
+            if not x: return None
+            
+            op_expr, *args = x
+            if op_expr == 'quote': return args[0]
+            if op_expr in special_forms: return special_forms[op_expr](args, env)
+            
+            proc = evaluate(op_expr, env)
+            
+            # Macro handling
+            if isinstance(proc, list) and proc[0] == 'macro':
+                _, params, body = proc
+                expanded = apply_proc(['lambda', params, body], args, env)
+                x = expanded
+                continue
+
+            vals = [evaluate(arg, env) for arg in args]
+            
+            if isinstance(proc, dict):
+                if len(vals) == 1:
+                    v = vals[0]
+                    if callable(v): return v(proc)
+                    if not isinstance(v, (list, dict)):
+                        return proc.get(v)
+                return proc
+            
+            if callable(proc): return proc(*vals)
+            
+            if isinstance(proc, list) and proc[0] == 'lambda':
+                _, params, body = proc
+                x = ['begin'] + body
+                env = Env(params, vals, env)
+                continue
+            
+            if isinstance(op_expr, str) and op_expr.startswith('.'):
+                 getter = evaluate(op_expr, env)
+                 if callable(getter): return getter(*vals)
+
+            return proc
+        except Exception as e:
+            if hasattr(x, 'metadata') and x.metadata:
+                m = x.metadata
+                msg = f"❌ Error in {m.file} (Line {m.line}, Col {m.col}): {e}"
+                # We raise a new exception to carry the message but avoid double printing if possible
+                # But for now, just print and re-raise
+                raise RuntimeError(msg) from e
+            raise e
+
+def apply_proc(proc, vals, env=None):
+    if env is None: env = Env()
+    if callable(proc): return proc(*vals)
+    if isinstance(proc, list) and proc[0] == 'lambda':
+        _, params, body = proc
+        local_env = Env(params, vals, env)
+        val = None
+        for expr in body: val = evaluate(expr, local_env)
+        return val
+    return proc
+
+def cond_form(args, env):
+    for clause in args:
+        test, *body = clause
+        if test == 'else' or evaluate(test, env):
+            return evaluate(['begin'] + body, env)
+    return None
+
+def match_form(args, env):
+    val = evaluate(args[0], env)
+    for clause in args[1:]:
+        pat, *body = clause
+        if pat == 'else' or evaluate(pat, env) == val:
+            return evaluate(['begin'] + body, env)
+    return None
+
+def set_form(args, env):
+    target, val_expr = args
+    val = evaluate(val_expr, env)
+    if isinstance(target, str):
+        if '.' in target:
+            parts = target.split('.')
+            found_env = env.find(parts[0])
+            obj = found_env[parts[0]] if found_env else None
+            if obj: set_path(obj, parts[1:], val)
+            return val
+        found_env = env.find(target)
+        if found_env: found_env[target] = val
+        else: env[target] = val
+        return val
+    return None
+
+def import_form(args, env):
+    module_name = args[0]
+    filename = str(module_name).replace('-', '_') + ".angeh"
+    if filename in LOADED_MODULES: return
+    search_paths = [os.getcwd(), os.path.dirname(__file__), os.path.dirname(os.path.dirname(__file__))]
+    for p in search_paths:
+        path = os.path.join(p, filename)
+        if os.path.exists(path):
+            LOADED_MODULES.add(filename)
+            module_env = create_global_env()
+            module_env['__name__'] = str(module_name)
+            with open(path, 'r', encoding='utf-8') as f:
+                code = f.read()
+                tokens = tokenize(code, filename)
+                while tokens:
+                    expr = parse_from_tokens(tokens)
+                    if expr: evaluate(expr, module_env)
+            
+            # Use exported symbols if available, otherwise use the whole env
+            exports = module_env.get('__exports__')
+            module_obj = exports if exports is not None else module_env
+            env[module_name] = module_obj
+            return
+
+LOADED_MODULES = set()
+
+def def_type_form(args, env):
+    if not args: return
+    name_expr = args[0]
+    name = name_expr[0] if isinstance(name_expr, list) else name_expr
+    if len(args) < 2:
+        env.__setitem__(name, lambda *a: {"__type__": name, "data": a})
+        return
+    struct_def = args[1]
+    fields = []
+    if isinstance(struct_def, list) and struct_def[0] == 'struct':
+        for field_entry in struct_def[1]:
+            if isinstance(field_entry, list): fields.append(field_entry[0])
+            else: fields.append(field_entry)
+    def constructor_proc(*vals):
+        res = {f: v for f, v in zip(fields, vals)}
+        res["__type__"] = name
+        return res
+    env.__setitem__(name, constructor_proc)
+
+def entangle_form(args, env):
+    group_id = time.time()
+    ENTANGLED_GROUPS_MAP[group_id] = []
+    for sym in args:
+        if isinstance(sym, list) and sym[0] == 'quote': sym = sym[1]
+        found_env = env.find(sym)
+        if not found_env:
+            env[sym] = None
+            found_env = env
+        state_key = f"{id(found_env)}_{sym}"
+        ENTANGLED_GROUPS[state_key] = group_id
+        ENTANGLED_GROUPS_MAP[group_id].append((found_env, sym))
+    return True
+
+def checkpoint_form(args, env):
+    name = evaluate(args[0], env) if isinstance(args[0], list) else args[0]
+    if isinstance(name, list) and name[0] == 'quote': name = name[1]
+    CHECKPOINTS[name] = {k: copy.deepcopy(v) for k, v in env.items() if not callable(v) and not str(k).startswith('__')}
+    print(f"⏳ [TIME-TRAVEL] Checkpoint saved: '{name}'")
+    return name
+
+def rewind_form(args, env):
+    name = evaluate(args[0], env) if isinstance(args[0], list) else args[0]
+    if isinstance(name, list) and name[0] == 'quote': name = name[1]
+    if name in CHECKPOINTS:
+        env.update(copy.deepcopy(CHECKPOINTS[name]))
+        print(f"⏱️ [TIME-TRAVEL] Time rewound to checkpoint: '{name}'")
+        return True
+    return False
+
+special_forms = {
+    'let': lambda args, env: evaluate(['begin'] + args[1:], Env([b[0] for b in args[0]], [evaluate(b[1], env) for b in args[0]], env)) if args else None,
+    'begin': lambda args, env: [evaluate(a, env) for a in args][-1] if args else None,
+    'def': lambda args, env: env.__setitem__(args[0], evaluate(args[1], env)) if isinstance(args[0], str) else None,
+    'def-fn': lambda args, env: env.__setitem__(args[0], ['lambda', args[1], args[2:]]),
+    'def-jit-fn': lambda args, env: env.__setitem__(args[0], compile_to_jit_lambda(args[1], args[2:], env)),
+    'def-state': lambda args, env: env.__setitem__(args[0], evaluate(args[1], env)),
+    'def-const': lambda args, env: env.__setitem__(args[0], evaluate(args[1], env)),
+    'def-module': lambda args, env: env.__setitem__('__module_name__', args[0]),
+    'def-macro': lambda args, env: env.__setitem__(args[0], ['macro', args[1], args[2:]]),
+    'def-type': def_type_form,
+    'import': import_form,
+    'export': lambda args, env: env.__setitem__('__exports__', {str(arg): evaluate(arg, env) for arg in args}),
+    'if': lambda args, env: evaluate(args[1], env) if evaluate(args[0], env) else (evaluate(args[2], env) if len(args)>2 else None),
+    'cond': cond_form,
+    'match': match_form,
+    'lambda': lambda args, env: ['lambda', args[0], args[1:]],
+    'and': lambda args, env: all(evaluate(a, env) for a in args),
+    'or': lambda args, env: any(evaluate(a, env) for a in args),
+    'struct': lambda args, env: { (evaluate(a[0], env) if isinstance(a, list) else a): (evaluate(a[1], env) if isinstance(a, list) else None) for a in args if isinstance(a, list) and not isinstance(a[0], list) },
+    'set!': set_form,
+    'when': lambda args, env: evaluate(['begin'] + args[1:], env) if evaluate(args[0], env) else None,
+    'for-each': lambda args, env: [evaluate(['begin'] + args[2:], Env([args[0]], [v], env)) for v in (evaluate(args[1], env) or [])] if len(args)>1 else None,
+    'while': while_form,
+    'entangle': entangle_form,
+    'checkpoint': checkpoint_form,
+    'rewind': rewind_form,
+}
+
+def compile_to_jit_lambda(params, body, env):
+    # Simple JIT: translate basic loops/math to Python for extreme speed
+    try:
+        def translate(ex):
+            if isinstance(ex, str): return ex
+            if not isinstance(ex, list): return str(ex)
+            op = ex[0]
+            if op == '+': return f"({translate(ex[1])} + {translate(ex[2])})"
+            if op == '-': return f"({translate(ex[1])} - {translate(ex[2])})"
+            if op == '*': return f"({translate(ex[1])} * {translate(ex[2])})"
+            if op == '<': return f"({translate(ex[1])} < {translate(ex[2])})"
+            if op == 'set!': return f"{ex[1]} = {translate(ex[2])}"
+            if op == 'while': return f"while {translate(ex[1])}:\n    " + "\n    ".join(translate(e) for e in ex[2:])
+            if op == 'let': return "\n".join([f"{b[0]}={translate(b[1])}" for b in ex[1]] + [translate(e) for e in ex[2:]])
+            return f"{ex[0]}({', '.join(translate(a) for a in ex[1:])})"
+        
+        py_body = translate(['begin'] + body).replace('\n', '\n        ')
+        py_code = f"def __jit_wrapped({', '.join(params)}):\n    try:\n        {py_body}\n        return locals().get('sum', locals().get('result', None))\n    except: return None"
+        l = {}
+        exec(py_code, env, l)
+        return l['__jit_wrapped']
+    except:
+        return compile_to_vm_lambda(params, body, env)
+
+def while_form(args, env):
+    cond, *body = args
+    res = None
+    while evaluate(cond, env):
+        res = evaluate(['begin'] + body, env)
+    return res
+
+
+import math
+
+def intend_proc(intent, data):
+    print(f"🔮 [INTENT] Inferring action for: '{intent}'")
+    intent = intent.lower()
+    if "sort" in intent: return sorted(data)
+    if "reverse" in intent: return list(reversed(data))
+    if "double" in intent: return [x*2 for x in data] if isinstance(data, list) else data*2
+    return data
+
+def create_global_env():
+    env = Env()
+    env.update({
+        'math': {
+            'sin': math.sin, 'cos': math.cos, 'tan': math.tan,
+            'asin': math.asin, 'acos': math.acos, 'atan': math.atan,
+            'sqrt': math.sqrt, 'log': math.log, 'exp': math.exp,
+            'pi': math.pi, 'e': math.e, 'pow': math.pow,
+            'floor': math.floor, 'ceil': math.ceil, 'abs': abs,
+        },
+        'string': {
+            'split': lambda s, d=" ": s.split(d),
+            'join': lambda d, l: d.join(map(str, l)),
+            'replace': lambda s, o, n: s.replace(o, n),
+            'trim': lambda s: s.strip(),
+            'lower': lambda s: s.lower(),
+            'upper': lambda s: s.upper(),
+            'starts-with?': lambda s, p: s.startswith(p),
+            'ends-with?': lambda s, p: s.endswith(p),
+            'contains?': lambda s, n: n in s,
+        },
+        '+': lambda a, b: a + b, '-': lambda a, b: a - b, '*': lambda a, b: a * b, '/': lambda a, b: a / b,
+        '=': lambda a, b: a == b, '>': lambda a, b: a > b, '<': lambda a, b: a < b,
+        'str': lambda *args: "".join(map(str, args)),
+        'list': lambda *args: list(args),
+        'print': print, 'log-info': lambda msg: print(f"💠 {msg}"), 'sleep': time.sleep, 'len': len,
+        'new-array': lambda: [], 'new-hash-map': lambda: {},
+        'make-array': lambda n, f: [apply_proc(f, [i]) for i in range(n)],
+        'array-push!': lambda l, x: l.append(x), 'array-set!': lambda l, i, x: l.__setitem__(i, x),
+        'get': lambda x, i: x.get(i) if isinstance(x, dict) else (x[i] if isinstance(x, list) and i < len(x) else None),
+        'qhash-map': lambda *args: {args[i]: args[i+1] for i in range(0, len(args), 2) if not isinstance(args[i], (list, dict))},
+        'qhash-get': lambda d, k: d.get(k) if isinstance(d, dict) and not isinstance(k, (list, dict)) else None,
+        'qhash-set!': lambda d, k, v: d.__setitem__(k, v) if isinstance(d, dict) and not isinstance(k, (list, dict)) else None,
+        'qhash-keys': lambda d: list(d.keys()) if isinstance(d, dict) else [],
+        'hash-set!': lambda d, k, v: d.__setitem__(k, v) if isinstance(d, dict) and not isinstance(k, (list, dict)) else None,
+        'hash-get': lambda d, k: d.get(k) if isinstance(d, dict) and not isinstance(k, (list, dict)) else None,
+        'hash-delete!': lambda d, k: d.pop(k, None) if isinstance(d, dict) and not isinstance(k, (list, dict)) else None,
+        'symbol->string': lambda s: str(s),
+        'not': lambda x: not x, 'equal?': lambda a, b: a == b,
+        'struct?': lambda x: isinstance(x, dict), 'has-field?': lambda x, f: isinstance(x, dict) and f in x,
+        'mod': lambda a, b: (a % b) if b is not None else 0, 'random': lambda: 0.5, 'void': lambda: None, 'return': lambda x: x,
+        'range': lambda s, e: list(range(s, e)),
+        'number?': lambda x: isinstance(x, (int, float)), 'string?': lambda x: isinstance(x, str),
+        'symbol?': lambda x: isinstance(x, str) and not (x.startswith('"') and x.endswith('"')),
+        'list?': lambda x: isinstance(x, list),
+        'intend': intend_proc,
+        'fold': lambda f, init, l: __import__('functools').reduce(lambda x, y: apply_proc(f, [x, y]), l, init),
+        'char-code': lambda c: ord(c) if isinstance(c, str) and len(c)==1 else 0,
+        'string->list': lambda s: list(s),
+        'car': lambda x: x[0] if x else None, 'cdr': lambda x: x[1:] if isinstance(x, list) else (x[1] if isinstance(x, list) else []),
+        'cons': lambda a, b: [a, b] if not isinstance(b, list) else [a] + b,
+        'set-car!': lambda p, v: p.__setitem__(0, v),
+        'set-cdr!': lambda p, v: p.__setitem__(1, v) if len(p) > 1 else p.append(v),
+        'map': lambda f, l: [apply_proc(f, [x]) for x in l],
+        'copy-env': lambda e: Env(outer=e.outer, **e),
+        'parse': lambda t: parse_from_tokens(tokenize(t) if isinstance(t, str) else t),
+        'nil': None, 'true': True, 'false': False,
+        
+        # Hyper-Intelligence Mock UI primitives
+        'className': lambda x: ['className', x], 'children': lambda x: ['children', x], 'on-click': lambda x: ['on-click', x],
+        'icon': lambda x: ['icon', x], 'label': lambda x: ['label', x], 'active': lambda x: ['active', x],
+        'Container': lambda *a: { (x[0] if isinstance(x, list) else f"arg{i}"): (x[1] if isinstance(x, list) else x) for i, x in enumerate(a) },
+        'IconButton': lambda *a: { (x[0] if isinstance(x, list) else f"arg{i}"): (x[1] if isinstance(x, list) else x) for i, x in enumerate(a) },
+        'Text': lambda *a: { (x[0] if isinstance(x, list) else f"arg{i}"): (x[1] if isinstance(x, list) else x) for i, x in enumerate(a) },
+        'Button': lambda *a: { (x[0] if isinstance(x, list) else f"arg{i}"): (x[1] if isinstance(x, list) else x) for i, x in enumerate(a) },
+        'Image': lambda *a: { (x[0] if isinstance(x, list) else f"arg{i}"): (x[1] if isinstance(x, list) else x) for i, x in enumerate(a) },
+        'ScrollArea': lambda child: child,
+        'boot-studio-standalone': lambda: print("🚀 Studio GUI Booted!"),
+        'trigger-landing-enter': lambda cb: (print("🖱️ [USER] Hovering over Photonic Logo..."), time.sleep(1.0), print("🖱️ [USER] LOGO PRESSED!"), apply_proc(cb, [])),
+        'VS_ICONS': {'explorer': "📁", 'search': "🔍", 'git': "🌿", 'debug': "🐞", 'extensions': "🧩"},
+        'VS_THEME': lambda key: "#1e1e1e",
+        'Tab': lambda name, active: {"type": "Tab", "name": name, "active": active},
+        
+        # Emoji-Based Photonic Shortcuts
+        '🖨️👋🌏': lambda: print("💠 Image Reified: 'Hello World'"),
+        '🖨️': print,
+        '👋': "Hello",
+        '🌏': "World",
+    })
+    return env
+
+def main():
+    if len(sys.argv) < 2: return
+    sys.setrecursionlimit(5000)
+    global_env = create_global_env()
+    for filename in sys.argv[1:]:
+        if not os.path.exists(filename): 
+            # Check search paths for the file itself
+            search_paths = [os.getcwd(), os.path.dirname(__file__), os.path.dirname(os.path.dirname(__file__))]
+            found = False
+            for p in search_paths:
+                path = os.path.join(p, filename)
+                if os.path.exists(path):
+                    filename = path
+                    found = True
+                    break
+            if not found: continue
+
+        with open(filename, 'r', encoding='utf-8') as f:
+            code = f.read()
+            tokens = tokenize(code, filename)
+            while tokens:
+                try:
+                    expr = parse_from_tokens(tokens)
+                    if expr: evaluate(expr, global_env)
+                except Exception as e:
+                    # Error is already enhanced by evaluate
+                    print(e)
+                    return
+
+if __name__ == '__main__':
+    main()

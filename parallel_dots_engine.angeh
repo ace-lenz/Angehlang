@@ -1,0 +1,392 @@
+(def-module parallel-dots-engine
+  "Advanced N-Dimensional Parallel DOT Execution Engine
+   Supports 2D-ND dots with 4-directional live coding and hardware acceleration")
+
+(import type-system)
+(import collections)
+(import quantum-ai)
+(import concurrency)
+(import realtime-llm)
+
+;; ============================================================
+;; N-DIMENSIONAL DOT STRUCTURES
+;; ============================================================
+
+(def-type NDimensionalDot
+  (struct (
+    (quantum-id symbol)
+    (dimensions (new-array))      ; [width, height, depth, ...]
+    (dot-tensor any)              ; N-dimensional array of quantum dots
+    (parallel-axes (new-array))   ; Which axes to parallelize
+    (entanglement-graph (new-qhash-map))
+    (execution-device symbol)     ; 'gpu | 'npu | 'cpu
+    (state symbol)                ; 'ready | 'executing | 'completed
+    (metadata (new-qhash-map))
+  )))
+
+(def-fn ndot-create (dimensions)
+  "Create N-dimensional dot structure"
+  (validate-dimensions dimensions)
+  (let ((tensor (create-nd-tensor dimensions))
+        (qid (gensym 'ndot)))
+    (NDimensionalDot
+      qid
+      dimensions
+      tensor
+      (default-parallel-axes dimensions)
+      (new-qhash-map)
+      (detect-best-device)
+      'ready
+      (new-qhash-map))))
+
+(def-fn validate-dimensions (dims)
+  "Validate dimension array"
+  (when (or (nil? dims) (= (len dims) 0))
+    (error "Dimensions cannot be empty"))
+  (when (> (len dims) 10)
+    (error "Maximum 10 dimensions supported"))
+  (for-each dim dims
+    (when (<= dim 0)
+      (error "All dimensions must be positive"))))
+
+(def-fn create-nd-tensor (dimensions)
+  "Create N-dimensional tensor of quantum dots"
+  (if (= (len dimensions) 1)
+    ;; 1D case
+    (let ((arr (make-array (get dimensions 0) create-quantum-dot)))
+      arr)
+    ;; Recursive ND case  
+    (let ((first-dim (get dimensions 0))
+          (rest-dims (array-slice dimensions 1 (len dimensions))))
+      (make-array first-dim (fn () (create-nd-tensor rest-dims))))))
+
+(def-fn default-parallel-axes (dimensions)
+  "Determine default axes for parallelization"
+  (cond
+    ;; 1D - no parallelization
+    ((= (len dimensions) 1) (new-array))
+    ;; 2D - parallelize rows (axis 0)
+    ((= (len dimensions) 2) (array 0))
+    ;; 3D+ - parallelize first two axes
+    (else (array 0 1))))
+
+(def-fn detect-best-device ()
+  "Auto-detect best available hardware"
+  ;; Priority: GPU > NPU > CPU (multi-threaded)
+  (cond
+    ((gpu-available?) 'gpu)
+    ((npu-available?) 'npu)
+    (else 'cpu)))
+
+;; ============================================================
+;; 4-DIRECTIONAL LIVE CODING SYSTEM
+;; ============================================================
+
+(def-type LiveCodingSession
+  (struct (
+    (session-id symbol)
+    ;; 4 Directional Streams
+    (code-input-stream (new-queue))        ; User code input
+    (live-output-stream (new-queue))       ; Execution output
+    (natural-language-stream (new-queue))  ; NL explanations
+    (system-execution-stream (new-queue))  ; System metrics
+    ;; LLM Integration
+    (llm-engine any)                        ; Native Angeh LLM
+    (alternative-llms (new-qhash-map))     ; Gemini, GPT-4, etc
+    (active-llm symbol)                     ; Currently active LLM
+    ;; Execution Context
+    (execution-context ExecutionContext)
+    (current-ndot NDimensionalDot)
+    ;; Display Mode
+    (display-mode symbol)                   ; 'web-ui | 'separate-window
+    (is-active bool)
+  )))
+
+(def-fn live-coding-session-new ()
+  "Create new 4-directional live coding session"
+  (let ((session-id (gensym 'live-session)))
+    (LiveCodingSession
+      session-id
+      (new-queue)
+      (new-queue)
+      (new-queue)
+      (new-queue)
+      (quantum-llm-new)              ; Native Angeh LLM as default
+      (initialize-alternative-llms)
+      'native
+      (new-execution-context 8)      ; 8 CPU threads
+      (ndot-create (array 1))        ; Default 1D dot
+      'web-ui
+      false)))
+
+(def-fn initialize-alternative-llms ()
+  "Initialize alternative LLM options"
+  (let ((llms (new-qhash-map)))
+    (qhash-set! llms 'gemini (create-gemini-llm-adapter))
+    (qhash-set! llms 'gpt4 (create-gpt4-llm-adapter))
+    (qhash-set! llms 'ollama (create-ollama-llm-adapter))
+    (qhash-set! llms 'claude (create-claude-llm-adapter))
+    llms))
+
+;; ============================================================
+;; NATURAL LANGUAGE → DOT CODE LIVE RENDERING
+;; ============================================================
+
+(def-fn live-code-natural-language-input! (session nl-input)
+  "Process natural language input and live render DOT code"
+  ;; Step 1: Queue natural language input
+  (queue-enqueue! (session.natural-language-stream session) 
+                  (struct ((type 'input) (content nl-input) (timestamp (time-now)))))
+  
+  ;; Step 2: Generate DOT code using active LLM
+  (let ((dot-code (generate-dot-from-natural-language session nl-input)))
+    
+    ;; Step 3: Live render DOT code to code-input-stream
+    (queue-enqueue! (session.code-input-stream session)
+                    (struct ((type 'generated-code) 
+                            (content dot-code) 
+                            (source 'nl-translation)
+                            (timestamp (time-now)))))
+    
+    ;; Step 4: Execute in parallel with real-time output
+    (parallel-execute-with-live-output! session dot-code)
+    
+    dot-code))
+
+(def-fn generate-dot-from-natural-language (session nl-text)
+  "Generate DOT code from natural language using LLM"
+  (let ((llm (get-active-llm session)))
+    (match (session.active-llm session)
+      ('native
+        ;; Use native Angeh LLM
+        (qllm-any-to-any llm nl-text 'natural-language 'dots))
+      (llm-name
+        ;; Use alternative LLM
+        (match (qhash-get (session.alternative-llms session) llm-name)
+          ((Some adapter)
+            (llm-adapter-translate adapter nl-text 'natural-language 'dots))
+          (Nothing
+            (error (str "LLM not found: " llm-name))))))))
+
+(def-fn get-active-llm (session)
+  "Get the currently active LLM engine"
+  (if (eq? (session.active-llm session) 'native)
+    (session.llm-engine session)
+    (match (qhash-get (session.alternative-llms session) (session.active-llm session))
+      ((Some llm) llm)
+      (Nothing (session.llm-engine session)))))
+
+;; ============================================================
+;; PARALLEL EXECUTION WITH LIVE OUTPUT
+;; ============================================================
+
+(def-fn parallel-execute-with-live-output! (session dot-code)
+  "Execute DOT code with real-time output streaming in all 4 directions"
+  ;; Create execution thread for parallel processing
+  (async-execute!
+    (fn ()
+      ;; Parse DOT code
+      (let ((ndot (parse-dot-code-to-ndot dot-code)))
+        (set! (session.current-ndot session) ndot)
+        
+        ;; Stream system execution info
+        (stream-system-execution! session "Starting execution...")
+        (stream-system-execution! session 
+          (str "Device: " (ndot.execution-device ndot)))
+        (stream-system-execution! session
+          (str "Dimensions: " (format-dimensions (ndot.dimensions ndot))))
+        
+        ;; Execute with hardware acceleration
+        (let ((result (ndot-execute-parallel ndot)))
+          
+          ;; Stream live output
+          (queue-enqueue! (session.live-output-stream session)
+                         (struct ((type 'execution-result)
+                                 (content result)
+                                 (timestamp (time-now)))))
+          
+          ;; Generate natural language explanation
+          (let ((explanation (generate-nl-explanation session dot-code result)))
+            (queue-enqueue! (session.natural-language-stream session)
+                           (struct ((type 'explanation)
+                                   (content explanation)
+                                   (timestamp (time-now))))))
+          
+          ;; Stream system completion
+          (stream-system-execution! session "Execution completed")
+          
+          result)))))
+
+(def-fn stream-system-execution! (session message)
+  "Stream system execution status"
+  (queue-enqueue! (session.system-execution-stream session)
+                 (struct ((type 'status)
+                         (content message)
+                         (timestamp (time-now))))))
+
+(def-fn generate-nl-explanation (session dot-code result)
+  "Generate natural language explanation of execution"
+  (let ((llm (get-active-llm session)))
+    (qllm-code-to-explanation llm dot-code)))
+
+;; ============================================================
+;; N-DIMENSIONAL PARALLEL EXECUTION
+;; ============================================================
+
+(def-fn ndot-execute-parallel (ndot)
+  "Execute N-dimensional dot with hardware acceleration"
+  (set! (ndot.state ndot) 'executing)
+  
+  (let ((result
+    (match (ndot.execution-device ndot)
+      ('gpu (ndot-execute-gpu ndot))
+      ('npu (ndot-execute-npu ndot))
+      ('cpu (ndot-execute-cpu-parallel ndot))
+      (else (error "Unknown execution device")))))
+    
+    (set! (ndot.state ndot) 'completed)
+    result))
+
+(def-fn ndot-execute-gpu (ndot)
+  "Execute on GPU using CUDA/OpenCL"
+  (struct ((device 'gpu)
+          (result (gpu-execute-tensor (ndot.dot-tensor ndot)))
+          (performance (gpu-get-metrics)))))
+
+(def-fn ndot-execute-npu (ndot)
+  "Execute on NPU for AI-optimized operations"
+  (struct ((device 'npu)
+          (result (npu-execute-tensor (ndot.dot-tensor ndot)))
+          (performance (npu-get-metrics)))))
+
+(def-fn ndot-execute-cpu-parallel (ndot)
+  "Execute on CPU with multi-threading"
+  (let ((parallel-axes (ndot.parallel-axes ndot)))
+    (if (= (len parallel-axes) 0)
+      ;; No parallelization - sequential execution
+      (cpu-execute-sequential (ndot.dot-tensor ndot))
+      ;; Parallelize along specified axes
+      (cpu-execute-parallel-axes (ndot.dot-tensor ndot) parallel-axes))))
+
+(def-fn cpu-execute-parallel-axes (tensor axes)
+  "Execute tensor in parallel along specified axes"
+  ;; Create dataflow graph for parallel execution
+  (let ((graph (dataflow-new))
+        (ctx (new-execution-context 8)))
+    
+    ;; Decompose tensor along parallel axes
+    (let ((slices (decompose-tensor-along-axes tensor axes)))
+      ;; Add each slice as parallel computation node
+      (for-each slice slices
+        (dataflow-add-node! graph slice (fn (dot) (execute-dot-computation dot))))
+      
+      ;; Execute in parallel
+      (dataflow-execute-parallel! graph ctx)
+      
+      ;; Gather results
+      (gather-parallel-results ctx slices))))
+
+;; ============================================================
+;; DISPLAY MODES
+;; ============================================================
+
+(def-fn live-coding-start-web-ui! (session port)
+  "Start web UI for 4-directional live coding"
+  (set! (session.display-mode session) 'web-ui)
+  (set! (session.is-active session) true)
+  
+  ;; Initialize web server
+  (web-ui-start! port session)
+  
+  ;; Return WebSocket endpoint for streaming
+  (str "ws://localhost:" port "/live"))
+
+(def-fn live-coding-start-separate-window! (session)
+  "Start separate window for 4-directional display"
+  (set! (session.display-mode session) 'separate-window)
+  (set! (session.is-active session) true)
+  
+  ;; Launch native window application
+  (native-window-launch! session))
+
+;; ============================================================
+;; LLM ADAPTER INTERFACES
+;; ============================================================
+
+(def-fn create-gemini-llm-adapter ()
+  "Create adapter for Google Gemini"
+  (struct ((name 'gemini)
+          (translate (fn (text from to) (gemini-api-call text from to)))
+          (available? (fn () (gemini-check-availability))))))
+
+(def-fn create-gpt4-llm-adapter ()
+  "Create adapter for OpenAI GPT-4"
+  (struct ((name 'gpt4)
+          (translate (fn (text from to) (gpt4-api-call text from to)))
+          (available? (fn () (gpt4-check-availability))))))
+
+(def-fn create-ollama-llm-adapter ()
+  "Create adapter for Ollama"
+  (struct ((name 'ollama)
+          (translate (fn (text from to) (ollama-api-call text from to)))
+          (available? (fn () (ollama-check-availability))))))
+
+(def-fn create-claude-llm-adapter ()
+  "Create adapter for Anthropic Claude"
+  (struct ((name 'claude)
+          (translate (fn (text from to) (claude-api-call text from to)))
+          (available? (fn () (claude-check-availability))))))
+
+(def-fn llm-adapter-translate (adapter text from to)
+  "Use LLM adapter to translate between modalities"
+  ((adapter.translate adapter) text from to))
+
+;; ============================================================
+;; HELPER FUNCTIONS
+;; ============================================================
+
+(def-fn gpu-available? ()
+  "Check if GPU is available"
+  (system-has-capability? 'cuda))
+
+(def-fn npu-available? ()
+  "Check if NPU is available"
+  (system-has-capability? 'npu))
+
+(def-fn parse-dot-code-to-ndot (code)
+  "Parse DOT code string into NDimensionalDot"
+  ;; Simplified - would use full parser
+  (ndot-create (array 10)))
+
+(def-fn format-dimensions (dims)
+  "Format dimensions array as string"
+  (str-join "×" (map number-\u003estring dims)))
+
+(def-fn decompose-tensor-along-axes (tensor axes)
+  "Decompose tensor into slices along axes"
+  ;; Simplified - would implement full tensor slicing  
+  (new-array))
+
+(def-fn gather-parallel-results (ctx slices)
+  "Gather results from parallel execution"
+  ;; Simplified - would gather from async results
+  (struct ((status 'completed) (slices (len slices)))))
+
+(def-fn execute-dot-computation (dot)
+  "Execute single dot computation"
+  (struct ((value (random)) (timestamp (time-now)))))
+
+;; Export public API
+(export
+  ;; N-Dimensional Dots
+  ndot-create ndot-execute-parallel
+  ;; Live Coding Session
+  live-coding-session-new
+  live-code-natural-language-input!
+  parallel-execute-with-live-output!
+  ;; Display Modes
+  live-coding-start-web-ui!
+  live-coding-start-separate-window!
+  ;; LLM Management
+  get-active-llm
+  generate-dot-from-natural-language)

@@ -1,0 +1,34 @@
+{
+  "name": "angehlang-system",
+  "version": "1.0.0",
+  "description": "Complete AngehLang execution environment with photonic substrate",
+  "main": "dist/main.js",
+  "type": "module",
+  "scripts": {
+    "build": "node --loader ./runtime-loader.js build.angeh",
+    "start": "npm run build && node dist/main.js",
+    "dev": "node --loader ./runtime-loader.js build.angeh --dev",
+    "repl": "npm run build && node dist/main.js --repl",
+    "run": "node --loader ./runtime-loader.js AngehLang_Standalone/core/engine.angeh",
+    "aurora": "node aurora_interface.js",
+    "ide": "cd angew_ide && node improved-ide-server.js",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "angehlang",
+    "photonic",
+    "quantum",
+    "ai",
+    "neural",
+    "execution-engine"
+  ],
+  "author": "AngehLang Team",
+  "license": "MIT",
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/angehlang/angehlang-system"
+  }
+}

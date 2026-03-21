@@ -1,0 +1,88 @@
+{
+  "dataset": "quantum_states.angel",
+  "type": "quantum_computing_dataset",
+  "description": "Comprehensive quantum state dataset for multi-paradigm computing",
+  "version": "2.0",
+  "created": "2025-01-01",
+  "quantum_systems": {
+    "photonic_qubits": {
+      "description": "Light-based quantum bits",
+      "states": [
+        {"id": "photon_0", "polarization": "horizontal", "phase": 0, "amplitude": 1.0},
+        {"id": "photon_1", "polarization": "vertical", "phase": 3.14159, "amplitude": 1.0},
+        {"id": "photon_plus", "polarization": "diagonal", "phase": 1.5708, "amplitude": 0.707},
+        {"id": "photon_minus", "polarization": "anti-diagonal", "phase": -1.5708, "amplitude": 0.707}
+      ],
+      "entangled_pairs": [
+        {"pair": ["photon_0", "photon_1"], "state": "EPR_pair", "correlation": 1.0},
+        {"pair": ["photon_plus", "photon_minus"], "state": "Bell_state", "correlation": -1.0}
+      ]
+    },
+    "atomic_qubits": {
+      "description": "Atomic electron spin qubits",
+      "atoms": [
+        {"element": "Rubidium", "isotope": 87, "hyperfine_states": ["|F=1,mF=-1⟩", "|F=1,mF=0⟩", "|F=1,mF=1⟩", "|F=2,mF=-2⟩", "|F=2,mF=-1⟩", "|F=2,mF=0⟩", "|F=2,mF=1⟩", "|F=2,mF=2⟩"]},
+        {"element": "Cesium", "isotope": 133, "hyperfine_states": ["|F=3,mF=-3⟩", "|F=3,mF=-2⟩", "|F=3,mF=-1⟩", "|F=3,mF=0⟩", "|F=3,mF=1⟩", "|F=3,mF=2⟩", "|F=3,mF=3⟩", "|F=4,mF=-4⟩", "|F=4,mF=-3⟩", "|F=4,mF=-2⟩", "|F=4,mF=-1⟩", "|F=4,mF=0⟩", "|F=4,mF=1⟩", "|F=4,mF=2⟩", "|F=4,mF=3⟩", "|F=4,mF=4⟩"]}
+      ],
+      "transitions": [
+        {"name": "D1_line", "wavelength": 794.7e-9, "frequency": 377.1e12},
+        {"name": "D2_line", "wavelength": 852.3e-9, "frequency": 351.7e12}
+      ]
+    },
+    "superconducting_qubits": {
+      "description": "Josephson junction based qubits",
+      "circuits": [
+        {"type": "transmon", "frequency": 5e9, "anharmonicity": -200e6, "t1_time": 50e-6, "t2_time": 30e-6},
+        {"type": "fluxonium", "frequency": 1e9, "anharmonicity": -1e6, "t1_time": 100e-6, "t2_time": 80e-6}
+      ]
+    }
+  },
+  "quantum_algorithms": {
+    "shor_algorithm": {
+      "description": "Integer factorization algorithm",
+      "qubits_required": 1024,
+      "complexity": "O((log N)^3)",
+      "success_probability": 0.5
+    },
+    "grover_algorithm": {
+      "description": "Unstructured search algorithm",
+      "speedup": "quadratic",
+      "optimal_iterations": "π/4 * √N",
+      "success_probability": "sin²((2k+1)θ)"
+    },
+    "quantum_fourier_transform": {
+      "description": "Quantum version of FFT",
+      "complexity": "O(n^2)",
+      "applications": ["phase_estimation", "shor_algorithm"]
+    }
+  },
+  "error_correction": {
+    "surface_code": {
+      "description": "2D topological error correction",
+      "distance": 7,
+      "logical_qubits": 1,
+      "physical_qubits": 49,
+      "threshold": 0.01
+    },
+    "shor_code": {
+      "description": "9-qubit error correction code",
+      "physical_qubits": 9,
+      "logical_qubits": 1,
+      "detectable_errors": ["bit_flip", "phase_flip"],
+      "correctable_errors": ["single_qubit"]
+    }
+  },
+  "quantum_communication": {
+    "bb84_protocol": {
+      "description": "Quantum key distribution protocol",
+      "security": "information_theoretic",
+      "key_rate": "1-2h(e)",
+      "distance_limit": "atmospheric_attenuation"
+    },
+    "entanglement_swapping": {
+      "description": "Quantum repeater protocol",
+      "fidelity": 0.9,
+      "success_probability": 0.25
+    }
+  }
+}

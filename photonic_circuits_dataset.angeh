@@ -1,0 +1,451 @@
+// ═══════════════════════════════════════════════════════════════════
+// PHOTONIC CIRCUITS TRAINING DATASET
+// ═══════════════════════════════════════════════════════════════════
+// Optical circuit patterns for ML training and synthesis
+// Input-output pairs for photonic circuit learning
+// ═══════════════════════════════════════════════════════════════════
+
+dataset photonic_circuits @training {
+    purpose: "ml_circuit_synthesis",
+    total_circuits: 50,
+    complexity_levels: ["basic", "intermediate", "advanced"],
+    emoji: "🔷📚"
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// BASIC CIRCUITS
+// ═══════════════════════════════════════════════════════════════════
+
+circuit_pattern basic_001 {
+    name: "simple_modulator",
+    complexity: "basic",
+    
+    input: {
+        optical: "1550nm_CW_laser",
+        electrical: "10Gbps_NRZ_data"
+    },
+    
+    circuit: {
+        🔆 laser(1550, 10mW),
+        🌊 waveguide(length=100),
+        🔄 mzm(v_pi=3.0),
+        📡 detector
+    },
+    
+    output: {
+        modulated_signal: "10Gbps_optical",
+        extinction_ratio: "25dB",
+        power_penalty: "< 1dB"
+    },
+    
+    performance_metrics: {
+        latency: "10ps",
+        energy: "5pJ/bit",
+        area: "0.01mm²"
+    },
+    
+    training_data: {
+        label: "basic_transmitter",
+        category: "modulation",
+        difficulty: 1
+    }
+}
+
+circuit_pattern basic_002 {
+    name: "wavelength_filter",
+    complexity: "basic",
+    
+    input: {
+        wdm_signal: "40_channels_C_band"
+    },
+    
+    circuit: {
+        🌈 demux_awg(channels=40),
+        select: channel_15,
+        🌊 output_waveguide
+    },
+    
+    output: {
+        selected_wavelength: "1550.12nm",
+        crosstalk: "< -30dB",
+        insertion_loss: "3.5dB"
+    },
+    
+    training_data: {
+        label: "wavelength_selection",
+        category: "filtering",
+        difficulty: 1
+    }
+}
+
+circuit_pattern basic_003 {
+    name: "optical_splitter",
+    complexity: "basic",
+    
+    input: {
+        signal: "single_optical_input"
+    },
+    
+    circuit: {
+        🔀 beam_splitter(ratio=0.5),
+        outputs: [port_A, port_B]
+    },
+    
+    output: {
+        port_A: "50%_power",
+        port_B: "50%_power",
+        balance: "± 0.2dB"
+    },
+    
+    training_data: {
+        label: "power_splitting",
+        category: "distribution",
+        difficulty: 1
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// INTERMEDIATE CIRCUITS
+// ═══════════════════════════════════════════════════════════════════
+
+circuit_pattern intermediate_001 {
+    name: "coherent_transmitter",
+    complexity: "intermediate",
+    
+    input: {
+        data: "100Gbps_DP_QPSK",
+        laser: "1550nm_narrow_linewidth"
+    },
+    
+    circuit: {
+        🔆 laser_source,
+        🔀 split_4_ways,
+        
+        // I path
+        path_I: {
+            🔄 modulator_I(data_I),
+            phase_shift: 0
+        },
+        
+        // Q path  
+        path_Q: {
+            🔄 modulator_Q(data_Q),
+            phase_shift: π/2
+        },
+        
+        // Dual polarization
+        polarization_X: 🔀 combine(I, Q),
+        polarization_Y: 🔀 combine(I', Q'),
+        
+        🔀 polarization_combine,
+        📡 output
+    },
+    
+    output: {
+        format: "DP_QPSK",
+        data_rate: "100Gbps",
+        osnr_penalty: "< 2dB"
+    },
+    
+    training_data: {
+        label: "advanced_modulation",
+        category: "coherent_optics",
+        difficulty: 5
+    }
+}
+
+circuit_pattern intermediate_002 {
+    name: "optical_AND_gate",
+    complexity: "intermediate",
+    
+    input: {
+        signal_A: "pulsed_1550nm",
+        signal_B: "pulsed_1555nm"
+    },
+    
+    circuit: {
+        🌊 combine_inputs,
+        nonlinear_medium: "HNLF_100m",
+        💫 four_wave_mixing,
+        🌈 filter(λ=1545nm),  // Idler wavelength
+        📡 detect
+    },
+    
+    logic: {
+        A=0, B=0: output=0,
+        A=1, B=0: output=0,
+        A=0, B=1: output=0,
+        A=1, B=1: output=1
+    },
+    
+    output: {
+        gate_type: "AND",
+        switching_energy: "10fJ",
+        speed: "< 1ps"
+    },
+    
+    training_data: {
+        label: "all_optical_logic",
+        category: "nonlinear",
+        difficulty: 6
+    }
+}
+
+circuit_pattern intermediate_003 {
+    name: "optical_memory_bit",
+    complexity: "intermediate",
+    
+    circuit: {
+        ring_resonator: {
+            radius: 10,  // μm
+            quality_factor: 10000
+        },
+        
+        write: {
+            🔆 write_pulse -> 🔀 couple_to_ring,
+            soliton_formation: trapped_in_cavity
+        },
+        
+        read: {
+            🔆 probe_beam,
+            🔀 couple_from_ring,
+            📡 detect_presence
+        },
+        
+        erase: {
+            🔄 detune_resonance,
+            soliton_expelled: true
+        }
+    },
+    
+    performance: {
+        write_time: "10ps",
+        retention: "microseconds",
+        read_nondestructive: true
+    },
+    
+    training_data: {
+        label: "optical_storage",
+        category: "memory",
+        difficulty: 7
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ADVANCED CIRCUITS
+// ═══════════════════════════════════════════════════════════════════
+
+circuit_pattern advanced_001 {
+    name: "  mzi_optical_neural_layer",
+    complexity: "advanced",
+    
+    input: {
+        optical_vectors: "8_wavelength_channels",
+        matrix_size: "8x8"
+    },
+    
+    circuit: {
+        mzi_mesh: {
+            topology: "reck_scheme",
+            total_mzis: 64,
+            phase_shifters: 128,
+            
+            structure: {
+                for layer in range(log2(N)):
+                    for element in layer:
+                        🔀 beam_splitter,
+                        🔄 phase_shifter(θ),
+                        🔄 phase_shifter(φ),
+            }
+        },
+        
+        detection: {
+            📡 photodetector_array(8),
+            transimpedance_amplifier,
+            ADC: "8_bit"
+        }
+    },
+    
+    operation: {
+        input_encoding: wavelength_amplitude,
+        matrix_multiply: single_optical_pass,
+        output_readout: intensity_detection
+    },
+    
+    performance: {
+        throughput: "1 TOPS",
+        energy_efficiency: "1000 TOPS/W",
+        latency: "< 10ns"
+    },
+    
+    training_data: {
+        label: "photonic_ml_accelerator",
+        category: "neural_network",
+        difficulty: 10
+    }
+}
+
+circuit_pattern advanced_002 {
+    name: "quantum_bell_state_generator",
+    complexity: "advanced",
+    
+    circuit: {
+        // Parametric down-conversion
+        🔆 pump_laser(λ=775nm, power=100mW),
+        💎 focus_into_crystal,
+        
+        ppln_crystal: {
+            material: "periodically_poled_LiNbO3",
+            length: 10,  // mm
+            poling_period: 6.5,  // μm
+            process: "spontaneous_parametric_down_conversion"
+        },
+        
+        // Filter pump
+        🌈 dichroic_mirror(cutoff=1000nm),
+        
+        // Separate signal/idler
+        🌈 wavelength_demux,
+        signal_path: (λ=1550nm),
+        idler_path: (λ=1550nm),
+        
+        // Coincidence detection
+        📡 detector_signal,
+        📡 detector_idler,
+        coincidence_counter
+    },
+    
+    quantum_state: {
+        output: "|Φ⁺⟩ = (|HH⟩ + |VV⟩)/√2",
+        entanglement_fidelity: 0.995,
+        pair_generation_rate: "10^6 pairs/s",
+        heralding_efficiency: 0.7
+    },
+    
+    training_data: {
+        label: "quantum_entanglement_source",
+        category: "quantum_photonics",
+        difficulty: 10
+    }
+}
+
+circuit_pattern advanced_003 {
+    name: "topological_photonic_circuit",
+    complexity: "advanced",
+    
+    circuit: {
+        photonic_crystal: {
+            topology: "honeycomb_lattice",
+            valley_hall_effect: true,
+            topological_edge_states: enabled
+        },
+        
+        waveguide: {
+            type: "topological_edge_channel",
+            propagation: "unidirectional",
+            backscattering: "forbidden_by_topology",
+            robustness: "immune_to_disorder"
+        },
+        
+        routing: {
+            🌊 inject_at_edge,
+            propagate_around_defects: automatic,
+            sharp_bends: "lossless",
+            📡 collect_at_output
+        }
+    },
+    
+    advantages: {
+        fabrication_tolerance: "extreme",
+        loss: "topologically_protected",
+        scalability: "high"
+    },
+    
+    training_data: {
+        label: "topological_routing",
+        category: "advanced_physics",
+        difficulty: 10
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// COMBINED SYSTEMS
+// ═══════════════════════════════════════════════════════════════════
+
+system_pattern complete_transceiver {
+    name: "400G_coherent_transceiver",
+    
+    transmitter: {
+        laser: "tunable_ECL",
+        modulator: "DP_16QAM_IQ",
+        dsp: "pre_emphasis_FEC"
+    },
+    
+    fiber_link: {
+        distance: "80km",
+        fiber: "SSMF",
+        amplification: "EDFA_inline"
+    },
+    
+    receiver: {
+        local_oscillator: "matched_laser",
+        hybrid_90deg: "coherent_mixer",
+        balanced_detectors: 4,
+        dsp: "equalization_FEC_decode"
+    },
+    
+    performance: {
+        data_rate: "400Gbps",
+        reach: "80km",
+        ber: "< 10^-15",
+        osnr_requirement: "18dB"
+    },
+    
+    training_data: {
+        label: "complete_optical_link",
+        category: "system",
+        difficulty: 9
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// DATASET METADATA
+// ═══════════════════════════════════════════════════════════════════
+
+training_dataset_info {
+    total_patterns: 12,
+    complexity_distribution: {
+        basic: 3,
+        intermediate: 3,
+        advanced: 3,
+        systems: 1
+    },
+    
+    categories: [
+        "modulation",
+        "filtering",
+        "coherent_optics",
+        "nonlinear",
+        "quantum",
+        "neural_networks",
+        "topological"
+    ],
+    
+    difficulty_range: [1, 10],
+    
+    use_cases: [
+        "circuit_synthesis_ai",
+        "performance_prediction",
+        "optimization_algorithms",
+        "automated_design"
+    ],
+    
+    ml_ready: {
+        input_features: "circuit_topology",
+        output_labels: "performance_metrics",
+        format: "graph_neural_network_compatible"
+    },
+    
+    version: "1.0",
+    emoji: "🔷📚✨"
+}

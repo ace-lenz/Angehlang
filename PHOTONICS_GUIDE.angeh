@@ -1,0 +1,324 @@
+# AngehLang Photonics Programming Guide
+
+## 🔆 Introduction to Photonics Programming
+
+AngehLang now includes comprehensive **photonics programming** capabilities, enabling you to design and simulate optical circuits, quantum photonic systems, and light-based computation.
+
+## 🌟 Key Features
+
+### Photonic Devices
+- **Waveguides** - Optical transmission lines
+- **Modulators** - Mach-Zehnder, electro-optic
+- **Beam Splitters** - Directional couplers
+- **Photodetectors** - O/E conversion
+- **Ring Resonators** - Wavelength filters
+- **Optical Amplifiers** - SOA, EDFA
+
+### Quantum Photonics
+- Single photon sources
+- Entangled photon pairs (SPDC)
+- Quantum gates (Hadamard, CNOT)
+- Quantum state measurement
+
+### Optical Neural Networks
+- MZI mesh architectures
+- Coherent matrix multiplication
+- Optical activation functions
+- THz-speed inference
+
+## 📝 Syntax Examples
+
+### Creating Optical Signals
+
+```angehlang
+// Create a laser signal
+dot optical_signal @laser {
+    wavelength: 1550,    // nm (C-band telecom)
+    power: 10.0,         // mW
+    phase: 0.0,
+    polarization: "horizontal",
+    emoji: "🔆"
+}
+```
+
+### Building Photonic Circuits
+
+```angehlang
+dot photonic_circuit @mzi_switch {
+    name: "Optical_Switch",
+    mode: "classical",
+    
+    components: [
+        @beam_splitter,
+        @waveguide,
+        @modulator,
+        @detector
+    ],
+    
+    emoji: "🔷"
+}
+```
+
+### Quantum Photonics
+
+```angehlang
+// Quantum entanglement
+dot quantum_gate @entangler {
+    🌀 entangle(photon1, photon2),
+    🔮 hadamard(photon1),
+    📡 measure() -> result
+}
+```
+
+### Optical Operations
+
+```angehlang
+workspace photonic_ops {
+    // Emit light
+    🔆 emit(1550, 10.0) -> laser_signal,
+    
+    // Propagate through waveguide
+    🌊 propagate(laser_signal, waveguide) -> propagated,
+    
+    // Split beam
+    🔀 split(propagated, 0.5) -> [path1, path2],
+    
+    // Modulate
+    🔄 modulate(path1, voltage) -> modulated,
+    
+    // Detect
+    📡 detect(modulated) -> current
+}
+```
+
+## 🧬 Device Library
+
+### Waveguide
+```python
+waveguide = Waveguide(
+    length=1.0,          # cm
+    width=500,           # nm
+    material="silicon"
+)
+```
+
+### Mach-Zehnder Modulator
+```python
+mzm = MachZehnderModulator(voltage=1.5)
+# V_pi = 3.0V for silicon photonics
+```
+
+### Ring Resonator
+```python
+ring = RingResonator(
+    radius=5.0,          # μm
+    coupling=0.5
+)
+# FSR ~20 nm for 5μm radius
+```
+
+### Photodetector
+```python
+pd = PhotoDetector(responsivity=0.9)  # A/W
+current = pd.detect(optical_signal)
+```
+
+## 🌀 Quantum Photonic Gates
+
+### Hadamard Gate
+```python
+qgate = QuantumPhotonicGate()
+sig1, sig2 = qgate.hadamard(photon)
+# Creates superposition: (|0⟩ + |1⟩)/√2
+```
+
+### CNOT Gate
+```angehlang
+dot quantum_gate @cnot {
+    control_qubit: "polarization",
+    target_qubit: "path",
+    fidelity: 0.95
+}
+```
+
+## 🧠 Optical Neural Networks
+
+```python
+# Create 4-layer optical NN
+onn = OpticalNeuralNetwork([4, 8, 4, 2])
+
+# Forward propagation
+inputs = [OpticalSignal(...) for _ in range(4)]
+outputs = onn.forward(inputs)
+```
+
+**Performance:**
+- Speed: 1 THz operation
+- Energy: < 1 fJ/operation
+- Latency: ~10 ns
+
+## 🌈 Wavelength Division Multiplexing
+
+```angehlang
+dot wdm_system @dwdm {
+    channels: 80,
+    channel_spacing: 50,  // GHz
+    data_rate_per_channel: 100,  // Gbps
+    total_capacity: 8,     // Tbps
+    emoji: "🌈"
+}
+```
+
+## 💫 Nonlinear Optics
+
+### Four-Wave Mixing
+```angehlang
+dot nonlinear_process @fwm {
+    pump_wavelengths: [1550, 1560],
+    signal_wavelength: 1540,
+    idler_wavelength: 1570,
+    conversion_efficiency: 0.1,
+    emoji: "💫"
+}
+```
+
+### Second Harmonic Generation
+```angehlang
+dot nonlinear_process @shg {
+    fundamental: 1064,  // nm
+    harmonic: 532,      // nm (green)
+    crystal: "LiNbO3",
+    emoji: "💚"
+}
+```
+
+## 📊 Complete Example Programs
+
+### 1. Optical Matrix Multiplication
+```angehlang
+dot photonic_program @matmul {
+    // Encode matrices in MZI mesh
+    encode_weights([[0.5, 0.5], [0.5, -0.5]]),
+    
+    // Create input signals
+    🔆 emit_vector([1, 2]),
+    
+    // Propagate through mesh
+    🌊 mzi_mesh.forward(),
+    
+    // Detect outputs
+    📡 detect_all() -> result
+}
+```
+
+### 2. Quantum Random Number Generator
+```angehlang
+dot photonic_program @qrng {
+    // Generate entangled pair
+    🌀 SPDC() -> [photon_A, photon_B],
+    
+    // Quantum measurement
+    🔮 hadamard(photon_A),
+    📡 measure() -> random_bit,
+    
+    // Certified randomness
+    repeat(1000) -> random_bits
+}
+```
+
+### 3. All-Optical Switch
+```angehlang
+dot photonic_circuit @router {
+    inputs: 16,
+    outputs: 16,
+    switching_time: 100,  // ps
+    
+    🔷 configure_path(packet),
+    🌊 route(output_port),
+    throughput: "10 Tbps"
+}
+```
+
+## 🎯 Photonic Operators
+
+| Emoji | Operation | Description |
+|-------|-----------|-------------|
+| 🔆 | emit_light | Create optical signal |
+| 🌊 | propagate | Transmit through device |
+| 🔀 | split_beam | Beam splitter |
+| 🔄 | modulate | Optical modulation |
+| 📡 | detect | Photodetection |
+| 💎 | refract | Refraction/focusing |
+| 🌈 | disperse | WDM/spectral |
+| ⚡ | amplify | Optical gain |
+| 🔮 | quantum_gate | Quantum operation |
+| 🌀 | entangle | Quantum entanglement |
+
+## 📐 Physical Constants
+
+```python
+SPEED_OF_LIGHT = 299792458  # m/s
+PLANCK_CONSTANT = 6.626e-34  # J·s
+
+# Wavelength to frequency
+frequency = c / wavelength
+
+# Photon energy
+E = h * c / wavelength
+```
+
+## 🔬 Applications
+
+### Optical Computing
+- Matrix multiplication at THz speeds
+- Ultra-low energy consumption (< fJ/op)
+- Massive parallelism
+
+### Quantum Communication
+- QKD (Quantum Key Distribution)
+- Entanglement distribution
+- Quantum teleportation
+
+### Optical Sensing
+- Biosensors (protein, DNA detection)
+- Environmental monitoring
+- Label-free detection
+
+### Telecommunications
+- DWDM systems (8+ Tbps)
+- Coherent communications
+- All-optical routing
+
+## 🚀 Getting Started
+
+1. **Import photonics module:**
+```python
+from angehlang_photonics import *
+```
+
+2. **Create optical signals:**
+```python
+laser = OpticalSignal(wavelength=1550, power=10.0, ...)
+```
+
+3. **Build circuits:**
+```python
+circuit = PhotonicCircuit("my_circuit")
+circuit.add_device(waveguide)
+```
+
+4. **Simulate:**
+```python
+results = circuit.simulate()
+```
+
+## 📚 Resources
+
+- **Theory:** Classical & quantum optics
+- **Materials:** Silicon, SiN, polymers, LiNbO3
+- **Fabrication:** CMOS-compatible processes
+- **Standards:** ITU-T G.694.1 (DWDM grid)
+
+---
+
+**🔆 AngehLang Photonics - Program at the Speed of Light!**

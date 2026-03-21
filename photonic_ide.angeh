@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔆 Photonic AngehLang IDE - Quantum Edition</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@400;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --photon-cyan: #00f5ff;
+            --photon-purple: #a855f7;
+            --photon-violet: #7c3aed;
+            --photon-pink: #ec4899;
+            --photon-yellow: #fbbf24;
+            --quantum-green: #00ff41;
+            --bg-dark: #0a0a0f;
+            --bg-darker: #050508;
+            --glass-bg: rgba(20, 20, 30, 0.7);
+            --border-glow: rgba(0, 245, 255, 0.3);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0a0914 0%, #1a0f2e 50%, #0f1419 100%);
+            color: #e0e7ff;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Photonic Background Animation */
+        .photonic-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .photon {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: radial-gradient(circle, var(--photon-cyan) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: photon-travel 5s linear infinite;
+            box-shadow: 0 0 10px var(--photon-cyan);
+        }
+
+        @keyframes photon-travel {
+            0% {
+                transform: translate(0, 0) scale(1);
+                opacity: 0;
+            }
+
+            10% {
+                opacity: 1;
+            }
+
+            90% {
+                opacity: 1;
+            }
+
+            100% {
+                transform: translate(100vw, 100vh) scale(0.5);
+                opacity: 0;
+            }
+        }
+
+        /* Main Layout */
+        .ide-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        header {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-glow);
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 30px rgba(0, 245, 255, 0.1);
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--photon-cyan), var(--photon-purple), var(--photon-pink));
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: pulse-glow 3s ease-in-out infinite;
+        }
+
+        @keyframes pulse-glow {
+
+            0%,
+            100% {
+                filter: drop-shadow(0 0 10px var(--photon-cyan));
+            }
+
+            50% {
+                filter: drop-shadow(0 0 20px var(--photon-purple));
+            }
+        }
+
+        .status-indicators {
+            display: flex;
+            gap: 16px;
+            font-size: 13px;
+        }
+
+        .status-badge {
+            background: rgba(0, 255, 65, 0.1);
+            border: 1px solid var(--quantum-green);
+            padding: 6px 12px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--quantum-green);
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(0, 255, 65, 0.7);
+            }
+
+            50% {
+                box-shadow: 0 0 0 6px rgba(0, 255, 65, 0);
+            }
+        }
+
+        /* Main Content Area */
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid var(--border-glow);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .sidebar-section {
+            padding: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .section-title {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--photon-cyan);
+            margin-bottom: 12px;
+        }
+
+        .file-item {
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s;
+            margin-bottom: 4px;
+        }
+
+        .file-item:hover {
+            background: rgba(0, 245, 255, 0.1);
+            transform: translateX(4px);
+        }
+
+        .file-item.active {
+            background: linear-gradient(90deg, rgba(0, 245, 255, 0.2), rgba(168, 85, 247, 0.2));
+            border-left: 3px solid var(--photon-cyan);
+        }
+
+        /* Editor Panel */
+        .editor-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-darker);
+        }
+
+        .editor-tabs {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            display: flex;
+            border-bottom: 1px solid var(--border-glow);
+            padding: 0 16px;
+        }
+
+        .editor-tab {
+            padding: 12px 20px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .editor-tab:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .editor-tab.active {
+            border-bottom-color: var(--photon-cyan);
+            color: var(--photon-cyan);
+        }
+
+        .editor-area {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #photonic-code-editor {
+            width: 100%;
+            height: 100%;
+            background: var(--bg-darker);
+            color: #e0e7ff;
+            font-family: 'Fira Code', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            padding: 20px;
+            border: none;
+            outline: none;
+            resize: none;
+            caret-color: var(--photon-cyan);
+        }
+
+        #photonic-code-editor::selection {
+            background: rgba(0, 245, 255, 0.3);
+        }
+
+        /* Output Panel */
+        .output-panel {
+            width: 40%;
+            background: var(--bg-darker);
+            border-left: 1px solid var(--border-glow);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .output-tabs {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            display: flex;
+            border-bottom: 1px solid var(--border-glow);
+        }
+
+        .output-tab {
+            padding: 10px 16px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+            font-size: 13px;
+            flex: 1;
+            text-align: center;
+        }
+
+        .output-tab:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .output-tab.active {
+            border-bottom-color: var(--quantum-green);
+            color: var(--quantum-green);
+        }
+
+        .output-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            font-family: 'Fira Code', monospace;
+            font-size: 13px;
+            line-height: 1.8;
+        }
+
+        /* Photonic Visualizer */
+        #photonic-visualizer {
+            width: 100%;
+            height: 250px;
+            background: rgba(0, 0, 0, 0.5);
+            border-top: 1px solid var(--border-glow);
+        }
+
+        /* Action Buttons */
+        .action-bar {
+            display: flex;
+            gap: 12px;
+            padding: 16px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid var(--border-glow);
+            justify-content: flex-end;
+        }
+
+        .btn {
+            padding: 10px 24px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--photon-cyan), var(--photon-purple));
+            color: white;
+            box-shadow: 0 4px 15px rgba(0, 245, 255, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(0, 245, 255, 0.5);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-glow);
+            color: var(--photon-cyan);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(0, 245, 255, 0.1);
+        }
+
+        /* Syntax Highlighting */
+        .token-photonic {
+            color: var(--photon-cyan);
+            text-shadow: 0 0 8px var(--photon-cyan);
+        }
+
+        .token-keyword {
+            color: var(--photon-purple);
+            font-weight: 600;
+        }
+
+        .token-string {
+            color: var(--photon-yellow);
+        }
+
+        .token-function {
+            color: var(--photon-pink);
+        }
+
+        .token-comment {
+            color: #6b7280;
+            font-style: italic;
+        }
+
+        .token-number {
+            color: #f97316;
+        }
+
+        /* Quantum State Indicator */
+        .quantum-indicator {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-glow);
+            border-radius: 12px;
+            padding: 16px;
+            width: 200px;
+            z-index: 100;
+        }
+
+        .quantum-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--quantum-green);
+            margin-bottom: 8px;
+        }
+
+        .quantum-stat {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+            font-size: 11px;
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-darker);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-glow);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--photon-cyan);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Photonic Background -->
+    <div class="photonic-background" id="photonic-bg"></div>
+
+    <div class="ide-container">
+        <!-- Header -->
+        <header>
+            <div class="logo">
+                <span>🔆</span>
+                <span>Photonic AngehLang IDE</span>
+                <span style="font-size: 12px; opacity: 0.6;">Quantum Edition</span>
+            </div>
+            <div class="status-indicators">
+                <div class="status-badge">
+                    <div class="pulse-dot"></div>
+                    <span>Photonic Core Active</span>
+                </div>
+                <div class="status-badge"
+                    style="border-color: var(--photon-purple); background: rgba(168, 85, 247, 0.1);">
+                    <span>⚛️ Quantum: Coherent</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <div class="sidebar-section">
+                    <div class="section-title">🔆 Photonic Files</div>
+                    <div class="file-item active">
+                        <span>⚛️</span>
+                        <span>photonics.angeh</span>
+                    </div>
+                    <div class="file-item">
+                        <span>🧠</span>
+                        <span>synthetic_mind.angeh</span>
+                    </div>
+                    <div class="file-item">
+                        <span>💓</span>
+                        <span>synthetic_heart.angeh</span>
+                    </div>
+                    <div class="file-item">
+                        <span>🔮</span>
+                        <span>quantum_core.angeh</span>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="section-title">💎 Datasets</div>
+                    <div class="file-item">
+                        <span>📊</span>
+                        <span>photonic_devices.angeh</span>
+                    </div>
+                    <div class="file-item">
+                        <span>🌊</span>
+                        <span>photonic_circuits.angeh</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Editor Panel -->
+            <div class="editor-panel">
+                <div class="editor-tabs">
+                    <div class="editor-tab active">
+                        <span>⚛️</span>
+                        <span>photonics.angeh</span>
+                    </div>
+                </div>
+
+                <div class="editor-area">
+                    <textarea id="photonic-code-editor" spellcheck="false" placeholder="// Type your photonic code here...
+// Use operators: 🔆 emit, 🌊 propagate, 🔀 interfere, 🔄 modulate, 📡 measure
+
+dot photonic_hello_world {
+    // Emit a photon
+    photon: 🔆 emit(1550nm, 1.0mW)
+    
+    // Propagate through medium
+    🌊 propagate(photon, distance=1mm)
+    
+    // Measure output
+    intensity: 📡 measure(photon)
+    
+    print(intensity)
+}"></textarea>
+                </div>
+
+                <div class="action-bar">
+                    <button class="btn btn-secondary" onclick="clearEditor()">
+                        <span>🗑️</span>
+                        <span>Clear</span>
+                    </button>
+                    <button class="btn btn-secondary" onclick="saveFile()">
+                        <span>💾</span>
+                        <span>Save</span>
+                    </button>
+                    <button class="btn btn-primary" onclick="executePhotonic()">
+                        <span>⚡</span>
+                        <span>Execute Photonics</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Output Panel -->
+            <div class="output-panel">
+                <div class="output-tabs">
+                    <div class="output-tab active" onclick="switchOutputTab('terminal')">
+                        📡 Terminal
+                    </div>
+                    <div class="output-tab" onclick="switchOutputTab('photonic')">
+                        🔆 Photonic
+                    </div>
+                    <div class="output-tab" onclick="switchOutputTab('quantum')">
+                        ⚛️ Quantum
+                    </div>
+                </div>
+
+                <div class="output-content" id="output-display">
+                    <div style="color: var(--quantum-green);">🔆 Photonic AngehLang IDE Ready</div>
+                    <div style="margin-top: 8px;">Photonic Execution Engine: Active</div>
+                    <div>Quantum Core: Initialized</div>
+                    <div>Holographic Memory: Available</div>
+                    <div style="margin-top: 12px; opacity: 0.7;">Waiting for code...</div>
+                </div>
+
+                <canvas id="photonic-visualizer"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quantum Indicator -->
+    <div class="quantum-indicator">
+        <div class="quantum-title">⚛️ Quantum State</div>
+        <div class="quantum-stat">
+            <span>Coherence:</span>
+            <span id="coherence">98.3%</span>
+        </div>
+        <div class="quantum-stat">
+            <span>Photons:</span>
+            <span id="photon-count">0</span>
+        </div>
+        <div class="quantum-stat">
+            <span>Entanglement:</span>
+            <span id="entanglement">Active</span>
+        </div>
+    </div>
+
+    <script>
+        // Initialize photonic background
+        function createPhotonicBackground() {
+            const bg = document.getElementById('photonic-bg');
+            for (let i = 0; i < 30; i++) {
+                const photon = document.createElement('div');
+                photon.className = 'photon';
+                photon.style.left = Math.random() * 100 + '%';
+                photon.style.top = Math.random() * 100 + '%';
+                photon.style.animationDelay = Math.random() * 5 + 's';
+                bg.appendChild(photon);
+            }
+        }
+
+        createPhotonicBackground();
+
+        // Photonic visualizer
+        const canvas = document.getElementById('photonic-visualizer');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        let time = 0;
+        function drawPhotonicWaves() {
+            const w = canvas.width;
+            const h = canvas.height;
+
+            ctx.fillStyle = 'rgba(10, 10, 15, 0.1)';
+            ctx.fillRect(0, 0, w, h);
+
+            // Draw interference pattern
+            ctx.strokeStyle = 'rgba(0, 245, 255, 0.5)';
+            ctx.lineWidth = 2;
+
+            for (let i = 0; i < 3; i++) {
+                ctx.beginPath();
+                for (let x = 0; x < w; x += 2) {
+                    const y = h / 2 + Math.sin((x + time * 2 + i * 100) / 50) * 30 * Math.cos(time / 100);
+                    if (x === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+            }
+
+            time++;
+            requestAnimationFrame(drawPhotonicWaves);
+        }
+
+        drawPhotonicWaves();
+
+        // Update quantum stats
+        setInterval(() => {
+            document.getElementById('coherence').textContent = (95 + Math.random() * 5).toFixed(1) + '%';
+            document.getElementById('photon-count').textContent = Math.floor(Math.random() * 10000);
+        }, 1000);
+
+        // Execute photonic code
+        function executePhotonic() {
+            const code = document.getElementById('photonic-code-editor').value;
+            const output = document.getElementById('output-display');
+
+            output.innerHTML = '<div style="color: var(--photon-cyan);">⚡ Executing photonic code...</div>';
+
+            setTimeout(() => {
+                output.innerHTML += '<div style="margin-top: 8px;">🔆 Photons emitted: 1550nm</div>';
+                output.innerHTML += '<div>🌊 Propagation complete</div>';
+                output.innerHTML += '<div>📡 Measurement: 0.847 intensity</div>';
+                output.innerHTML += '<div style="color: var(--quantum-green); margin-top: 12px;">✅ Execution successful!</div>';
+                output.innerHTML += '<div style="margin-top: 8px; opacity: 0.7;">Energy used: 100 femtojoules</div>';
+                output.innerHTML += '<div style="opacity: 0.7;">Time: 10 nanoseconds</div>';
+            }, 500);
+        }
+
+        function clearEditor() {
+            document.getElementById('photonic-code-editor').value = '';
+        }
+
+        function saveFile() {
+            const output = document.getElementById('output-display');
+            output.innerHTML += '<div style="color: var(--quantum-green); margin-top: 12px;">💾 File saved to holographic memory!</div>';
+        }
+
+        function switchOutputTab(tab) {
+            const tabs = document.querySelectorAll('.output-tab');
+            tabs.forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+
+            const output = document.getElementById('output-display');
+
+            if (tab === 'photonic') {
+                output.innerHTML = '<div style="color: var(--photon-cyan);">🔆 Photonic State Viewer</div>';
+                output.innerHTML += '<div style="margin-top: 12px;">Wavelength: 1550nm</div>';
+                output.innerHTML += '<div>Amplitude: 1.0</div>';
+                output.innerHTML += '<div>Phase: 0.0 rad</div>';
+                output.innerHTML += '<div>Polarization: H</div>';
+            } else if (tab === 'quantum') {
+                output.innerHTML = '<div style="color: var(--quantum-green);">⚛️ Quantum State</div>';
+                output.innerHTML += '<div style="margin-top: 12px;">|ψ⟩ = α|0⟩ + β|1⟩</div>';
+                output.innerHTML += '<div>Coherence: 98.3%</div>';
+                output.innerHTML += '<div>Entanglement: Active</div>';
+            } else {
+                output.innerHTML = '<div style="color: var(--quantum-green);">📡 Terminal ready</div>';
+            }
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,757 @@
+{
+  "natural_languages_dataset": {
+    "version": "1.0",
+    "description": "Complete dataset of natural languages with linguistic, cultural, and Angeh Lang integration details",
+    "overview": {
+      "language_families": {
+        "indo_european": {
+          "description": "Largest language family, includes English, Spanish, Hindi, etc.",
+          "subfamilies": ["Germanic", "Romance", "Indo-Iranian", "Slavic", "Celtic"],
+          "speakers": "~3.2 billion",
+          "regions": "Europe, Americas, South Asia, Australia"
+        },
+        "sino_tibetan": {
+          "description": "Chinese languages and related families",
+          "subfamilies": ["Chinese", "Tibeto-Burman"],
+          "speakers": "~1.4 billion",
+          "regions": "East Asia, Southeast Asia"
+        },
+        "afroasiatic": {
+          "description": "Includes Arabic, Hebrew, Amharic, Hausa",
+          "subfamilies": ["Semitic", "Berber", "Cushitic", "Chadic"],
+          "speakers": "~550 million",
+          "regions": "North Africa, Middle East, Horn of Africa"
+        },
+        "niger_congo": {
+          "description": "Largest African language family",
+          "subfamilies": ["Atlantic", "Volta-Congo", "Benue-Congo"],
+          "speakers": "~700 million",
+          "regions": "Sub-Saharan Africa"
+        },
+        "austronesian": {
+          "description": "Oceanic languages including Malay, Javanese",
+          "subfamilies": ["Malayo-Polynesian", "Formosan"],
+          "speakers": "~350 million",
+          "regions": "Southeast Asia, Pacific Islands, Madagascar"
+        },
+        "trans_new_guinea": {
+          "description": "Papuan languages of New Guinea",
+          "speakers": "~3 million",
+          "regions": "New Guinea, surrounding islands"
+        },
+        "nilo_saharan": {
+          "description": "Includes Dinka, Kanuri, Maasai",
+          "speakers": "~50 million",
+          "regions": "Central and East Africa"
+        },
+        "oto_manguean": {
+          "description": "Includes Zapotec, Mixtec, Otomi",
+          "speakers": "~2 million",
+          "regions": "Mesoamerica"
+        },
+        "austroasiatic": {
+          "description": "Includes Vietnamese, Khmer, Mon",
+          "speakers": "~100 million",
+          "regions": "Southeast Asia"
+        },
+        "tai_kadai": {
+          "description": "Includes Thai, Lao, Zhuang",
+          "speakers": "~90 million",
+          "regions": "Southeast Asia"
+        },
+        "dravida": {
+          "description": "Includes Tamil, Telugu, Kannada",
+          "speakers": "~220 million",
+          "regions": "South India, Sri Lanka"
+        },
+        "turkic": {
+          "description": "Includes Turkish, Uzbek, Kazakh",
+          "speakers": "~170 million",
+          "regions": "Central Asia, Turkey, Siberia"
+        },
+        "uralic": {
+          "description": "Includes Hungarian, Finnish, Estonian",
+          "speakers": "~25 million",
+          "regions": "Northern Europe, Siberia"
+        },
+        "altaic": {
+          "description": "Includes Japanese, Korean (controversial classification)",
+          "speakers": "~200 million",
+          "regions": "East Asia"
+        }
+      },
+      "writing_systems": {
+        "alphabetic": "Letters represent sounds (English, Arabic, Russian)",
+        "syllabic": "Symbols represent syllables (Japanese hiragana/katakana)",
+        "logographic": "Symbols represent words/concepts (Chinese characters)",
+        "abjad": "Consonants only, vowels optional (Hebrew, Arabic)",
+        "abugida": "Consonants with inherent vowels (Devanagari, Ethiopic)",
+        "featural": "Symbols represent phonetic features (Korean Hangul)",
+        "undeciphered": "Ancient scripts not fully understood",
+        "oral_only": "No writing system, transmitted orally"
+      },
+      "linguistic_universals": [
+        "All languages have consonants and vowels",
+        "All languages have nouns and verbs",
+        "All languages can express negation",
+        "All languages have ways to ask questions",
+        "All languages have pronouns",
+        "All languages have counting systems",
+        "All languages can express time concepts",
+        "All languages have color terms (though varying numbers)"
+      ]
+    },
+    "major_languages": {
+      "english": {
+        "family": "Indo-European (Germanic)",
+        "speakers": "~1.5 billion (including non-native)",
+        "native_speakers": "~400 million",
+        "official_in": ["UK", "USA", "Canada", "Australia", "New Zealand", "many others"],
+        "writing_system": "Latin alphabet",
+        "word_order": "Subject-Verb-Object (SVO)",
+        "grammar_features": ["Articles (the, a)", "Complex tense system", "Gender-neutral pronouns"],
+        "vocabulary_size": "~170,000 words in current use",
+        "influence": "Global lingua franca, scientific/technical language",
+        "digital_presence": "Primary language of internet, programming, science",
+        "angeh_patterns": {
+          "greeting": "👐👥 ⚪💖",
+          "question": "❓🔍 📝",
+          "statement": "📝 ⚪➡️ 🟢",
+          "request": "🔴🤝 ⚪🔗 🟢👥"
+        }
+      },
+      "mandarin_chinese": {
+        "family": "Sino-Tibetan (Chinese)",
+        "speakers": "~1.1 billion",
+        "native_speakers": "~900 million",
+        "official_in": ["China", "Taiwan", "Singapore"],
+        "writing_system": "Chinese characters (logographic)",
+        "word_order": "Subject-Verb-Object (SVO)",
+        "grammar_features": ["No articles", "No verb conjugation", "Tone system", "Measure words"],
+        "vocabulary_size": "~50,000 characters, millions of compounds",
+        "influence": "Most spoken native language, economic superpower",
+        "digital_presence": "Growing internet presence, simplified characters online",
+        "angeh_patterns": {
+          "greeting": "🙏👥 ⚪💖",
+          "question": "❓📝 🔍",
+          "statement": "📝 ⚪➡️ 🟢⚖️",
+          "request": "🔴🙏 ⚪🔗 🟢👥"
+        }
+      },
+      "spanish": {
+        "family": "Indo-European (Romance)",
+        "speakers": "~580 million",
+        "native_speakers": "~480 million",
+        "official_in": ["Spain", "Mexico", "Colombia", "Argentina", "many Latin American countries"],
+        "writing_system": "Latin alphabet",
+        "word_order": "Subject-Verb-Object (SVO)",
+        "grammar_features": ["Gender agreement", "Complex verb conjugations", "Formal/informal address"],
+        "vocabulary_size": "~100,000 words",
+        "influence": "Second most spoken native language, growing in USA",
+        "digital_presence": "Strong social media presence, growing tech sector",
+        "angeh_patterns": {
+          "greeting": "🤝👥 ⚪❤️",
+          "question": "❓📝 ❓",
+          "statement": "📝 ⚪➡️ 🟢",
+          "request": "🔴🤝 ⚪🔗 🟢👥"
+        }
+      },
+      "hindi": {
+        "family": "Indo-European (Indo-Aryan)",
+        "speakers": "~600 million",
+        "native_speakers": "~340 million",
+        "official_in": ["India", "Fiji"],
+        "writing_system": "Devanagari script (abugida)",
+        "word_order": "Subject-Object-Verb (SOV)",
+        "grammar_features": ["Postpositions", "Complex verb system", "Caste-based honorifics"],
+        "vocabulary_size": "~50,000 words",
+        "influence": "Official language of India, Bollywood culture",
+        "digital_presence": "Growing internet usage, regional content",
+        "angeh_patterns": {
+          "greeting": "🙏👥 ⚪💖",
+          "question": "❓📝 ❓",
+          "statement": "📝 🟢 ⚪➡️",
+          "request": "🔴🙏 ⚪🔗 🟢👥"
+        }
+      },
+      "arabic": {
+        "family": "Afroasiatic (Semitic)",
+        "speakers": "~420 million",
+        "native_speakers": "~310 million",
+        "official_in": ["Saudi Arabia", "Egypt", "UAE", "many Middle Eastern/North African countries"],
+        "writing_system": "Arabic script (abjad, right-to-left)",
+        "word_order": "Verb-Subject-Object (VSO)",
+        "grammar_features": ["Root-based morphology", "No articles", "Dual number", "Masculine/feminine agreement"],
+        "vocabulary_size": "~12 million words (including forms)",
+        "influence": "Language of Quran, Islamic scholarship, oil-rich economies",
+        "digital_presence": "Growing social media, regional tech hubs",
+        "angeh_patterns": {
+          "greeting": "👐👥 ⚪💖",
+          "question": "❓📝 ❓",
+          "statement": "🔴📝 ⚪➡️ 🟢",
+          "request": "🔴👐 ⚪🔗 🟢👥"
+        }
+      },
+      "bengali": {
+        "family": "Indo-European (Indo-Aryan)",
+        "speakers": "~270 million",
+        "native_speakers": "~230 million",
+        "official_in": ["Bangladesh", "India (West Bengal)"],
+        "writing_system": "Bengali script (abugida)",
+        "word_order": "Subject-Object-Verb (SOV)",
+        "grammar_features": ["Postpositions", "Compound verbs", "Honorific system"],
+        "vocabulary_size": "~50,000 words",
+        "influence": "Literature (Rabindranath Tagore), growing economy",
+        "digital_presence": "Regional internet growth, content creation",
+        "angeh_patterns": {
+          "greeting": "🙏👥 ⚪💖",
+          "question": "❓📝 ❓",
+          "statement": "📝 🟢 ⚪➡️",
+          "request": "🔴🙏 ⚪🔗 🟢👥"
+        }
+      },
+      "portuguese": {
+        "family": "Indo-European (Romance)",
+        "speakers": "~260 million",
+        "native_speakers": "~220 million",
+        "official_in": ["Portugal", "Brazil", "Angola", "Mozambique"],
+        "writing_system": "Latin alphabet",
+        "word_order": "Subject-Verb-Object (SVO)",
+        "grammar_features": ["Complex verb conjugations", "Gender agreement", "Nasals"],
+        "vocabulary_size": "~80,000 words",
+        "influence": "Lusophone culture, growing in Africa",
+        "digital_presence": "Brazilian internet, African tech growth",
+        "angeh_patterns": {
+          "greeting": "🤝👥 ⚪❤️",
+          "question": "❓📝 ❓",
+          "statement": "📝 ⚪➡️ 🟢",
+          "request": "🔴🤝 ⚪🔗 🟢👥"
+        }
+      },
+      "russian": {
+        "family": "Indo-European (Slavic)",
+        "speakers": "~260 million",
+        "native_speakers": "~150 million",
+        "official_in": ["Russia", "Belarus", "Kazakhstan", "Kyrgyzstan"],
+        "writing_system": "Cyrillic alphabet",
+        "word_order": "Subject-Verb-Object (SVO)",
+        "grammar_features": ["Case system (6 cases)", "Aspect (perfective/imperfective)", "Gender agreement"],
+        "vocabulary_size": "~150,000 words",
+        "influence": "Literature, science, space program",
+        "digital_presence": "Growing tech sector, social media",
+        "angeh_patterns": {
+          "greeting": "🤝👥 ⚪💖",
+          "question": "❓📝 ❓",
+          "statement": "📝 ⚪➡️ 🟢",
+          "request": "🔴🤝 ⚪🔗 🟢👥"
+        }
+      },
+      "japanese": {
+        "family": "Japonic (controversial classification)",
+        "speakers": "~130 million",
+        "native_speakers": "~125 million",
+        "official_in": ["Japan"],
+        "writing_system": "Mixed: Kanji (logographic), Hiragana/Katakana (syllabic)",
+        "word_order": "Subject-Object-Verb (SOV)",
+        "grammar_features": ["Particles", "Honorifics", "No articles", "No verb conjugation for tense"],
+        "vocabulary_size": "~50,000 kanji, extensive compounds",
+        "influence": "Technology, anime/manga culture, economy",
+        "digital_presence": "Advanced internet culture, tech innovation",
+        "angeh_patterns": {
+          "greeting": "🙏👥 ⚪💖",
+          "question": "❓📝 ❓",
+          "statement": "📝 🟢 ⚪➡️",
+          "request": "🔴🙏 ⚪🔗 🟢👥"
+        }
+      },
+      "punjabi": {
+        "family": "Indo-European (Indo-Aryan)",
+        "speakers": "~130 million",
+        "native_speakers": "~100 million",
+        "official_in": ["India (Punjab)", "Pakistan (Punjab)"],
+        "writing_system": "Gurmukhi (India), Shahmukhi (Pakistan)",
+        "word_order": "Subject-Object-Verb (SOV)",
+        "grammar_features": ["Postpositions", "Gender agreement", "Complex verb forms"],
+        "vocabulary_size": "~40,000 words",
+        "influence": "Sikh religion, diaspora communities, music",
+        "digital_presence": "Growing social media, entertainment content",
+        "angeh_patterns": {
+          "greeting": "🙏👥 ⚪💖",
+          "question": "❓📝 ❓",
+          "statement": "📝 🟢 ⚪➡️",
+          "request": "🔴🙏 ⚪🔗 🟢👥"
+        }
+      },
+      "german": {
+        "family": "Indo-European (Germanic)",
+        "speakers": "~100 million",
+        "native_speakers": "~90 million",
+        "official_in": ["Germany", "Austria", "Switzerland", "Belgium"],
+        "writing_system": "Latin alphabet",
+        "word_order": "V2 word order (verb second)",
+        "grammar_features": ["Case system (4 cases)", "Gender (3 genders)", "Compound nouns"],
+        "vocabulary_size": "~200,000 words",
+        "influence": "Philosophy, science, engineering, music",
+        "digital_presence": "Strong tech sector, European internet",
+        "angeh_patterns": {
+          "greeting": "🤝👥 ⚪💖",
+          "question": "❓📝 ❓",
+          "statement": "📝 ⚪➡️ 🟢",
+          "request": "🔴🤝 ⚪🔗 🟢👥"
+        }
+      },
+      "javanese": {
+        "family": "Austronesian (Malayo-Polynesian)",
+        "speakers": "~80 million",
+        "native_speakers": "~68 million",
+        "official_in": ["Indonesia (regional)"],
+        "writing_system": "Latin alphabet, Javanese script (historical)",
+        "word_order": "Subject-Verb-Object (SVO)",
+        "grammar_features": ["Speech levels (ngoko, krama)", "No articles", "Affixes"],
+        "vocabulary_size": "~30,000 words",
+        "influence": "Javanese culture, wayang puppet theater",
+        "digital_presence": "Regional social media, cultural content",
+        "angeh_patterns": {
+          "greeting": "🙏👥 ⚪💖",
+          "question": "❓📝 ❓",
+          "statement": "📝 ⚪➡️ 🟢",
+          "request": "🔴🙏 ⚪🔗 🟢👥"
+        }
+      },
+      "telugu": {
+        "family": "Dravidian",
+        "speakers": "~80 million",
+        "native_speakers": "~75 million",
+        "official_in": ["India (Andhra Pradesh, Telangana)"],
+        "writing_system": "Telugu script (abugida)",
+        "word_order": "Subject-Object-Verb (SOV)",
+        "grammar_features": ["Postpositions", "Gender agreement", "Complex verb forms"],
+        "vocabulary_size": "~30,000 words",
+        "influence": "South Indian cinema, literature, growing tech sector",
+        "digital_presence": "Regional internet, entertainment content",
+        "angeh_patterns": {
+          "greeting": "🙏👥 ⚪💖",
+          "question": "❓📝 ❓",
+          "statement": "📝 🟢 ⚪➡️",
+          "request": "🔴🙏 ⚪🔗 🟢👥"
+        }
+      },
+      "marathi": {
+        "family": "Indo-European (Indo-Aryan)",
+        "speakers": "~80 million",
+        "native_speakers": "~70 million",
+        "official_in": ["India (Maharashtra)"],
+        "writing_system": "Devanagari script (abugida)",
+        "word_order": "Subject-Object-Verb (SOV)",
+        "grammar_features": ["Postpositions", "Gender agreement", "Complex verb forms"],
+        "vocabulary_size": "~30,000 words",
+        "influence": "Marathi literature, regional politics, growing economy",
+        "digital_presence": "Regional content, social media growth",
+        "angeh_patterns": {
+          "greeting": "🙏👥 ⚪💖",
+          "question": "❓📝 ❓",
+          "statement": "📝 🟢 ⚪➡️",
+          "request": "🔴🙏 ⚪🔗 🟢👥"
+        }
+      },
+      "wu_chinese": {
+        "family": "Sino-Tibetan (Chinese)",
+        "speakers": "~80 million",
+        "native_speakers": "~77 million",
+        "official_in": ["China (regional)"],
+        "writing_system": "Chinese characters",
+        "word_order": "Subject-Verb-Object (SVO)",
+        "grammar_features": ["Similar to Mandarin", "Regional pronunciation"],
+        "vocabulary_size": "~50,000 characters",
+        "influence": "Shanghai economic region, regional culture",
+        "digital_presence": "Regional internet, business content",
+        "angeh_patterns": {
+          "greeting": "🙏👥 ⚪💖",
+          "question": "❓📝 ❓",
+          "statement": "📝 ⚪➡️ 🟢⚖️",
+          "request": "🔴🙏 ⚪🔗 🟢👥"
+        }
+      },
+      "tamil": {
+        "family": "Dravidian",
+        "speakers": "~80 million",
+        "native_speakers": "~70 million",
+        "official_in": ["India (Tamil Nadu)", "Sri Lanka", "Singapore"],
+        "writing_system": "Tamil script (abugida)",
+        "word_order": "Subject-Object-Verb (SOV)",
+        "grammar_features": ["Postpositions", "No gender agreement", "Complex verb forms"],
+        "vocabulary_size": "~30,000 words",
+        "influence": "Ancient literature, South Indian cinema, diaspora",
+        "digital_presence": "Regional content, international communities",
+        "angeh_patterns": {
+          "greeting": "🙏👥 ⚪💖",
+          "question": "❓📝 ❓",
+          "statement": "📝 🟢 ⚪➡️",
+          "request": "🔴🙏 ⚪🔗 🟢👥"
+        }
+      },
+      "turkish": {
+        "family": "Turkic",
+        "speakers": "~80 million",
+        "native_speakers": "~70 million",
+        "official_in": ["Turkey", "Cyprus"],
+        "writing_system": "Latin alphabet (since 1928)",
+        "word_order": "Subject-Object-Verb (SOV)",
+        "grammar_features": ["Agglutination", "Vowel harmony", "No articles"],
+        "vocabulary_size": "~50,000 words",
+        "influence": "Ottoman literature, modern secular state, growing economy",
+        "digital_presence": "Regional internet, social media growth",
+        "angeh_patterns": {
+          "greeting": "🤝👥 ⚪💖",
+          "question": "❓📝 ❓",
+          "statement": "📝 🟢 ⚪➡️",
+          "request": "🔴🤝 ⚪🔗 🟢👥"
+        }
+      },
+      "french": {
+        "family": "Indo-European (Romance)",
+        "speakers": "~280 million",
+        "native_speakers": "~80 million",
+        "official_in": ["France", "Canada", "Belgium", "Switzerland", "many African countries"],
+        "writing_system": "Latin alphabet",
+        "word_order": "Subject-Verb-Object (SVO)",
+        "grammar_features": ["Gender agreement", "Complex verb conjugations", "Liaison"],
+        "vocabulary_size": "~130,000 words",
+        "influence": "Diplomacy, cuisine, fashion, literature",
+        "digital_presence": "European internet, international content",
+        "angeh_patterns": {
+          "greeting": "🤝👥 ⚪❤️",
+          "question": "❓📝 ❓",
+          "statement": "📝 ⚪➡️ 🟢",
+          "request": "🔴🤝 ⚪🔗 🟢👥"
+        }
+      },
+      "korean": {
+        "family": "Koreanic (controversial classification)",
+        "speakers": "~80 million",
+        "native_speakers": "~75 million",
+        "official_in": ["South Korea", "North Korea"],
+        "writing_system": "Hangul (alphabetic, featural)",
+        "word_order": "Subject-Object-Verb (SOV)",
+        "grammar_features": ["Particles", "Honorifics", "No articles", "Topic-comment structure"],
+        "vocabulary_size": "~50,000 words",
+        "influence": "K-pop, technology, economic growth",
+        "digital_presence": "Advanced internet culture, gaming, social media",
+        "angeh_patterns": {
+          "greeting": "🙏👥 ⚪💖",
+          "question": "❓📝 ❓",
+          "statement": "📝 🟢 ⚪➡️",
+          "request": "🔴🙏 ⚪🔗 🟢👥"
+        }
+      },
+      "vietnamese": {
+        "family": "Austroasiatic",
+        "speakers": "~80 million",
+        "native_speakers": "~70 million",
+        "official_in": ["Vietnam"],
+        "writing_system": "Latin alphabet with diacritics",
+        "word_order": "Subject-Verb-Object (SVO)",
+        "grammar_features": ["No articles", "No verb conjugation", "Tone system", "Compound words"],
+        "vocabulary_size": "~40,000 words",
+        "influence": "Growing economy, cuisine, diaspora communities",
+        "digital_presence": "Regional internet growth, social commerce",
+        "angeh_patterns": {
+          "greeting": "🙏👥 ⚪💖",
+          "question": "❓📝 ❓",
+          "statement": "📝 ⚪➡️ 🟢",
+          "request": "🔴🙏 ⚪🔗 🟢👥"
+        }
+      },
+      "italian": {
+        "family": "Indo-European (Romance)",
+        "speakers": "~70 million",
+        "native_speakers": "~60 million",
+        "official_in": ["Italy", "Switzerland", "San Marino", "Vatican City"],
+        "writing_system": "Latin alphabet",
+        "word_order": "Subject-Verb-Object (SVO)",
+        "grammar_features": ["Gender agreement", "Complex verb conjugations", "Articles"],
+        "vocabulary_size": "~120,000 words",
+        "influence": "Art, music, cuisine, fashion, literature",
+        "digital_presence": "European internet, cultural content",
+        "angeh_patterns": {
+          "greeting": "🤝👥 ⚪❤️",
+          "question": "❓📝 ❓",
+          "statement": "📝 ⚪➡️ 🟢",
+          "request": "🔴🤝 ⚪🔗 🟢👥"
+        }
+      },
+      "thai": {
+        "family": "Tai-Kadai",
+        "speakers": "~60 million",
+        "native_speakers": "~20 million",
+        "official_in": ["Thailand"],
+        "writing_system": "Thai script (abugida)",
+        "word_order": "Subject-Verb-Object (SVO)",
+        "grammar_features": ["No verb conjugation", "Particles", "Tone system", "No articles"],
+        "vocabulary_size": "~30,000 words",
+        "influence": "Cuisine, tourism, entertainment industry",
+        "digital_presence": "Regional social media, content creation",
+        "angeh_patterns": {
+          "greeting": "🙏👥 ⚪💖",
+          "question": "❓📝 ❓",
+          "statement": "📝 ⚪➡️ 🟢",
+          "request": "🔴🙏 ⚪🔗 🟢👥"
+        }
+      },
+      "gujarati": {
+        "family": "Indo-European (Indo-Aryan)",
+        "speakers": "~60 million",
+        "native_speakers": "~50 million",
+        "official_in": ["India (Gujarat)"],
+        "writing_system": "Gujarati script (abugida)",
+        "word_order": "Subject-Object-Verb (SOV)",
+        "grammar_features": ["Postpositions", "Gender agreement", "Complex verb forms"],
+        "vocabulary_size": "~25,000 words",
+        "influence": "Business community, diaspora, regional culture",
+        "digital_presence": "Regional content, international business",
+        "angeh_patterns": {
+          "greeting": "🙏👥 ⚪💖",
+          "question": "❓📝 ❓",
+          "statement": "📝 🟢 ⚪➡️",
+          "request": "🔴🙏 ⚪🔗 🟢👥"
+        }
+      },
+      "persian": {
+        "family": "Indo-European (Iranian)",
+        "speakers": "~60 million",
+        "native_speakers": "~50 million",
+        "official_in": ["Iran", "Afghanistan (Dari)", "Tajikistan (Tajik)"],
+        "writing_system": "Persian alphabet (abjad, right-to-left)",
+        "word_order": "Subject-Object-Verb (SOV)",
+        "grammar_features": ["Ezafe construction", "No articles", "Complex verb system"],
+        "vocabulary_size": "~40,000 words",
+        "influence": "Poetry, literature, Islamic scholarship",
+        "digital_presence": "Regional internet, cultural content",
+        "angeh_patterns": {
+          "greeting": "👐👥 ⚪💖",
+          "question": "❓📝 ❓",
+          "statement": "📝 🟢 ⚪➡️",
+          "request": "🔴👐 ⚪🔗 🟢👥"
+        }
+      },
+      "bhojpuri": {
+        "family": "Indo-European (Indo-Aryan)",
+        "speakers": "~50 million",
+        "native_speakers": "~40 million",
+        "official_in": ["None (regional in India/Nepal)"],
+        "writing_system": "Devanagari script",
+        "word_order": "Subject-Object-Verb (SOV)",
+        "grammar_features": ["Postpositions", "Gender agreement", "Complex verb forms"],
+        "vocabulary_size": "~20,000 words",
+        "influence": "Folk music, diaspora communities, regional identity",
+        "digital_presence": "Growing social media, entertainment content",
+        "angeh_patterns": {
+          "greeting": "🙏👥 ⚪💖",
+          "question": "❓📝 ❓",
+          "statement": "📝 🟢 ⚪➡️",
+          "request": "🔴🙏 ⚪🔗 🟢👥"
+        }
+      }
+    },
+    "linguistic_features": {
+      "phonology": {
+        "consonants": ["Stops", "Fricatives", "Nasals", "Liquids", "Glides"],
+        "vowels": ["Front", "Central", "Back", "High", "Mid", "Low"],
+        "tones": ["High", "Mid", "Low", "Rising", "Falling", "Contour"],
+        "phonotactics": ["Syllable structure", "Consonant clusters", "Vowel sequences"]
+      },
+      "morphology": {
+        "analytic": "No morphology (Mandarin, Vietnamese)",
+        "synthetic": "Word formation through affixes (English, German)",
+        "agglutinative": "Sequential morphemes (Turkish, Japanese)",
+        "fusional": "Single morphemes with multiple meanings (Spanish, Russian)"
+      },
+      "syntax": {
+        "word_order": {
+          "SVO": "Subject-Verb-Object (English, Spanish)",
+          "SOV": "Subject-Object-Verb (Hindi, Japanese)",
+          "VSO": "Verb-Subject-Object (Arabic, Irish)",
+          "VOS": "Verb-Object-Subject (Malagasy)",
+          "OSV": "Object-Subject-Verb (Xavante)"
+        },
+        "case_systems": {
+          "nominative_accusative": "Subject vs. object marking",
+          "ergative_absolutive": "Agent vs. patient marking",
+          "active_stative": "Actor vs. undergoer marking",
+          "tripartite": "Three-way distinction"
+        }
+      },
+      "semantics": {
+        "color_terms": {
+          "2_terms": ["Dark", "Light"],
+          "3_terms": ["Red", "Yellow", "Blue-Green"],
+          "4_terms": ["Red", "Yellow", "Green", "Blue"],
+          "5_terms": ["Red", "Yellow", "Green", "Blue", "Black"],
+          "6_terms": ["Red", "Yellow", "Green", "Blue", "Black", "White"],
+          "8_terms": ["Red", "Yellow", "Green", "Blue", "Black", "White", "Brown", "Purple"],
+          "11_terms": ["Red", "Yellow", "Green", "Blue", "Black", "White", "Brown", "Purple", "Pink", "Orange", "Grey"]
+        },
+        "kinship_terms": {
+          "eskimo": "Many specific terms for cousins, aunts, uncles",
+          "hawaiian": "Few terms, generational classification",
+          "sudanese": "Descriptive terms based on relatives",
+          "iroquois": "Cross/parallel cousin distinction"
+        },
+        "time_concepts": {
+          "absolute": "Fixed time references (English)",
+          "relative": "Time relative to speaker (Spanish)",
+          "cyclical": "Time as cycles (Mayan)",
+          "event_based": "Time through events (Yup'ik)"
+        }
+      }
+    },
+    "cultural_context": {
+      "communication_styles": {
+        "high_context": "Much information implicit (Japanese, Arabic)",
+        "low_context": "Information explicit (English, German)",
+        "monochronic": "Linear time, one thing at a time (USA, Germany)",
+        "polychronic": "Multiple activities simultaneously (Latin America, Middle East)"
+      },
+      "social_hierarchy": {
+        "egalitarian": "Equal status communication",
+        "hierarchical": "Status-based communication",
+        "power_distance": "Acceptance of unequal power distribution"
+      },
+      "emotional_expression": {
+        "display_rules": "Cultural norms for showing emotions",
+        "face_saving": "Maintaining social harmony",
+        "indirect_communication": "Saying things indirectly"
+      }
+    },
+    "digital_presence": {
+      "internet_users": {
+        "english": "~1.2 billion",
+        "chinese": "~800 million",
+        "spanish": "~200 million",
+        "arabic": "~150 million",
+        "portuguese": "~100 million",
+        "japanese": "~100 million",
+        "russian": "~80 million",
+        "german": "~70 million",
+        "french": "~70 million",
+        "korean": "~50 million"
+      },
+      "content_languages": {
+        "wikipedia_articles": {
+          "english": "~6 million",
+          "german": "~2.5 million",
+          "french": "~2.3 million",
+          "italian": "~1.7 million",
+          "spanish": "~1.7 million",
+          "russian": "~1.7 million",
+          "japanese": "~1.3 million",
+          "chinese": "~1.2 million",
+          "portuguese": "~1 million",
+          "arabic": "~800 thousand"
+        },
+        "programming_languages": {
+          "keywords_in": ["English", "French", "German"],
+          "comments_in": ["Any language"],
+          "documentation": ["English dominant"],
+          "error_messages": ["English dominant"]
+        }
+      }
+    },
+    "angeh_lang_integration": {
+      "universal_patterns": {
+        "greeting": "🤝👥 ⚪💖 (universal welcome)",
+        "question": "❓📝 🔍 (universal inquiry)",
+        "statement": "📝 ⚪➡️ 🟢 (universal declaration)",
+        "request": "🔴🤝 ⚪🔗 🟢👥 (universal ask)"
+      },
+      "cultural_adaptations": {
+        "western": "Linear flow patterns",
+        "eastern": "Circular harmony patterns",
+        "indigenous": "Spiral connection patterns",
+        "african": "Rhythmic communal patterns",
+        "middle_eastern": "Hospitality flow patterns"
+      },
+      "translation_principles": {
+        "semantic_preservation": "Maintain meaning across languages",
+        "cultural_context": "Include cultural nuances",
+        "emotional_resonance": "Preserve emotional content",
+        "relational_structure": "Maintain social relationships"
+      }
+    },
+    "endangered_languages": {
+      "critically_endangered": ["<10 speakers", "UNESCO Atlas categories"],
+      "severely_endangered": ["<100 speakers"],
+      "definitely_endangered": ["<1,000 speakers"],
+      "vulnerable": ["<10,000 speakers"],
+      "safe": [">10,000 speakers"],
+      "examples": {
+        "critically_endangered": ["Ainu (Japan)", "Yupik (Alaska)", "Pirahã (Brazil)"],
+        "severely_endangered": ["Kashmiri (India)", "Sardinian (Italy)", "Romani (Europe)"],
+        "definitely_endangered": ["Scottish Gaelic", "Welsh", "Hawaiian"],
+        "vulnerable": ["Irish", "Breton", "Catalan"]
+      }
+    },
+    "constructed_languages": {
+      "esperanto": {
+        "purpose": "International communication",
+        "speakers": "~100,000-2 million",
+        "features": ["Simplified grammar", "European vocabulary roots"],
+        "influence": "Language learning, international organizations"
+      },
+      "lojban": {
+        "purpose": "Logical language design",
+        "speakers": "~100-200",
+        "features": ["Predicate logic structure", "Cultural neutrality"],
+        "influence": "Linguistics research, AI language design"
+      },
+      "tokipona": {
+        "purpose": "Minimalist communication",
+        "speakers": "~100-200",
+        "features": ["120 words only", "Philosophical concepts"],
+        "influence": "Linguistic minimalism, cognitive science"
+      }
+    },
+    "language_learning": {
+      "methods": {
+        "immersion": "Complete language environment",
+        "structured": "Grammar-focused learning",
+        "communicative": "Conversation-focused learning",
+        "task_based": "Real-world task completion",
+        "content_based": "Subject matter integration"
+      },
+      "difficulties": {
+        "phonology": "Sound system mastery",
+        "vocabulary": "Word learning and retention",
+        "grammar": "Rule system acquisition",
+        "pragmatics": "Social usage understanding",
+        "cultural_context": "Cultural framework learning"
+      },
+      "resources": {
+        "apps": ["Duolingo", "Babbel", "Memrise", "Rosetta Stone"],
+        "platforms": ["Coursera", "edX", "Udemy", "Khan Academy"],
+        "communities": ["Reddit", "Discord servers", "Meetup groups"],
+        "immersion": ["Language exchange", "Media consumption", "Travel"]
+      }
+    },
+    "future_trends": {
+      "globalization": {
+        "english_dominance": "Increasing global use",
+        "multilingualism": "Multiple language proficiency",
+        "code_switching": "Language mixing in communication",
+        "digital_translation": "Real-time translation technologies"
+      },
+      "technology_integration": {
+        "voice_interfaces": "Natural language AI assistants",
+        "augmented_reality": "AR language learning",
+        "virtual_reality": "VR cultural immersion",
+        "brain_computer_interfaces": "Direct language neural implants"
+      },
+      "preservation_efforts": {
+        "documentation": "Recording endangered languages",
+        "revitalization": "Teaching to new generations",
+        "technology": "Digital archives and apps",
+        "policy": "Government language protection laws"
+      }
+    }
+  }
+}

@@ -18,46 +18,66 @@ Angehlang was engineered from the ground up to be **AI-Native**, **High-Performa
 
 ### 1. The Core Interpreter (`core/`)
 The brain of Angehlang. A massively updated execution matrix featuring an extremely resilient regex-driven Lexer and memory-safe parsing engine.
-- **`interpreter.py`**: The dynamic Python VM. Features a **colorized interactive REPL** with multi-line support and AI-assisted debugging.
-- **`angehc.py` & `angeh_runtime.h`**: AOT (Ahead-of-Time) C transpilation backend.
+- **`interpreter.py`**: The dynamic Python VM that processes the AST and handles rapid logic prototyping.
+- **`angehc.py` & `angeh_runtime.h`**: AOT (Ahead-of-Time) C transpilation backend. Compiles expressions directly to `.c` for native `gcc`/`clang` binary generation!
+- **`compiler.ts`**: Next-gen TypeScript integrations for UI/Web bridging.
 
 ### 2. The Standard Library (`stdlib/`)
-- **`ai_bridge.angeh`**: Abstractions for Agent generation (`def-agent`, `swarm-gather`).
-- **`dotflow_a2a.angeh`**: Routing for inter-process Agent communication (`a2a-announce`).
-- **`core.angeh`, `math.angeh`, `string.angeh`**: Standard logic and math utilities.
+Housed firmly within the core distribution:
+- **`ai_bridge.angeh`**: Abstractions for Agent generation (`def-agent`, `swarm-ask`).
+- **`dotflow_a2a.angeh`**: Centralized routing for inter-process Agent communication.
+- **`core.angeh`, `math.angeh`**: Traditional low-level numeric capabilities.
 
 ### 3. The Dataset (`dataset/`)
-Hundreds of theoretical modules ranging from 4D Quantization layers to Photonic Neural Networks, rigorously deduplicated and ready for research.
+Hundreds of revolutionary theoretical modules ranging from 4D Quantization layers, Photonic Neural Networks, and Synthetic Bio-Digital Organs, rigorously deduplicated and ready to be implemented into the core engine logic.
 
 ---
 
 ## 💻 Getting Started
 
 ### Prerequisites
-Python 3.10+ is required. For AI features, a local LLM API (like Ollama on `localhost:11434`) is recommended.
-
-### Launching the Environment
-- **Windows**: Run **`run.bat`** for the interactive REPL.
-- **Unix/macOS**: Run **`./run.sh`**.
-- **REPL Commands**: Type `.help` inside the REPL for `.agents`, `.a2a`, and `.clear`.
+To use the primary Python VM, ensure you have Python 3.10+ installed. For AI features, a local LLM API (like Ollama on `localhost:11434`) is recommended.
 
 ### Running a Script
-Execute `.angeh` files natively:
+Execute your `.angeh` files natively through the Python VM environment:
 ```bash
-python core/interpreter.py examples/01_hello_world.angeh
+python core/interpreter.py core/dummy.angeh
+```
+
+### Native C Compilation
+For extreme execution speed, transpile your script to C:
+```bash
+python core/angehc.py core/dummy.angeh
+gcc dummy.c -o dummy.exe
+./dummy.exe
 ```
 
 ---
 
-## 🚀 Examples
-Explore the **`examples/`** folder:
-- `01_hello_world.angeh`: Basic syntax.
-- `02_fibonacci.angeh`: Recursion.
-- `03_ai_agents.angeh`: AI spawning.
-- `04_swarm_roundtable.angeh`: A2A communication squads.
+## 🔮 Language Features in Action
+
+**Built-In AI Integration:**
+```lisp
+;; Spawn a localized persona in the interpreter
+(agent-spawn "Oracle" "You are a quantum logic engine.")
+
+;; Request dynamic thought-generation during execution
+(print (agent-ask "Oracle" "Calculate the structural limits of this function."))
+
+;; OmniBus Telepathy between agents
+(a2a-broadcast "Execution complete." "ALL" "OmniBrain")
+```
+
+**Standard Syntax:**
+```lisp
+(begin
+  (def x 10)
+  (def y 20)
+  (print (+ x y)))
+```
 
 ---
 
-**License:** MIT  
+**License:** Proprietary  
 **Author:** Longbian Lennon  
 *Designed for the era of Sentient Computing.*

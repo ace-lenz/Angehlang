@@ -1,0 +1,512 @@
+// AngehLang Photonics Programming Dataset
+// Complete photonic computing examples and patterns
+
+dot photonics @core {
+    version: "2.0.0",
+    domain: "optical_computing",
+    capabilities: [
+        "photonic_circuits",
+        "quantum_photonics",
+        "optical_neural_networks",
+        "coherent_optics",
+        "nonlinear_optics"
+    ]
+}
+
+// ========================================
+// PHOTONIC SIGNAL DEFINITIONS
+// ========================================
+
+dot optical_signal @laser1550 {
+    wavelength: 1550,  // nanometers (C-band)
+    power: 10.0,       // milliwatts
+    phase: 0.0,        // radians
+    polarization: "horizontal",
+    coherence_length: 100.0,  // micrometers
+    bandwidth: 0.1,    // nanometers
+    emoji: "🔆"
+}
+
+dot optical_signal @quantum_photon {
+    wavelength: 780,   // nanometers (visible)
+    power: 0.001,      // single photon level
+    phase: 0.0,
+    polarization: "superposition",
+    coherence_length: 1000.0,
+    bandwidth: 0.001,
+    quantum_state: "|+⟩",
+    emoji: "🌟"
+}
+
+// ========================================
+// PHOTONIC DEVICES
+// ========================================
+
+dot waveguide @silicon_waveguide {
+    material: "silicon",
+    length: 1000,      // micrometers
+    width: 500,        // nanometers
+    height: 220,       // nanometers
+    refractive_index: 3.48,
+    propagation_loss: 2.0,  // dB/cm
+    mode: "TE0",
+    emoji: "🌊"
+}
+
+dot modulator @mach_zehnder {
+    type: "MZM",
+    voltage: 0.0,
+    v_pi: 3.0,         // pi voltage
+    bandwidth_3db: 40,  // GHz
+    extinction_ratio: 30,  // dB
+    insertion_loss: 3.0,   // dB
+    wavelength_range: [1260, 1675],
+    emoji: "🔄"
+}
+
+dot beam_splitter @50_50 {
+    split_ratio: 0.5,
+    type: "directional_coupler",
+    coupling_length: 10,  // micrometers
+    gap: 200,            // nanometers
+    insertion_loss: 0.5,  // dB
+    directivity: 20,      // dB
+    emoji: "🔀"
+}
+
+dot detector @inp_photodiode {
+    material: "InP",
+    responsivity: 0.9,  // A/W
+    dark_current: 1.0,   // nA
+    bandwidth: 50,       // GHz
+    quantum_efficiency: 0.85,
+    wavelength_range: [1100, 1650],
+    emoji: "📡"
+}
+
+dot ring_resonator @microring {
+    radius: 5.0,         // micrometers
+    coupling_coefficient: 0.5,
+    quality_factor: 10000,
+    FSR: 20,             // nm (free spectral range)
+    resonance_wavelengths: [1550, 1570, 1590],
+    tuning_range: 10,    // nm
+    emoji: "💍"
+}
+
+dot optical_amplifier @soa {
+    type: "SOA",
+    gain: 20.0,          // dB
+    saturation_power: 10,  // dBm
+    noise_figure: 6.0,   // dB
+    bandwidth: 35,       // nm
+    polarization_dependent: false,
+    emoji: "⚡"
+}
+
+// ========================================
+// PHOTONIC CIRCUITS
+// ========================================
+
+dot photonic_circuit @optical_switch {
+    name: "2x2_MZI_Switch",
+    mode: "classical",
+    
+    components: [
+        @50_50,           // Input splitter
+        @silicon_waveguide,
+        @mach_zehnder,
+        @50_50            // Output combiner
+    ],
+    
+    connections: {
+        input -> splitter1,
+        splitter1[0] -> waveguide1 -> modulator,
+        splitter1[1] -> waveguide2,
+        [waveguide1_out, waveguide2_out] -> splitter2,
+        splitter2 -> output
+    },
+    
+    operation: {
+        switching_time: 100,  // picoseconds
+        extinction_ratio: 25,  // dB
+        insertion_loss: 5.0    // dB
+    },
+    
+    emoji: "🔷"
+}
+
+dot photonic_circuit @quantum_entangler {
+    name: "Photon_Pair_Source",
+   mode: "quantum",
+    
+    components: [
+        {
+            type: "pump_laser",
+            wavelength: 775,         // nm
+            power: 100               // mW
+        },
+        {
+            type: "PPLN_crystal",    // Periodically-poled lithium niobate
+            length: 10,              // mm
+            poling_period: 6.5,      // micrometers
+            process: "SPDC"          // Spontaneous parametric down-conversion
+        },
+        {
+            type: "dichroic_mirror",
+            cutoff: 1000            // nm
+        }
+    ],
+    
+    output: {
+        signal_wavelength: 1550,     // nm
+        idler_wavelength: 1550,      // nm
+        entanglement_fidelity: 0.995,
+        pair_generation_rate: 1e6    // pairs/second
+    },
+    
+    emoji: "🌀"
+}
+
+dot photonic_circuit @optical_neural_layer {
+    name: "Photonic_Matrix_Multiplier",
+    mode: "coherent",
+    
+    architecture: "mzi_mesh",
+    input_ports: 8,
+    output_ports: 8,
+    
+    mzi_array: {
+        rows: 8,
+        columns: 8,
+        total_mzis: 64,
+        phase_shifters: 128
+    },
+    
+    weights_encoding: "phase_amplitude",
+    activation: "optical_nonlinearity",
+    
+    performance: {
+        operation_speed: 1,          // THz
+        energy_per_operation: 1,     // fJ
+        precision: 8                 // bits
+    },
+    
+    emoji: "🧠"
+}
+
+// ========================================
+// WAVELENGTH DIVISION MULTIPLEXING
+// ========================================
+
+dot wdm_system @dwdm_link {
+    type: "DWDM",      // Dense WDM
+    channels: 80,
+    channel_spacing: 50,  // GHz (ITU grid)
+    wavelength_range: [1530, 1565],  // C-band
+    
+    multiplexer: {
+        type: "AWG",    // Arrayed waveguide grating
+        insertion_loss: 3.0,
+        crosstalk: -30   // dB
+    },
+    
+    data_rate_per_channel: 100,  // Gbps
+    total_capacity: 8,            // Tbps
+    
+    modulation_format: "DP-QPSK",  // Dual-polarization QPSK
+    
+    emoji: "🌈"
+}
+
+// ========================================
+// QUANTUM PHOTONIC GATES
+// ========================================
+
+dot quantum_gate @hadamard {
+    type: "Hadamard",
+    implementation: "balanced_beam_splitter",
+    
+    matrix: [
+        [0.707, 0.707],
+        [0.707, -0.707]
+    ],
+    
+    input_state: "|0⟩",
+    output_state: "(|0⟩ + |1⟩)/√2",
+    
+    fidelity: 0.999,
+    emoji: "🔮"
+}
+
+dot quantum_gate @cnot {
+    type: "CNOT",
+    implementation: "kerr_nonlinearity",
+    
+    control_qubit: "polarization",
+    target_qubit: "path",
+    
+    success_probability: 0.95,
+    gate_time: 10,  // nanoseconds
+    
+    emoji: "⚛️"
+}
+
+// ========================================
+// NONLINEAR OPTICAL EFFECTS
+// ========================================
+
+dot nonlinear_process @four_wave_mixing {
+    type: "FWM",
+    medium: "silicon_waveguide",
+    
+    pump_wavelengths: [1550, 1560],
+    signal_wavelength: 1540,
+    idler_wavelength: 1570,
+    
+    conversion_efficiency: 0.1,  // -10 dB
+    phase_matching: "modal",
+    
+    applications: [
+        "wavelength_conversion",
+        "signal_regeneration",
+        "frequency_comb_generation"
+    ],
+    
+    emoji: "💫"
+}
+
+dot nonlinear_process @second_harmonic {
+    type: "SHG",
+    crystal: "LiNbO3" ,
+    
+    fundamental: 1064,    // nm
+    harmonic: 532,        // nm (green)
+    
+    efficiency: 0.5,
+    phase_matching: "quasi_phase_matching",
+    
+    emoji: "💚"
+}
+
+// ========================================
+// OPTICAL SENSING
+// ========================================
+
+dot photonic_sensor @bio_sensor {
+    type: "ring_resonator_sensor",
+    
+    sensing_mechanism: "evanescent_field",
+    sensitivity: 150,     // nm/RIU
+    detection_limit: 1e-6,  // RIU
+    
+    target_molecules: [
+        "proteins",
+        "DNA",
+        "viruses"
+    ],
+    
+    real_time_monitoring: true,
+    label_free: true,
+    
+    emoji: "🔬"
+}
+
+// ========================================
+// PHOTONIC COMPUTING OPERATIONS
+// ========================================
+
+workspace photonic_ops {
+    icon: "🔆",
+    mode: "optical_computing",
+    
+    operations: {
+        
+        // Basic optical operations
+        emit: (wavelength, power) => {
+            🔆 create_signal(wavelength, power)
+        },
+        
+        propagate: (signal, device) => {
+            🌊 device.transfer_function(signal)
+        },
+        
+        split: (signal, ratio) => {
+            🔀 beam_splitter(signal, ratio)
+        },
+        
+        modulate: (signal, voltage) => {
+            🔄 mzm.apply(signal, voltage)
+        },
+        
+        detect: (signal) => {
+            📡 photodetector.convert(signal)
+        },
+        
+        // Quantum operations
+        entangle: (photon1, photon2) => {
+            🌀 SPDC(photon1, photon2)
+        },
+        
+        hadamard_gate: (photon) => {
+            🔮 H|photon⟩
+        },
+        
+        measure: (quantum_state) => {
+            📊 collapse(quantum_state)
+        },
+        
+        // Advanced operations
+        neural_forward: (optical_inputs, weights) => {
+            🧠 onn_layer.forward(optical_inputs, weights)
+        },
+        
+        wavelength_convert: (signal, target_λ) => {
+            💫 fwm.convert(signal, target_λ)
+        },
+        
+        amplify: (signal, gain_db) => {
+            ⚡ soa.amplify(signal, gain_db)
+        }
+    }
+}
+
+// ========================================
+// PHOTONIC COMPUTING EXAMPLES
+// ========================================
+
+// Example 1: Optical Matrix Multiplication
+dot photonic_program @optical_matmul {
+    input_matrix: [[1, 2], [3, 4]],
+    weight_matrix: [[0.5, 0.5], [0.5, -0.5]],
+    
+    algorithm: {
+        // Encode matrix in MZI mesh
+        encode_weights(weight_matrix) -> mzi_mesh,
+        
+        // Encode inputs as optical signals
+        for each row in input_matrix:
+            🔆 create_signal_vector(row) -> input_signals,
+        
+        // Perform multiplication
+        for signal in input_signals:
+            🌊 propagate(signal, mzi_mesh),
+            📡 detect_output() -> result_row,
+        
+        // Collect results
+        collect(result_rows) -> output_matrix
+    },
+    
+    speed: "1 THz",
+    energy: "< 1 pJ per operation",
+    emoji: "⚡🧮"
+}
+
+// Example 2: Quantum Random Number Generator
+dot photonic_program @qrng {
+    source: @quantum_photon,
+    
+    algorithm: {
+        // Generate entangled photon pair
+        🌀 entangle() -> [photon_A, photon_B],
+        
+        // Apply Hadamard to photon_A
+        🔮 hadamard(photon_A) -> superposition_state,
+        
+        // Measure in computational basis
+        📡 measure(superposition_state) -> random_bit,
+        
+        // Repeat for multiple bits
+        repeat(1000) -> random_bits
+    },
+    
+    randomness_quality: "quantum_certified",
+    rate: "1 Gbps",
+    emoji: "🎲"
+}
+
+// Example 3: All-Optical Switching Network
+dot photonic_program @optical_router {
+    inputs: 16,
+    outputs: 16,
+    
+    architecture: "benes_network",
+    switching_elements: 128,  // 2x2 MZI switches
+    
+    routing_algorithm: {
+        receive_packet(optical_signal),
+        read_header(wavelength_tag),
+        configure_switches(routing_table),
+        🔷 switch_path(optical_signal, output_port),
+        forward_packet()
+    },
+    
+    latency: "< 100 ps",
+    throughput: "10 Tbps",
+    power_consumption: "< 1 W",
+    emoji: "🔷📡"
+}
+
+// ========================================
+// PHOTONIC AI ACCELERATOR
+// ========================================
+
+dot photonic_ai @optical_cnn {
+    name: "Photonic_Convolutional_Network",
+    
+    layers: [
+        {
+            type: "optical_conv2d",
+            filters: 32,
+            kernel_size: 3,
+            implementation: "mzi_mesh"
+        },
+        {
+            type: "optical_pooling",
+            size: 2,
+            method: "optical_max"
+        },
+        {
+            type: "optical_dense",
+            units: 128,
+            implementation: "coherent_matmul"
+        }
+    ],
+    
+    performance: {
+        inference_time: 10,     // nanoseconds
+        energy_per_inference: 100,  // fJ
+        accuracy: 0.98,
+        throughput: 100e6      // inferences/second
+    },
+    
+    training: "hybrid_optical_digital",
+    
+    emoji: "🧠💡"
+}
+
+// ========================================
+// METADATA
+// ========================================
+
+dot photonics_metadata {
+    total_devices: 12,
+    total_circuits: 6,
+    quantum_gates: 2,
+    example_programs: 4,
+    
+    wavelength_ranges: {
+        visible: [380, 780],
+        near_infrared: [780, 3000],
+        telecom_c_band: [1530, 1565],
+        telecom_l_band: [1565, 1625]
+    },
+    
+    photonic_constants: {
+        speed_of_light: 299792458,  // m/s
+        planck_constant: 6.62607015e-34,  // J·s
+        photon_energy_1550nm: 1.28e-19    // J
+    },
+    
+    emoji: "📊🔆"
+}

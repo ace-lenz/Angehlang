@@ -1,0 +1,29 @@
+{
+  "quantum_internet_dataset": {
+    "version": "1.0-2030",
+    "description": "Protocols for the Quantum Web (QWeb) and Entanglement Networks",
+    "core_concepts": {
+      "qubit": "⚛️💾 (Atom Disk) - Superposition bit",
+      "entanglement": "🔗👻 (Link Ghost) - Spooky action at a distance",
+      "teleportation": "✨📍 (Spark Pin) - State transfer",
+      "no_cloning": "🚫🐑 (No Sheep) - Cannot copy quantum state",
+      "coherence": "🌊🧘 (Wave Yoga) - Stability of state"
+    },
+    "protocols": {
+      "QTP": "Quantum Teleportation Protocol - Transmit state, not data",
+      "E-Swapping": "Entanglement Swapping - Extending range via repeaters",
+      "QKD": "Quantum Key Distribution - Unbreakable auth",
+      "Super-Dense": "Dense Coding - 2 bits per qubit"
+    },
+    "hardware_mapping": {
+      "repeater": "📡⚛️ (Sat Atom) - Quantum Repeater",
+      "memory": "💎💾 (Gem Disk) - Diamond Vacancy Storage",
+      "transducer": "🔊💡 (Sound Light) - Microwave-Optical converter"
+    },
+    "patterns": {
+      "establish_link": "⚡🔗👻",
+      "teleport_packet": "⚡✨📍📦",
+      "distribute_key": "⚡🔑⚛️🛡️"
+    }
+  }
+}

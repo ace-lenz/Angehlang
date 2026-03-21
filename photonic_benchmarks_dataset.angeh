@@ -1,0 +1,385 @@
+// ═══════════════════════════════════════════════════════════════════
+// PHOTONIC BENCHMARKS DATASET
+// ═══════════════════════════════════════════════════════════════════
+// Standard test cases for photonic computing performance
+// Validation, comparison, and optimization benchmarks
+// ═══════════════════════════════════════════════════════════════════
+
+dataset photonic_benchmarks @standard {
+    purpose: "performance_validation",
+    total_benchmarks: 25,
+    domains: ["computation", "communication", "sensing", "quantum"],
+    emoji: "📊🎯"
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// COMPUTATIONAL BENCHMARKS
+// ═══════════════════════════════════════════════════════════===============
+
+benchmark matrix_multiply_16x16 {
+    operation: "optical_matrix_vector_product",
+    problem_size: {
+        matrix: "16x16",
+        vector: "16x1",
+        total_macs: 256
+    },
+    
+    photonic_implementation: {
+        architecture: "coherent_mzi_mesh",
+        wavelengths: 1,
+        photonic_elements: {
+            mzis: 256,
+            phase_shifters: 512,
+            photodetectors: 16
+        }
+    },
+    
+    reference_metrics: {
+        latency: "< 100ps",  // Single propagation
+        energy: "25pJ",  // Total
+        energy_per_mac: "100fJ/MAC",
+        throughput: "2.56 TOPS",
+        area: "0.5mm²"
+    },
+    
+    comparison_baseline: {
+        gpu_a100: {
+            latency: "100ns",
+            energy_per_mac: "10pJ/MAC",
+            throughput: "312 TOPS"
+        },
+        speedup: "1000x latency",
+        efficiency: "100x energy"
+    },
+    
+    test_cases: [
+        {input_type: "random_normal", expected_accuracy: "8bit"},
+        {input_type: "identity_matrix", expected_output: "unchanged"},
+        {input_type: "zero_matrix", expected_output: "zero"}
+    ],
+    
+    emoji: "🧮"
+}
+
+benchmark fft_1024_point {
+    operation: "fast_fourier_transform",
+    problem_size: 1024,
+    
+    photonic_implementation: {
+        method: "optical_4f_system",
+        components: {
+            input_slm: "spatial_light_modulator",
+            lens1: "fourier_lens_f=100mm",
+            lens2: "inverse_fourier_lens",
+            detector_array: "1024_pixels"
+        }
+    },
+    
+    reference_metrics: {
+        latency: "< 1ns",  // Speed of light!
+        energy: "< 100pJ",
+        accuracy: "6_bit",
+        continuous_operation: true
+    },
+    
+    comparison_baseline: {
+        cpu_fft: {
+            latency: "10μs",
+            complexity: "O(N log N)"
+        },
+        photonic_advantage: "O(1) time complexity",
+        speedup: "10000x"
+    },
+    
+    emoji: "📊"
+}
+
+benchmark neural_inference_resnet18 {
+    model: "ResNet-18",
+    task: "image_classification",
+    input_size: "224x224x3",
+    
+    photonic_implementation: {
+        layers: [
+            {type: "optical_conv", kernels: 64},
+            {type: "optical_pooling"},
+            {type: "optical_linear", neurons: 1000}
+        ],
+        total_params: "11.7M",
+        photonic_macs: "1.8G per image"
+    },
+    
+    reference_metrics: {
+        inference_time: "10μs",
+        energy_per_inference: "100μJ",
+        throughput: "100k images/sec",
+        accuracy: "top1=69.7%"  // Match digital
+    },
+    
+    comparison_baseline: {
+        nvidia_t4: {
+            inference_time: "1ms",
+            energy: "10mJ",
+            throughput: "1k images/sec"
+        },
+        photonic_speedup: "100x",
+        energy_reduction: "100x"
+    },
+    
+    emoji: "🧠"
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// COMMUNICATION BENCHMARKS
+// ═══════════════════════════════════════════════════════════════════
+
+benchmark optical_switching_100g {
+    operation: "packet_switching",  
+    data_rate: "100Gbps",
+    ports: "32x32",
+    
+    photonic_implementation: {
+        architecture: "wavelength_selective_switch",
+        switching_matrix: "mzi_array",
+        control: "thermal_phase_tuning"
+    },
+    
+    reference_metrics: {
+        switching_time: "< 10μs",
+        insertion_loss: "< 5dB",
+        crosstalk: "< -40dB",
+        wavelength_channels: 96,
+        total_capacity: "307.2 Tbps"
+    },
+    
+    comparison_baseline: {
+        electronic_switch: {
+            switching_time: "10ms",
+            power: "1000W"
+        },
+        photonic_power: "< 100W",
+        energy_savings: "10x"
+    },
+    
+    emoji: "🔀"
+}
+
+benchmark dwdm_transmission_80km {
+    operation: "wavelength_division_multiplexed_transmission",
+    distance: "80km",
+    channels: 80,
+    
+    system: {
+        transmitters: "80x 100G DP-QPSK",
+        multiplexer: "AWG 80ch",
+        fiber:" "SSMF G.652",
+        amplifiers: "EDFA inline",
+        demultiplexer: "AWG 80ch",
+        receivers: "80x coherent"
+    },
+    
+    reference_metrics: {
+        total_capacity: "8 Tbps",
+        ber: "< 10^-15",
+        osnr_margin: "> 3dB",
+        latency: "400μs",  // Speed of light in fiber
+        spectral_efficiency: "4 bit/s/Hz"
+    },
+    
+    emoji: "🌈"
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// QUANTUM BENCHMARKS
+// ═══════════════════════════════════════════════════════════════════
+
+benchmark quantum_random_generation {
+    operation: "quantum_random_number_generation",
+    method: "vacuum_fluctuation",
+    
+    implementation: {
+        source: "balanced_homodyne_detection",
+        🔆 laser_local_oscillator,
+        🔮 vacuum_input,
+        🔀 beam_splitter,
+        📡 balanced_detectors,
+        adc: "high_speed"
+    },
+    
+    reference_metrics: {
+        generation_rate: "1 Gbps",
+        min_entropy: "0.98 bits/sample",
+        randomness_tests: "NIST_SP_800_22_all_pass",
+        continuous_operation: true
+    },
+    
+    comparison_baseline: {
+        prng: "deterministic",
+        trng: "slower",
+        quantum_certified: "provably_random"
+    },
+    
+    emoji: "🎲"
+}
+
+benchmark bell_state_fidelity {
+    operation: "entangled_photon_pair_generation",
+    target_state: "|Φ⁺⟩ = (|HH⟩ + |VV⟩)/√2",
+    
+    implementation: {
+        source: "SPDC_in_PPLN",
+        wavelengths: [1550, 1550],  // Degenerate
+        collection_efficiency: 0.3
+    },
+    
+    reference_metrics: {
+        pair_rate: "10^6 pairs/s",
+        heralding_efficiency: 0.7,
+        fidelity: "> 0.99",
+        concurrence: "> 0.98",
+        violation_of_bell_inequality: "S > 2.7"
+    },
+    
+    applications: [
+        "quantum_key_distribution",
+        "quantum_teleportation",
+        "quantum_computing"
+    ],
+    
+    emoji: "🔮"
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SENSING BENCHMARKS  
+// ═══════════════════════════════════════════════════════════════════
+
+benchmark biosensor_detection_limit {
+    operation: "label_free_biomolecule_detection",
+    analyte: "DNA_oligonucleotides",
+    
+    sensor: {
+        type: "silicon_ring_resonator",
+        quality_factor: 50000,
+        sensitivity: "150 nm/RIU"
+    },
+    
+    reference_metrics: {
+        detection_limit: "1 femtomolar",
+        dynamic_range: "6 orders_of_magnitude",
+        response_time: "< 1 minute",
+        specificity: "single_base_mismatch"
+    },
+    
+    comparison: {
+        elisa: "picomolar detection",
+        photonic_advantage: "1000x more sensitive"
+    },
+    
+    emoji: "🔬"
+}
+
+benchmark lidar_resolution {
+    operation: "time_of_flight_ranging",
+    application: "autonomous_vehicle",
+    
+    system: {
+        laser: "905nm pulsed",
+        pulse_width: "5ns",
+        detector: "APD_array",
+        scanner: "mems_mirror"
+    },
+    
+    reference_metrics: {
+        range: "200m",
+        accuracy: "± 2cm",
+        resolution: "0.1°",
+        frame_rate: "10 Hz",
+        points_per_second: "1M"
+    },
+    
+    emoji: "📡"
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SYSTEM-LEVEL BENCHMARKS
+// ═══════════════════════════════════════════════════════════════════
+
+benchmark photonic_datacenter {
+    system: "optical_circuit_switched_fabric",
+    scale: "10000 servers",
+    
+    architecture: {
+        tor_switches: "photonic_mems",
+        spine: "wavelength_selective_switches",
+        fiber: "multi_core_fiber_ribbon"
+    },
+    
+    reference_metrics: {
+        bisection_bandwidth: "10 Pbps",
+        latency: "< 100ns",
+        power_consumption: "< 10MW",
+        pue: "1.1"  // Power Usage Effectiveness
+    },
+    
+    comparison_baseline: {
+        electrical_fabric: {
+            latency: "1μs",
+            power: "100MW"
+        },
+        photonic_savings: {
+            latency: "10x better",
+            energy: "10x reduction"
+        }
+    },
+    
+    emoji: "🏢"
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// BENCHMARK SUITE SUMMARY
+// ═══════════════════════════════════════════════════════════════════
+
+suite_metadata {
+    total_benchmarks: 11,
+    categories: {
+        computation: 3,
+        communication: 2,
+        quantum: 2,
+        sensing: 2,
+        system: 1
+    },
+    
+    performance_dimensions: [
+        "latency",
+        "throughput",
+        "energy_efficiency",
+        "accuracy",
+        "scalability"
+    ],
+    
+    comparison_baselines: [
+        "gpu",
+        "cpu",
+        "fpga",
+        "electrical_switch",
+        "classical_sensors"
+    ],
+    
+    photonic_advantages: {
+        speed: "1000-10000x",
+        energy: "100-1000x better",
+        bandwidth: "Tbps scale",
+        quantum: "physics_guaranteed"
+    },
+    
+    use_cases: [
+        "validate_photonic_hardware",
+        "compare_implementations", 
+        "optimize_designs",
+        "publish_research_results"
+    ],
+    
+    compliance: "IEEE_photonics_benchmarking_standard",
+    version: "1.0",
+    emoji: "📊🎯✨"
+}

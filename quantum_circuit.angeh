@@ -1,0 +1,347 @@
+(def-module quantum-circuit
+  "Quantum Circuit Operations for Angeh Reality Fabric
+   Quantum gates, measurements, and circuit simulation")
+
+(import type-system)
+(import collections)
+
+;; ============================================================
+;; QUANTUM STATE REPRESENTATION
+;; ============================================================
+(def-type QubitState
+  (struct (
+    (alpha complex)    ; Amplitude for |0⟩
+    (beta complex)     ; Amplitude for |1⟩
+    (is-measured bool)
+  )))
+
+(def-fn new-qubit (alpha beta)
+  "Create a new qubit in state α|0⟩ + β|1⟩"
+  (QubitState alpha beta false))
+
+(def-fn qubit-zero ()
+  "Create qubit in |0⟩ state"
+  (new-qubit 1.0 0.0))
+
+(def-fn qubit-one ()
+  "Create qubit in |1⟩ state"
+  (new-qubit 0.0 1.0))
+
+(def-fn qubit-plus ()
+  "Create qubit in |+⟩ state (1/√2(|0⟩ + |1⟩))"
+  (let ((inv-sqrt-2 (/ 1.0 (sqrt 2.0))))
+    (new-qubit inv-sqrt-2 inv-sqrt-2)))
+
+(def-fn qubit-minus ()
+  "Create qubit in |-⟩ state (1/√2(|0⟩ - |1⟩))"
+  (let ((inv-sqrt-2 (/ 1.0 (sqrt 2.0))))
+    (new-qubit inv-sqrt-2 (- inv-sqrt-2))))
+
+;; ============================================================
+;; QUANTUM GATES
+;; ============================================================
+
+;; --- Single Qubit Gates ---
+(def-fn gate-hadamard (qubit)
+  "Apply Hadamard gate: H = 1/√2 [[1, 1], [1, -1]]"
+  (let ((inv-sqrt-2 (/ 1.0 (sqrt 2.0)))
+        (new-alpha (* inv-sqrt-2 (+ (qubit.alpha qubit) (qubit.beta qubit))))
+        (new-beta  (* inv-sqrt-2 (- (qubit.alpha qubit) (qubit.beta qubit)))))
+    (new-qubit new-alpha new-beta)))
+
+(def-fn gate-pauli-x (qubit)
+  "Apply Pauli-X (NOT) gate: X = [[0, 1], [1, 0]]"
+  (new-qubit (qubit.beta qubit) (qubit.alpha qubit)))
+
+(def-fn gate-pauli-y (qubit)
+  "Apply Pauli-Y gate: Y = [[0, -i], [i, 0]]"
+  (new-qubit 
+    (* (complex 0 -1) (qubit.beta qubit))
+    (* (complex 0 1) (qubit.alpha qubit))))
+
+(def-fn gate-pauli-z (qubit)
+  "Apply Pauli-Z gate: Z = [[1, 0], [0, -1]]"
+  (new-qubit 
+    (qubit.alpha qubit)
+    (- (qubit.beta qubit))))
+
+(def-fn gate-phase (qubit phi)
+  "Apply phase gate: P(φ) = [[1, 0], [0, e^(iφ)]]"
+  (new-qubit
+    (qubit.alpha qubit)
+    (* (qubit.beta qubit) (exp (complex 0 phi)))))
+
+(def-fn gate-rx (qubit theta)
+  "Rotation around X-axis: RX(θ) = cos(θ/2)I - i*sin(θ/2)X"
+  (let ((half-theta (/ theta 2.0))
+        (cos-half (cos half-theta))
+        (sin-half (sin half-theta))
+        (minus-i (complex 0 -1)))
+    (new-qubit
+      (+ (* cos-half (qubit.alpha qubit))
+         (* minus-i sin-half (qubit.beta qubit)))
+      (+ (* minus-i sin-half (qubit.alpha qubit))
+         (* cos-half (qubit.beta qubit))))))
+
+(def-fn gate-ry (qubit theta)
+  "Rotation around Y-axis: RY(θ) = cos(θ/2)I - i*sin(θ/2)Y"
+  (let ((half-theta (/ theta 2.0))
+        (cos-half (cos half-theta))
+        (sin-half (sin half-theta)))
+    (new-qubit
+      (- (* cos-half (qubit.alpha qubit))
+         (* sin-half (qubit.beta qubit)))
+      (+ (* sin-half (qubit.alpha qubit))
+         (* cos-half (qubit.beta qubit))))))
+
+(def-fn gate-rz (qubit theta)
+  "Rotation around Z-axis: RZ(θ) = [[e^(-iθ/2), 0], [0, e^(iθ/2)]]"
+  (let ((half-theta (/ theta 2.0)))
+    (new-qubit
+      (* (qubit.alpha qubit) (exp (complex 0 (- half-theta))))
+      (* (qubit.beta qubit) (exp (complex 0 half-theta))))))
+
+(def-fn gate-t (qubit)
+  "Apply T gate: T = [[1, 0], [0, e^(iπ/4)]]"
+  (gate-phase qubit (/ pi 4.0)))
+
+(def-fn gate-s (qubit)
+  "Apply S gate: S = [[1, 0], [0, i]]"
+  (gate-phase qubit (/ pi 2.0)))
+
+;; --- Two Qubit Gates ---
+(def-type TwoQubitState
+  (struct (
+    (amp00 complex)  ; Amplitude for |00⟩
+    (amp01 complex)  ; Amplitude for |01⟩
+    (amp10 complex)  ; Amplitude for |10⟩
+    (amp11 complex)  ; Amplitude for |11⟩
+  )))
+
+(def-fn tensor-product (qubit1 qubit2)
+  "Compute tensor product of two qubits"
+  (TwoQubitState
+    (* (qubit1.alpha qubit1) (qubit2.alpha qubit2))
+    (* (qubit1.alpha qubit1) (qubit2.beta qubit2))
+    (* (qubit1.beta qubit1) (qubit2.alpha qubit2))
+    (* (qubit1.beta qubit1) (qubit2.beta qubit2))))
+
+(def-fn gate-cnot (control target)
+  "Apply CNOT gate: Flips target if control is |1⟩"
+  (let ((state (tensor-product control target)))
+    (TwoQubitState
+      (state.amp00 state)
+      (state.amp01 state)
+      (state.amp11 state)  ; Swapped
+      (state.amp10 state)))) ; Swapped
+
+(def-fn gate-cz (control target)
+  "Apply CZ gate: Phase flip target if control is |1⟩"
+  (let ((state (tensor-product control target)))
+    (TwoQubitState
+      (state.amp00 state)
+      (state.amp01 state)
+      (state.amp10 state)
+      (- (state.amp11 state)))))
+
+(def-fn gate-swap (qubit1 qubit2)
+  "Apply SWAP gate: Swaps states of two qubits"
+  (let ((state (tensor-product qubit1 qubit2)))
+    (TwoQubitState
+      (state.amp00 state)
+      (state.amp10 state)  ; Swapped
+      (state.amp01 state)  ; Swapped
+      (state.amp11 state))))
+
+;; ============================================================
+;; QUANTUM MEASUREMENT
+;; ============================================================
+(def-fn measure-qubit! (qubit)
+  "Measure qubit in computational basis, collapsing state"
+  (let ((prob-zero (* (magnitude (qubit.alpha qubit))
+                     (magnitude (qubit.alpha qubit)))))
+    (let ((outcome (if (< (random) prob-zero) 0 1)))
+      (set! (qubit.is-measured qubit) true)
+      (if (= outcome 0)
+        (begin
+          (set! (qubit.alpha qubit) 1.0)
+          (set! (qubit.beta qubit) 0.0)
+          0)
+        (begin
+          (set! (qubit.alpha qubit) 0.0)
+          (set! (qubit.beta qubit) 1.0)
+          1)))))
+
+(def-fn measure-probability (qubit outcome)
+  "Get probability of measuring specific outcome"
+  (if (= outcome 0)
+    (* (magnitude (qubit.alpha qubit))
+       (magnitude (qubit.alpha qubit)))
+    (* (magnitude (qubit.beta qubit))
+       (magnitude (qubit.beta qubit)))))
+
+;; ============================================================
+;; QUANTUM CIRCUIT
+;; ============================================================
+(def-type QuantumCircuit
+  (struct (
+    (num-qubits int)
+    (qubits (new-array))
+    (gates (new-qlist))
+    (measurements (new-qhash-map))
+  )))
+
+(def-fn new-quantum-circuit (n)
+  "Create quantum circuit with n qubits"
+  (let ((qubits (make-array n qubit-zero)))
+    (QuantumCircuit n qubits (new-qlist) (new-qhash-map))))
+
+(def-fn circuit-add-gate! (circuit gate-fn qubit-indices)
+  "Add gate to circuit"
+  (qlist-add! (circuit.gates circuit) (list gate-fn qubit-indices)))
+
+(def-fn circuit-h! (circuit idx)
+  "Add Hadamard gate to qubit at index"
+  (circuit-add-gate! circuit gate-hadamard (list idx)))
+
+(def-fn circuit-x! (circuit idx)
+  "Add Pauli-X gate to qubit at index"
+  (circuit-add-gate! circuit gate-pauli-x (list idx)))
+
+(def-fn circuit-y! (circuit idx)
+  "Add Pauli-Y gate to qubit at index"  
+  (circuit-add-gate! circuit gate-pauli-y (list idx)))
+
+(def-fn circuit-z! (circuit idx)
+  "Add Pauli-Z gate to qubit at index"
+  (circuit-add-gate! circuit gate-pauli-z (list idx)))
+
+(def-fn circuit-cnot! (circuit control-idx target-idx)
+  "Add CNOT gate"
+  (circuit-add-gate! circuit gate-cnot (list control-idx target-idx)))
+
+(def-fn circuit-execute! (circuit)
+  "Execute all gates in circuit"
+  (for-each gate-info (qlist->list (circuit.gates circuit))
+    (let ((gate-fn (car gate-info))
+          (indices (cadr gate-info)))
+      (if (= (len indices) 1)
+        ;; Single qubit gate
+        (let ((idx (car indices)))
+          (array-set! (circuit.qubits circuit) idx
+                     (gate-fn (array-get (circuit.qubits circuit) idx))))
+        ;; Two qubit gate
+        (let ((idx1 (car indices))
+              (idx2 (cadr indices)))
+          (let ((result (gate-fn 
+                         (array-get (circuit.qubits circuit) idx1)
+                         (array-get (circuit.qubits circuit) idx2))))
+            ;; Handle two-qubit state result
+            (void)))))))
+
+(def-fn circuit-measure! (circuit idx)
+  "Measure qubit at index"
+  (let ((result (measure-qubit! (array-get (circuit.qubits circuit) idx))))
+    (qhash-set! (circuit.measurements circuit) idx result)
+    result))
+
+(def-fn circuit-measure-all! (circuit)
+  "Measure all qubits"
+  (map (fn (idx) (circuit-measure! circuit idx))
+       (range 0 (circuit.num-qubits circuit))))
+
+;; ============================================================
+;; QUANTUM ALGORITHMS
+;; ============================================================
+(def-fn algorithm-bell-state ()
+  "Create Bell state (maximally entangled state)"
+  (let ((circuit (new-quantum-circuit 2)))
+    (circuit-h! circuit 0)
+    (circuit-cnot! circuit 0 1)
+    (circuit-execute! circuit)
+    circuit))
+
+(def-fn algorithm-teleportation (qubit-to-teleport)
+  "Quantum teleportation protocol"
+  (let ((circuit (new-quantum-circuit 3)))
+    ;; Create Bell pair between qubits 1 and 2
+    (circuit-h! circuit 1)
+    (circuit-cnot! circuit 1 2)
+    ;; Alice's operations
+    (circuit-cnot! circuit 0 1)
+    (circuit-h! circuit 0)
+    ;; Measurements
+    (let ((m0 (circuit-measure! circuit 0))
+          (m1 (circuit-measure! circuit 1)))
+      ;; Bob's corrections based on measurements
+      (when (= m1 1) (circuit-x! circuit 2))
+      (when (= m0 1) (circuit-z! circuit 2))
+      (circuit-execute! circuit)
+      circuit)))
+
+(def-fn algorithm-grover-iteration (circuit oracle)
+  "Single Grover iteration for search"
+  ;; Apply oracle
+  (oracle circuit)
+  ;; Apply diffusion operator
+  (for-each idx (range 0 (circuit.num-qubits circuit))
+    (circuit-h! circuit idx))
+  (for-each idx (range 0 (circuit.num-qubits circuit))
+    (circuit-x! circuit idx))
+  ;; Multi-controlled Z
+  (circuit-z! circuit (- (circuit.num-qubits circuit) 1))
+  (for-each idx (range 0 (circuit.num-qubits circuit))
+    (circuit-x! circuit idx))
+  (for-each idx (range 0 (circuit.num-qubits circuit))
+    (circuit-h! circuit idx))
+  circuit)
+
+;; ============================================================
+;; QUANTUM ERROR CORRECTION
+;; ============================================================
+(def-fn encode-bit-flip-code (qubit)
+  "Encode qubit using 3-qubit bit-flip code"
+  (let ((circuit (new-quantum-circuit 3)))
+    ;; Copy qubit state to first qubit (simplified)
+    (circuit-cnot! circuit 0 1)
+    (circuit-cnot! circuit 0 2)
+    (circuit-execute! circuit)
+    circuit))
+
+(def-fn correct-bit-flip (circuit)
+  "Correct bit-flip errors using syndrome measurement"
+  ;; Syndrome measurements
+  (circuit-cnot! circuit 0 3)
+  (circuit-cnot! circuit 1 3)
+  (circuit-cnot! circuit 0 4)
+  (circuit-cnot! circuit 2 4)
+  ;; Correction based on syndrome
+  (let ((s1 (circuit-measure! circuit 3))
+        (s2 (circuit-measure! circuit 4)))
+    (cond
+      ((and (= s1 1) (= s2 0)) (circuit-x! circuit 0))
+      ((and (= s1 1) (= s2 1)) (circuit-x! circuit 1))
+      ((and (= s1 0) (= s2 1)) (circuit-x! circuit 2))
+      (else (void))))
+  (circuit-execute! circuit)
+  circuit)
+
+;; Export public API
+(export
+  ;; Qubit creation
+  new-qubit qubit-zero qubit-one qubit-plus qubit-minus
+  ;; Single qubit gates
+  gate-hadamard gate-pauli-x gate-pauli-y gate-pauli-z
+  gate-phase gate-rx gate-ry gate-rz gate-t gate-s
+  ;; Two qubit gates
+  gate-cnot gate-cz gate-swap
+  ;; Measurement
+  measure-qubit! measure-probability
+  ;; Circuits
+  new-quantum-circuit circuit-add-gate!
+  circuit-h! circuit-x! circuit-y! circuit-z! circuit-cnot!
+  circuit-execute! circuit-measure! circuit-measure-all!
+  ;; Algorithms
+  algorithm-bell-state algorithm-teleportation algorithm-grover-iteration
+  ;; Error correction
+  encode-bit-flip-code correct-bit-flip)

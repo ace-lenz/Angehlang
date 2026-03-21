@@ -1,0 +1,483 @@
+(def-module optimizer
+  "Advanced Dot Optimization Engine for Angeh Reality Fabric
+   Performance profiling, entanglement optimization, and adaptive resource allocation")
+
+(import type-system)
+(import collections)
+(import quantum-ai)
+(import concurrency)
+
+;; ============================================================
+;; DOT OPTIMIZATION PROFILE
+;; ============================================================
+(def-type DotProfile
+  (struct (
+    (dot-id symbol)
+    (execution-count int)
+    (total-execution-time float)
+    (average-execution-time float)
+    (memory-usage int)
+    (entanglement-cost float)
+    (hot-path bool)
+    (optimization-level int)  ; 0-3
+  )))
+
+(def-fn profile-new (dot)
+  "Create performance profile for dot"
+  (DotProfile
+    (dot.quantum-id dot)
+    0
+    0.0
+    0.0
+    0
+    0.0
+    false
+    0))
+
+(def-fn profile-record-execution! (profile execution-time memory-used)
+  "Record execution metrics"
+  (set! (profile.execution-count profile) (+ (profile.execution-count profile) 1))
+  (set! (profile.total-execution-time profile) 
+        (+ (profile.total-execution-time profile) execution-time))
+  (set! (profile.average-execution-time profile)
+        (/ (profile.total-execution-time profile) (profile.execution-count profile)))
+  (set! (profile.memory-usage profile) memory-used)
+  ;; Mark as hot path if executed frequently
+  (when (> (profile.execution-count profile) 100)
+    (set! (profile.hot-path profile) true)))
+
+;; ============================================================
+;; ENTANGLEMENT OPTIMIZATION
+;; ============================================================
+(def-type EntanglementCluster
+  (struct (
+    (cluster-id symbol)
+    (member-dots (new-qset))
+    (entanglement-strength (new-qhash-map))  ; dot-pair -> strength
+    (total-weight float)
+    (locality-score float)
+  )))
+
+(def-fn cluster-new (dot)
+  "Create new entanglement cluster"
+  (let ((cluster (EntanglementCluster
+                   (gensym 'cluster)
+                   (new-qset)
+                   (new-qhash-map)
+                   0.0
+                   1.0)))
+    (qset-add! (cluster.member-dots cluster) (dot.quantum-id dot))
+    cluster))
+
+(def-fn cluster-add-dot! (cluster dot strength)
+  "Add dot to entanglement cluster"
+  (qset-add! (cluster.member-dots cluster) (dot.quantum-id dot))
+  (set! (cluster.total-weight cluster) 
+        (+ (cluster.total-weight cluster) strength)))
+
+(def-fn cluster-merge! (cluster1 cluster2)
+  "Merge two entanglement clusters"
+  ;; Merge member dots
+  (for-each dot-id (qset->list (cluster2.member-dots cluster2))
+    (qset-add! (cluster1.member-dots cluster1) dot-id))
+  ;; Merge entanglement strengths
+  (for-each pair-key (qhash-keys (cluster2.entanglement-strength cluster2))
+    (match (qhash-get (cluster2.entanglement-strength cluster2) pair-key)
+      ((Some strength)
+        (qhash-set! (cluster1.entanglement-strength cluster1) pair-key strength))
+      (Nothing (void))))
+  ;; Update weights
+  (set! (cluster1.total-weight cluster1)
+        (+ (cluster1.total-weight cluster1) (cluster2.total-weight cluster2))))
+
+(def-fn optimize-entanglement-layout (dots)
+  "Optimize physical layout of entangled dots for locality"
+  (let ((clusters (new-qlist))
+        (dot-to-cluster (new-qhash-map)))
+    ;; Build entanglement clusters
+    (for-each dot dots
+      (let ((cluster (cluster-new dot)))
+        (qlist-add! clusters cluster)
+        (qhash-set! dot-to-cluster (dot.quantum-id dot) cluster)))
+    
+    ;; Merge strongly entangled dots into same cluster
+    (for-each dot dots
+      (for-each entangled-id (qhash-keys (dot.entanglements dot))
+        (match (qhash-get (dot.entanglements dot) entangled-id)
+          ((Some strength)
+            (when (> strength 0.7)  ; Strong entanglement threshold
+              (match (qhash-get dot-to-cluster (dot.quantum-id dot))
+                ((Some cluster1)
+                  (match (qhash-get dot-to-cluster entangled-id)
+                    ((Some cluster2)
+                      (when (not (eq? cluster1 cluster2))
+                        (cluster-merge! cluster1 cluster2)))
+                    (Nothing (void))))
+                (Nothing (void)))))
+          (Nothing (void)))))
+    
+    ;; Return optimized clusters
+    clusters))
+
+;; ============================================================
+;; ADAPTIVE QUANTIZATION
+;; ============================================================
+(def-type QuantizationStrategy
+  (struct (
+    (target-device symbol)  ; 'micro | 'mobile | 'desktop | 'cloud
+    (available-memory int)
+    (available-compute float)
+    (network-bandwidth float)
+    (dot-size-limit int)
+    (compression-level int)  ; 0-9
+  )))
+
+(def-fn quantize-for-device (device)
+  "Create quantization strategy for target device"
+  (match device
+    ('micro
+      (QuantizationStrategy 'micro 1024 0.1 0.01 64 9))
+    ('mobile
+      (QuantizationStrategy 'mobile (* 1024 1024) 1.0 1.0 512 7))
+    ('desktop
+      (QuantizationStrategy 'desktop (* 1024 1024 1024) 10.0 100.0 4096 5))
+    ('cloud
+      (QuantizationStrategy 'cloud (* 1024 1024 1024 1024) 1000.0 10000.0 999999 0))
+    (else
+      (QuantizationStrategy 'unknown 1024 1.0 1.0 512 5))))
+
+(def-fn quantize-dot (dot strategy)
+  "Quantize dot according to strategy"
+  (let ((original-size (estimate-dot-size dot))
+        (target-size (strategy.dot-size-limit strategy)))
+    (if (> original-size target-size)
+      ;; Need to compress
+      (compress-dot-content dot (strategy.compression-level strategy) target-size)
+      ;; Already fits
+      dot)))
+
+(def-fn estimate-dot-size (dot)
+  "Estimate size of dot in bytes"
+  ;; Simplified estimation
+  1024)
+
+(def-fn compress-dot-content (dot level target-size)
+  "Compress dot content to fit target size"
+  ;; Simplified compression
+  (let ((compressed-content (compress-data (dot.content dot) level)))
+    (create-quantum-dot compressed-content)))
+
+(def-fn compress-data (data level)
+  "Compress data at specified level"
+  data)
+
+;; ============================================================
+;; AUTOMATIC LOAD BALANCING
+;; ============================================================
+(def-type LoadBalancer
+  (struct (
+    (workers (new-qlist))
+    (worker-loads (new-qhash-map))   ; worker-id -> current load
+    (worker-capacity (new-qhash-map)) ; worker-id -> max capacity
+    (assignment-strategy symbol)     ; 'round-robin | 'least-loaded | 'affinity
+    (current-round int)
+  )))
+
+(def-fn balancer-new (workers strategy)
+  "Create new load balancer"
+  (let ((balancer (LoadBalancer
+                    (new-qlist)
+                    (new-qhash-map)
+                    (new-qhash-map)
+                    strategy
+                    0)))
+    (for-each worker workers
+      (qlist-add! (balancer.workers balancer) worker)
+      (qhash-set! (balancer.worker-loads balancer) worker 0.0)
+      (qhash-set! (balancer.worker-capacity balancer) worker 1.0))
+    balancer))
+
+(def-fn balancer-assign-dot (balancer dot)
+  "Assign dot to optimal worker"
+  (match (balancer.assignment-strategy balancer)
+    ('round-robin
+      (let ((worker-idx (mod (balancer.current-round balancer)
+                            (qlist-size (balancer.workers balancer)))))
+        (set! (balancer.current-round balancer) 
+              (+ (balancer.current-round balancer) 1))
+        (qlist-get (balancer.workers balancer) worker-idx)))
+    
+    ('least-loaded
+      (balancer-find-least-loaded balancer))
+    
+    ('affinity
+      (balancer-find-affinity-worker balancer dot))
+    
+    (else (qlist-get (balancer.workers balancer) 0))))
+
+(def-fn balancer-find-least-loaded (balancer)
+  "Find worker with least load"
+  (let ((min-load 999999.0)
+        (best-worker Nothing))
+    (for-each worker (qlist->list (balancer.workers balancer))
+      (match (qhash-get (balancer.worker-loads balancer) worker)
+        ((Some load)
+          (when (< load min-load)
+            (set! min-load load)
+            (set! best-worker (Some worker))))
+        (Nothing (void))))
+    (match best-worker
+      ((Some w) w)
+      (Nothing (qlist-get (balancer.workers balancer) 0)))))
+
+(def-fn balancer-find-affinity-worker (balancer dot)
+  "Find worker with affinity to dot's entanglements"
+  ;; Find worker that already has entangled dots
+  (balancer-find-least-loaded balancer))
+
+(def-fn balancer-update-load! (balancer worker new-load)
+  "Update worker load"
+  (qhash-set! (balancer.worker-loads balancer) worker new-load))
+
+;; ============================================================
+;; DOT FUSION OPTIMIZATION
+;; ============================================================
+(def-fn optimize-dot-fusion (dots)
+  "Fuse frequently co-executing dots"
+  (let ((fusion-candidates (new-qlist))
+        (execution-pairs (new-qhash-map)))
+    ;; Track which dots execute together
+    (for-each dot1 dots
+      (for-each dot2 dots
+        (when (not (eq? dot1 dot2))
+          (let ((pair-key (make-pair-key (dot1.quantum-id dot1) 
+                                        (dot2.quantum-id dot2))))
+            (when (frequently-coexecute? dot1 dot2)
+              (qlist-add! fusion-candidates (list dot1 dot2)))))))
+    
+    ;; Fuse candidate pairs
+    (qlist-map fusion-candidates
+      (fn (pair)
+        (fuse-dots (car pair) (cadr pair))))))
+
+(def-fn frequently-coexecute? (dot1 dot2)
+  "Check if two dots frequently execute together"
+  ;; Simplified heuristic
+  (> (calculate-coexecution-frequency dot1 dot2) 0.8))
+
+(def-fn calculate-coexecution-frequency (dot1 dot2)
+  "Calculate frequency of co-execution"
+  0.5)
+
+(def-fn fuse-dots (dot1 dot2)
+  "Fuse two dots into single optimized dot"
+  (let ((fused-content (list (dot1.content dot1) (dot2.content dot2))))
+    (create-quantum-dot fused-content)))
+
+(def-fn make-pair-key (id1 id2)
+  "Create unique key for dot pair"
+  (gensym 'pair))
+
+;; ============================================================
+;; PROGRESSIVE ENHANCEMENT
+;; ============================================================
+(def-type EnhancementLevel
+  (struct (
+    (level int)  ; 0-4
+    (features (new-qset))
+    (resource-requirements (new-qhash-map))
+    (fallback-level int)
+  )))
+
+(def-fn enhance-level-create (level)
+  "Create enhancement level"
+  (match level
+    (0 ; Minimal - runs everywhere
+      (let ((features (new-qset)))
+        (qset-add! features 'basic-execution)
+        (qset-add! features 'simple-entanglement)
+        (EnhancementLevel 0 features (new-qhash-map) 0)))
+    
+    (1 ; Basic - mobile devices
+      (let ((features (new-qset)))
+        (qset-add! features 'basic-execution)
+        (qset-add! features 'simple-entanglement)
+        (qset-add! features 'limited-parallelism)
+        (qset-add! features 'basic-ai)
+        (EnhancementLevel 1 features (new-qhash-map) 0)))
+    
+    (2 ; Standard - desktop
+      (let ((features (new-qset)))
+        (qset-add! features 'full-execution)
+        (qset-add! features 'quantum-entanglement)
+        (qset-add! features 'parallel-execution)
+        (qset-add! features 'advanced-ai)
+        (qset-add! features 'optimization)
+        (EnhancementLevel 2 features (new-qhash-map) 1)))
+    
+    (3 ; Advanced - workstation
+      (let ((features (new-qset)))
+        (qset-add! features 'full-execution)
+        (qset-add! features 'quantum-entanglement)
+        (qset-add! features 'massive-parallelism)
+        (qset-add! features 'multi-scale-ai)
+        (qset-add! features 'aggressive-optimization)
+        (qset-add! features 'reality-integration)
+        (EnhancementLevel 3 features (new-qhash-map) 2)))
+    
+    (4 ; Maximum - cloud/cluster
+      (let ((features (new-qset)))
+        (qset-add! features 'unlimited-execution)
+        (qset-add! features 'distributed-entanglement)
+        (qset-add! features 'infinite-parallelism)
+        (qset-add! features 'evolutionary-ai)
+        (qset-add! features 'reality-synthesis)
+        (qset-add! features 'global-coordination)
+        (EnhancementLevel 4 features (new-qhash-map) 3)))
+    
+    (else (enhance-level-create 0))))
+
+(def-fn optimize-for-enhancement-level (dot level)
+  "Optimize dot for specific enhancement level"
+  (let ((enhancement (enhance-level-create level)))
+    (if (qset-has? (enhancement.features enhancement) 'aggressive-optimization)
+      ;; Apply all optimizations
+      (apply-all-optimizations dot)
+      ;; Apply basic optimizations
+      (apply-basic-optimizations dot))))
+
+(def-fn apply-all-optimizations (dot)
+  "Apply all available optimizations"
+  dot)
+
+(def-fn apply-basic-optimizations (dot)
+  "Apply basic optimizations"
+  dot)
+
+;; ============================================================
+;; PERFORMANCE MONITORING
+;; ============================================================
+(def-type PerformanceMonitor
+  (struct (
+    (metrics (new-qhash-map))
+    (samples (new-qlist))
+    (alert-thresholds (new-qhash-map))
+    (optimization-triggers (new-qlist))
+  )))
+
+(def-fn monitor-new ()
+  "Create performance monitor"
+  (PerformanceMonitor
+    (new-qhash-map)
+    (new-qlist)
+    (new-qhash-map)
+    (new-qlist)))
+
+(def-fn monitor-record-metric! (monitor metric-name value)
+  "Record performance metric"
+  (qhash-set! (monitor.metrics monitor) metric-name value)
+  (qlist-add! (monitor.samples monitor) (list metric-name value (time-now))))
+
+(def-fn monitor-check-thresholds! (monitor)
+  "Check if any thresholds exceeded"
+  (for-each threshold-key (qhash-keys (monitor.alert-thresholds monitor))
+    (match (qhash-get (monitor.metrics monitor) threshold-key)
+      ((Some current-value)
+        (match (qhash-get (monitor.alert-thresholds monitor) threshold-key)
+          ((Some threshold)
+            (when (> current-value threshold)
+              (trigger-optimization! monitor threshold-key)))
+          (Nothing (void))))
+      (Nothing (void)))))
+
+(def-fn trigger-optimization! (monitor metric-name)
+  "Trigger optimization based on metric"
+  (qlist-add! (monitor.optimization-triggers monitor) 
+              (list metric-name (time-now))))
+
+;; ============================================================
+;; CACHE OPTIMIZATION
+;; ============================================================
+(def-type DotCache
+  (struct (
+    (hot-cache (new-qhash-map))   ; Frequently accessed dots
+    (warm-cache (new-qhash-map))  ; Occasionally accessed
+    (cold-storage (new-qhash-map)) ; Rarely accessed
+    (access-counts (new-qhash-map))
+    (eviction-policy symbol)  ; 'lru | 'lfu | 'adaptive
+  )))
+
+(def-fn cache-new (policy)
+  "Create dot cache"
+  (DotCache
+    (new-qhash-map)
+    (new-qhash-map)
+    (new-qhash-map)
+    (new-qhash-map)
+    policy))
+
+(def-fn cache-get (cache dot-id)
+  "Get dot from cache, promoting if necessary"
+  (let ((result Nothing))
+    ;; Check hot cache first
+    (match (qhash-get (cache.hot-cache cache) dot-id)
+      ((Some dot) (set! result (Some dot)))
+      (Nothing
+        ;; Check warm cache
+        (match (qhash-get (cache.warm-cache cache) dot-id)
+          ((Some dot)
+            (cache-promote-to-hot! cache dot-id dot)
+            (set! result (Some dot)))
+          (Nothing
+            ;; Check cold storage
+            (match (qhash-get (cache.cold-storage cache) dot-id)
+              ((Some dot)
+                (cache-promote-to-warm! cache dot-id dot)
+                (set! result (Some dot)))
+              (Nothing (void)))))))
+    ;; Increment access count
+    (cache-increment-access! cache dot-id)
+    result))
+
+(def-fn cache-put! (cache dot-id dot)
+  "Put dot in cache"
+  (qhash-set! (cache.warm-cache cache) dot-id dot)
+  (cache-increment-access! cache dot-id))
+
+(def-fn cache-promote-to-hot! (cache dot-id dot)
+  "Promote dot to hot cache"
+  (qhash-delete! (cache.warm-cache cache) dot-id)
+  (qhash-set! (cache.hot-cache cache) dot-id dot))
+
+(def-fn cache-promote-to-warm! (cache dot-id dot)
+  "Promote dot to warm cache"
+  (qhash-delete! (cache.cold-storage cache) dot-id)
+  (qhash-set! (cache.warm-cache cache) dot-id dot))
+
+(def-fn cache-increment-access! (cache dot-id)
+  "Increment access count for dot"
+  (match (qhash-get (cache.access-counts cache) dot-id)
+    ((Some count)
+      (qhash-set! (cache.access-counts cache) dot-id (+ count 1)))
+    (Nothing
+      (qhash-set! (cache.access-counts cache) dot-id 1))))
+
+;; Export public API
+(export
+  ;; Profiling
+  profile-new profile-record-execution!
+  ;; Entanglement Optimization
+  cluster-new cluster-add-dot! cluster-merge!
+  optimize-entanglement-layout
+  ;; Quantization
+  quantize-for-device quantize-dot
+  ;; Load Balancing
+  balancer-new balancer-assign-dot balancer-update-load!
+  ;; Dot Fusion
+  optimize-dot-fusion
+  ;; Progressive Enhancement
+  enhance-level-create optimize-for-enhancement-level
+  ;; Performance Monitoring
+  monitor-new monitor-record-metric! monitor-check-thresholds!
+  ;; Caching
+  cache-new cache-get cache-put!)

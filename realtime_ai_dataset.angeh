@@ -1,0 +1,47 @@
+{
+  "realtime_ai_dataset": {
+    "version": "1.0",
+    "description": "Dataset for Real-time AI, Streaming, and Low-latency inference mapped to Angeh Lang dot patterns",
+    "core_concepts": {
+      "realtime": "⚡⏱️ (Lightning timer) - Instant response",
+      "streaming": "🌊💬 (Wave chat) - Token-by-token output",
+      "low_latency": "⚡📉 (Lightning down) - Minimal delay",
+      "edge_inference": "📍🤖 (Location robot) - Local processing",
+      "async_processing": "🔄⚡ (Cycle lightning) - Non-blocking execution"
+    },
+    "streaming_apis": {
+      "openai_streaming": "🌊🤖 (Wave robot) - OpenAI stream",
+      "anthropic_streaming": "🌊🎭 (Wave theater) - Claude stream",
+      "gemini_streaming": "🌊♊ (Wave twins) - Gemini stream",
+      "websocket": "🔗🌊 (Link wave) - WebSocket connection",
+      "server_sent_events": "📡🌊 (Dish wave) - SSE"
+    },
+    "voice_realtime": {
+      "openai_realtime_api": "🎤⚡ (Mic lightning) - OpenAI Realtime",
+      "elevenlabs_streaming": "🗣️🌊 (Speaking wave) - ElevenLabs stream",
+      "whisper_realtime": "👂⚡ (Ear lightning) - Live transcription",
+      "deepgram": "🎤📊 (Mic chart) - Deepgram",
+      "assemblyai": "🔊📝 (Sound write) - AssemblyAI"
+    },
+    "video_realtime": {
+      "live_video_analysis": "🎥👀 (Camera eye) - Real-time vision",
+      "frame_processing": "🖼️⚡ (Picture lightning) - Per-frame analysis",
+      "avatar_streaming": "👤🌊 (Person wave) - Live avatars",
+      "lip_sync": "👄🔊 (Lip sound) - Real-time lip sync"
+    },
+    "optimization_techniques": {
+      "quantization": "📦📉 (Container down) - Reduce precision",
+      "speculative_decoding": "🔮⚡ (Crystal lightning) - Parallel drafts",
+      "kv_cache": "💾⚡ (Storage lightning) - Key-value caching",
+      "continuous_batching": "📦🔄 (Container cycle) - Dynamic batching",
+      "flash_attention": "⚡👀 (Lightning eye) - Fast attention"
+    },
+    "edge_deployment": {
+      "onnx_runtime": "📦⚡ (Container lightning) - ONNX Runtime",
+      "tensorrt": "🚀📦 (Rocket container) - TensorRT",
+      "core_ml": "🍎🧠 (Apple brain) - Apple CoreML",
+      "webgpu": "🌐⚡ (Globe lightning) - WebGPU inference",
+      "wasm": "📦🌐 (Container globe) - WebAssembly"
+    }
+  }
+}

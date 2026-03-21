@@ -31,6 +31,12 @@ Housed firmly within the core distribution:
 ### 3. The Dataset (`dataset/`)
 Hundreds of revolutionary theoretical modules ranging from 4D Quantization layers, Photonic Neural Networks, and Synthetic Bio-Digital Organs, rigorously deduplicated and ready to be implemented into the core engine logic.
 
+## 🧱 The Self-Hosted OS Pipeline
+Angehlang is proudly a **fully self-hosted OS macro-engine**.
+By engineering our Native Memory Managers (`memory.angeh`), Distributed Actor Systems (`actors.angeh`), and SIMD Tensor Backpropagation loops natively utilizing pure S-expressions, we explicitly decoupled from the legacy C# Architectonic dependencies. 
+
+The core Angehlang codebase can deterministically parse, compile, and execute its own internal Architectonic ecosystem structurally using `build_bootstrap.angeh`. Continuous Integration explicitly protects these self-hosting AST evaluation determinisms globally on every commit.
+
 ---
 
 ## 💻 Getting Started

@@ -1,786 +1,361 @@
 """
-77D Real AI Engine - FULLY ENHANCED
-Quantum-Aware Training | Distributed Training | Model Serving API | Streaming Inference | Dynamic Scaling
+Angeh Hardware Optimizer - Comprehensive Hardware Detection & Optimization
+Auto-detects CPU, GPU, NPU, QPU and optimally distributes quantum dot workloads
 
-Complete integration of Angeh Reality Fabric with production-ready features
+Progressive Enhancement: S (Quantum+) → A (Workstation) → B (Desktop) → C (Mobile) → D (IoT)
 """
 
-import json
-import torch
-import torch.nn as nn
-import torch.distributed as dist
-import torch.multiprocessing as mp
-from torch.nn.parallel import DistributedDataParallel as DDP
-from torch.utils.data import Dataset, DataLoader, DistributedSampler
-from pathlib import Path
+import platform
 import os
-import sys
-from typing import List, Dict, Any, Optional, Tuple
-import numpy as np
-from flask import Flask, request, jsonify
-import threading
-import argparse
+import psutil
+import json
+from typing import Dict, List, Optional, Tuple
+from dataclasses import dataclass, field
+from enum import Enum
 
-# Try to import quantum bridge
+# Try importing hardware-specific libraries
 try:
-    from angeh_bridge import QuantumDot, AngehRuntimeBridge, QuantumState
-    QUANTUM_AVAILABLE = True
-except ImportError:
-    QUANTUM_AVAILABLE = False
-    print("Warning: angeh_bridge not available. Quantum features disabled.")
+    import torch
+    TORCH_AVAILABLE = True
+except:
+    TORCH_AVAILABLE = False
+
+try:
+    import cpuinfo
+    CPUINFO_AVAILABLE = True
+except:
+    CPUINFO_AVAILABLE = False
 
 # ============================================================
-# DOT PARSER (Enhanced with Quantum Support)
+# HARDWARE CLASSES
 # ============================================================
-class DotParser:
-    """Parse dots with quantum awareness"""
-    def __init__(self, quantum_enabled=False):
-        self.quantum_enabled = quantum_enabled and QUANTUM_AVAILABLE
-        self.runtime = AngehRuntimeBridge() if self.quantum_enabled else None
+
+class HardwareClass(Enum):
+    """Progressive enhancement classes"""
+    S = "quantum_plus"      # Quantum+ systems
+    A = "workstation"       # High-end workstations
+    B = "desktop"           # Standard desktop/laptop
+    C = "mobile"            # Mobile devices
+    D = "iot_edge"          # IoT/Edge devices
+
+@dataclass
+class CPUProfile:
+    """CPU detection and profiling"""
+    cores: int
+    threads: int
+    architecture: str  # 'x86', 'ARM', 'RISC-V', 'Quantum'
+    extensions: List[str] = field(default_factory=list)
+    cache_l1: int = 0
+    cache_l2: int = 0
+    cache_l3: int = 0
+    frequency_ghz: float = 0.0
+    quantum_bits: Optional[int] = None
+
+@dataclass
+class GPUProfile:
+    """GPU detection and profiling"""
+    vendor: str  # 'NVIDIA', 'AMD', 'Intel', 'Apple', 'Custom'
+    model: str
+    vram_mb: int
+    compute_units: int
+    ray_tracing: bool = False
+    tensor_cores: int = 0
+    quantum_accelerator: bool = False
+    cuda_available: bool = False
+    opencl_available: bool = False
+
+@dataclass
+class NPUProfile:
+    """NPU/TPU detection"""
+    available: bool
+    type: str  # 'GoogleTPU', 'AppleNeural', 'HuaweiNPU', 'Custom'
+    ops_per_second: int = 0
+    precision: str = 'FP32'  # 'INT8', 'FP16', 'BF16', 'FP32'
+
+@dataclass
+class MemoryProfile:
+    """Memory and storage profiling"""
+    total_ram_mb: int
+    available_ram_mb: int
+    speed_mhz: int = 0
+    type: str = 'Unknown'  # 'DDR4', 'DDR5', 'HBM', 'Quantum'
+
+@dataclass
+class QuantumProfile:
+    """Quantum co-processor (if available)"""
+    qubits: int = 0
+    coherence_time_us: float = 0.0
+    topology: str = 'None'
+    error_rate: float = 0.0
+
+@dataclass
+class CompleteHardwareProfile:
+    """Complete system hardware profile"""
+    cpu: CPUProfile
+    gpu: Optional[GPUProfile]
+    npu: NPUProfile
+    memory: MemoryProfile
+    quantum: QuantumProfile
+    hardware_class: HardwareClass
     
-    def parse_line(self, line: str):
-        """Parse line with optional quantum dot creation"""
-        line = line.strip()
-        if not line:
-            return [], None, None
-        
-        vector = None
-        tokens = []
-        quantum_dot = None
-        
-        # Try JSON first
-        try:
-            if line.startswith('{') and line.endswith('}'):
-                obj = json.loads(line)
-                if isinstance(obj, dict):
-                    if "vector" in obj:
-                        vector = [float(v) for v in obj["vector"]]
-                        if "text" in obj:
-                            tokens = str(obj["text"]).split()
-                        else:
-                            tokens = [str(v) for v in obj["vector"]]
-                        
-                        # Create quantum dot if enabled
-                        if self.quantum_enabled:
-                            quantum_dot = self.runtime.create_quantum_dot(obj)
-                        
-                        return tokens, vector, quantum_dot
-                    tokens = [str(v) for v in obj.values()]
-                    return tokens, None, None
-        except (json.JSONDecodeError, ValueError):
-            pass
-        
-        # CSV / space-separated numbers
-        parts = line.replace(',', ' ').split()
-        try:
-            float_parts = [float(p) for p in parts]
-            vector = float_parts
-            tokens = parts
-            
-            if self.quantum_enabled:
-                quantum_dot = self.runtime.create_quantum_dot({
-                    'type': 'numeric_vector',
-                    'values': vector
-                })
-            
-            return tokens, vector, quantum_dot
-        except ValueError:
-            pass
-        
-        # Plain tokens
-        tokens = line.split()
-        
-        if self.quantum_enabled:
-            quantum_dot = self.runtime.create_quantum_dot({
-                'type': 'text',
-                'content': line
-            })
-        
-        return tokens, None, quantum_dot
+    # Capabilities
+    max_parallel_dots: int = 1000
+    max_quantum_loops: int = 100
+    real_time_fps: int = 30
 
 # ============================================================
-# QUANTUM-AWARE COMPONENTS
+# HARDWARE DETECTION
 # ============================================================
-class QuantumEmbedding(nn.Module):
-    """Quantum-enhanced embedding layer"""
-    def __init__(self, vocab_size, d_model, enable_superposition=True):
-        super().__init__()
-        self.embedding = nn.Embedding(vocab_size, d_model)
-        self.enable_superposition = enable_superposition
-        self.quantum_projection = nn.Linear(d_model, d_model) if enable_superposition else None
-        self.superposition_gate = nn.Parameter(torch.zeros(1))
+
+class HardwareOptimizer:
+    """Comprehensive hardware detection and optimization"""
     
-    def forward(self, x, quantum_enhance=False):
-        """Forward pass with optional quantum enhancement"""
-        emb = self.embedding(x)
-        
-        if self.enable_superposition and quantum_enhance and self.quantum_projection is not None:
-            # Apply quantum projection with learnable gate
-            quantum_emb = self.quantum_projection(emb)
-            gate_value = torch.sigmoid(self.superposition_gate)
-            emb = emb * (1 - gate_value) + quantum_emb * gate_value
-        
-        return emb
-
-class QuantumAttention(nn.Module):
-    """Quantum-enhanced multi-head attention"""
-    def __init__(self, d_model, nhead, entanglement_strength=0.1, dropout=0.1):
-        super().__init__()
-        self.attention = nn.MultiheadAttention(d_model, nhead, dropout=dropout, batch_first=False)
-        self.entanglement_strength = entanglement_strength
-        self.entanglement_gate = nn.Linear(d_model, d_model)
-        self.entanglement_norm = nn.LayerNorm(d_model)
+    def __init__(self):
+        self.profile = self.detect_all_hardware()
+        self.classify_hardware()
+        self.calculate_capabilities()
     
-    def forward(self, x, attn_mask=None, key_padding_mask=None, enable_entanglement=False):
-        """Attention with optional entanglement"""
-        attn_out, attn_weights = self.attention(x, x, x, attn_mask=attn_mask,
-                                                key_padding_mask=key_padding_mask)
+    def detect_all_hardware(self) -> CompleteHardwareProfile:
+        """Detect all available hardware"""
+        cpu = self.detect_cpu()
+        gpu = self.detect_gpu()
+        npu = self.detect_npu()
+        memory = self.detect_memory()
+        quantum = self.detect_quantum()
         
-        if enable_entanglement:
-            # Apply entanglement transformation
-            entangled = self.entanglement_gate(attn_out)
-            entangled = self.entanglement_norm(entangled)
-            attn_out = attn_out + self.entanglement_strength * entangled
-        
-        return attn_out, attn_weights
-
-# ============================================================
-# ENHANCED MOE LAYER
-# ============================================================
-class Expert(nn.Module):
-    """Single expert network"""
-    def __init__(self, d_model, d_ff, dropout=0.1):
-        super().__init__()
-        self.net = nn.Sequential(
-            nn.Linear(d_model, d_ff),
-            nn.GELU(),
-            nn.Dropout(dropout),
-            nn.Linear(d_ff, d_model),
-            nn.Dropout(dropout)
+        return CompleteHardwareProfile(
+            cpu=cpu,
+            gpu=gpu,
+            npu=npu,
+            memory=memory,
+            quantum=quantum,
+            hardware_class=HardwareClass.B  # Will be updated
         )
     
-    def forward(self, x):
-        return self.net(x)
-
-class MoELayer(nn.Module):
-    """Mixture of Experts with quantum routing"""
-    def __init__(self, d_model, num_experts=8, d_ff=512, k=2, quantum_routing=False, dropout=0.1):
-        super().__init__()
-        self.num_experts = num_experts
-        self.k = min(k, num_experts)
-        self.quantum_routing = quantum_routing
-        self.d_model = d_model
+    def detect_cpu(self) -> CPUProfile:
+        """Detect CPU specifications"""
+        cores = psutil.cpu_count(logical=False) or 4
+        threads = psutil.cpu_count(logical=True) or 8
+        arch = platform.machine()
         
-        # Experts
-        self.experts = nn.ModuleList([Expert(d_model, d_ff, dropout) for _ in range(num_experts)])
-        
-        # Gating network
-        self.gate = nn.Linear(d_model, num_experts)
-        
-        if quantum_routing:
-            self.quantum_gate = nn.Linear(d_model, num_experts)
-            self.quantum_norm = nn.LayerNorm(num_experts)
-    
-    def forward(self, x, quantum_enhance=False):
-        """Forward with optional quantum routing"""
-        # x: (seq_len, batch, d_model)
-        original_shape = x.shape
-        x_flat = x.view(-1, original_shape[-1])  # (total_tokens, d_model)
-        
-        # Compute gates
-        gate_logits = self.gate(x_flat)
-        
-        if self.quantum_routing and quantum_enhance:
-            quantum_logits = self.quantum_gate(x_flat)
-            quantum_logits = self.quantum_norm(quantum_logits)
-            gate_logits = gate_logits + 0.1 * quantum_logits
-        
-        # Top-k selection
-        weights, indices = torch.topk(gate_logits, self.k, dim=-1)
-        weights = torch.softmax(weights, dim=-1)
-        
-        output = torch.zeros_like(x_flat)
-        
-        # Route tokens to experts
-        for i in range(self.k):
-            expert_indices = indices[:, i]
-            expert_weights = weights[:, i].unsqueeze(1)
-            
-            for expert_idx in range(self.num_experts):
-                mask = (expert_indices == expert_idx)
-                if mask.any():
-                    token_inputs = x_flat[mask]
-                    expert_out = self.experts[expert_idx](token_inputs)
-                    output[mask] += expert_out * expert_weights[mask]
-        
-        return output.view(original_shape)
-    
-    def scale_experts(self, new_num_experts):
-        """Dynamically add or remove experts"""
-        current_experts = len(self.experts)
-        
-        if new_num_experts > current_experts:
-            # Add new experts
-            for _ in range(new_num_experts - current_experts):
-                new_expert = Expert(self.d_model, self.experts[0].net[0].out_features)
-                self.experts.append(new_expert)
-            # Update gate
-            self.gate = nn.Linear(self.d_model, new_num_experts)
-            if self.quantum_routing:
-                self.quantum_gate = nn.Linear(self.d_model, new_num_experts)
-            self.num_experts = new_num_experts
-        elif new_num_experts < current_experts:
-            # Remove experts (keep best performing ones)
-            self.experts = self.experts[:new_num_experts]
-            self.gate = nn.Linear(self.d_model, new_num_experts)
-            if self.quantum_routing:
-                self.quantum_gate = nn.Linear(self.d_model, new_num_experts)
-            self.num_experts = new_num_experts
-
-# ============================================================
-# ENHANCED INFINITE MoE TRANSFORMER
-# ============================================================
-class InfiniteMoETransformer(nn.Module):
-    """Enhanced transformer with quantum features and dynamic scaling"""
-    def __init__(self, vocab_size, d_model=128, nhead=4, num_layers=4, 
-                 num_experts=8, d_ff=512, quantum_features=False, dropout=0.1):
-        super().__init__()
-        self.quantum_features = quantum_features and QUANTUM_AVAILABLE
-        self.d_model = d_model
-        self.num_layers = num_layers
-        
-        # Quantum-aware or standard embedding
-        if self.quantum_features:
-            self.embed = QuantumEmbedding(vocab_size, d_model, enable_superposition=True)
+        # Map architecture
+        if 'x86' in arch or 'AMD64' in arch:
+            architecture = 'x86'
+        elif 'arm' in arch.lower() or 'aarch' in arch.lower():
+            architecture = 'ARM'
+        elif 'riscv' in arch.lower():
+            architecture = 'RISC-V'
         else:
-            self.embed = nn.Embedding(vocab_size, d_model)
+            architecture = arch
         
-        self.pos_encoder = nn.Linear(d_model, d_model)
-        self.dropout = nn.Dropout(dropout)
+        # Detect extensions
+        extensions = []
+        if CPUINFO_AVAILABLE:
+            info = cpuinfo.get_cpu_info()
+            if 'flags' in info:
+                flags = info['flags']
+                if 'avx2' in flags:
+                    extensions.append('AVX2')
+                if 'avx512' in flags or 'avx512f' in flags:
+                    extensions.append('AVX-512')
+                if 'neon' in flags:
+                    extensions.append('NEON')
         
-        # Build layers
-        self.attention_layers = nn.ModuleList()
-        self.moe_layers = nn.ModuleList()
-        self.norm_layers = nn.ModuleList()
+        # Get frequency
+        try:
+            freq = psutil.cpu_freq()
+            frequency_ghz = freq.current / 1000.0 if freq else 0.0
+        except:
+            frequency_ghz = 0.0
         
-        for _ in range(num_layers):
-            if self.quantum_features:
-                self.attention_layers.append(QuantumAttention(d_model, nhead, dropout=dropout))
-            else:
-                self.attention_layers.append(nn.MultiheadAttention(d_model, nhead, dropout=dropout, batch_first=False))
-            
-            self.moe_layers.append(MoELayer(d_model, num_experts, d_ff, quantum_routing=self.quantum_features, dropout=dropout))
-            self.norm_layers.append(nn.ModuleList([nn.LayerNorm(d_model), nn.LayerNorm(d_model)]))
-        
-        self.fc_out = nn.Linear(d_model, vocab_size)
-        self.init_weights()
+        return CPUProfile(
+            cores=cores,
+            threads=threads,
+            architecture=architecture,
+            extensions=extensions,
+            frequency_ghz=frequency_ghz
+        )
     
-    def init_weights(self):
-        """Initialize weights"""
-        initrange = 0.1
-        if isinstance(self.embed, nn.Embedding):
-            self.embed.weight.data.uniform_(-initrange, initrange)
+    def detect_gpu(self) -> Optional[GPUProfile]:
+        """Detect GPU specifications"""
+        if not TORCH_AVAILABLE:
+            return None
+        
+        if torch.cuda.is_available():
+            # NVIDIA CUDA
+            device_name = torch.cuda.get_device_name(0)
+            vram_b = torch.cuda.get_device_properties(0).total_memory
+            vram_mb = vram_b // (1024 * 1024)
+            compute_capability = torch.cuda.get_device_properties(0).major
+            
+            # Estimate tensor cores (rough approximation)
+            tensor_cores = 0
+            if 'RTX' in device_name or 'A100' in device_name:
+                tensor_cores = 320  # Approximate
+            
+            return GPUProfile(
+                vendor='NVIDIA',
+                model=device_name,
+                vram_mb=vram_mb,
+                compute_units=torch.cuda.get_device_properties(0).multi_processor_count,
+                ray_tracing='RTX' in device_name,
+                tensor_cores=tensor_cores,
+                cuda_available=True
+            )
+        elif hasattr(torch, 'hip') and torch.hip.is_available():
+            # AMD ROCm
+            return GPUProfile(
+                vendor='AMD',
+                model='ROCm GPU',
+                vram_mb=0,  # Would need specific detection
+                compute_units=0,
+                opencl_available=True
+            )
+        
+        return None
+    
+    def detect_npu(self) -> NPUProfile:
+        """Detect NPU/TPU"""
+        # Check for Apple Neural Engine
+        if platform.system() == 'Darwin' and platform.machine() == 'arm64':
+            return NPUProfile(
+                available=True,
+                type='AppleNeural',
+                ops_per_second=11_000_000_000_000,  # 11 TOPS for M1
+                precision='FP16'
+            )
+        
+        # Check for other NPUs (would need specific libraries)
+        return NPUProfile(available=False, type='None')
+    
+    def detect_memory(self) -> MemoryProfile:
+        """Detect memory specifications"""
+        mem = psutil.virtual_memory()
+        total_mb = mem.total // (1024 * 1024)
+        available_mb = mem.available // (1024 * 1024)
+        
+        return MemoryProfile(
+            total_ram_mb=total_mb,
+            available_ram_mb=available_mb
+        )
+    
+    def detect_quantum(self) -> QuantumProfile:
+        """Detect quantum co-processor (if available)"""
+        # Placeholder - would integrate with quantum hardware SDKs
+        # e.g., IBM Qiskit, Google Cirq, AWS Braket
+        return QuantumProfile()
+    
+    def classify_hardware(self):
+        """Classify hardware into progressive enhancement class"""
+        profile = self.profile
+        
+        # Class S: Quantum+
+        if profile.quantum.qubits > 0:
+            profile.hardware_class = HardwareClass.S
+        # Class A: High-end workstation
+        elif profile.cpu.cores >= 16 and profile.gpu and profile.gpu.vram_mb >= 8192:
+            profile.hardware_class = HardwareClass.A
+        # Class B: Desktop/Laptop
+        elif profile.cpu.cores >= 4 and profile.memory.total_ram_mb >= 8192:
+            profile.hardware_class = HardwareClass.B
+        # Class C: Mobile
+        elif profile.cpu.cores >= 2:
+            profile.hardware_class = HardwareClass.C
+        # Class D: IoT/Edge
         else:
-            self.embed.embedding.weight.data.uniform_(-initrange, initrange)
-        self.fc_out.bias.data.zero_()
-        self.fc_out.weight.data.uniform_(-initrange, initrange)
+            profile.hardware_class = HardwareClass.D
     
-    def forward(self, src, quantum_enhance=False):
-        """Forward pass with optional quantum enhancement"""
-        # src: (seq_len, batch)
-        if isinstance(self.embed, QuantumEmbedding):
-            emb = self.embed(src, quantum_enhance=quantum_enhance)
-        else:
-            emb = self.embed(src)
+    def calculate_capabilities(self):
+        """Calculate system capabilities based on hardware"""
+        profile = self.profile
+        hw_class = profile.hardware_class
         
-        # Simple positional encoding
-        seq_len = src.size(0)
-        positions = torch.arange(0, seq_len, device=src.device).unsqueeze(1).float()
-        pos_emb = self.pos_encoder(torch.randn(seq_len, 1, self.d_model, device=src.device) * 0.01)
-        
-        x = emb + pos_emb
-        x = self.dropout(x)
-        
-        # Process through layers
-        for i in range(self.num_layers):
-            # Attention
-            if isinstance(self.attention_layers[i], QuantumAttention):
-                attn_out, _ = self.attention_layers[i](x, enable_entanglement=quantum_enhance)
-            else:
-                attn_out, _ = self.attention_layers[i](x, x, x)
-            
-            x = self.norm_layers[i][0](x + attn_out)
-            
-            # MoE
-            moe_out = self.moe_layers[i](x, quantum_enhance=quantum_enhance)
-            x = self.norm_layers[i][1](x + moe_out)
-        
-        logits = self.fc_out(x)
-        return logits
+        # Set capabilities based on class
+        if hw_class == HardwareClass.S:
+            profile.max_parallel_dots = 10_000_000  # 10 million
+            profile.max_quantum_loops = 10_000
+            profile.real_time_fps = 120
+        elif hw_class == HardwareClass.A:
+            profile.max_parallel_dots = 1_000_000  # 1 million
+            profile.max_quantum_loops = 1000
+            profile.real_time_fps = 60
+        elif hw_class == HardwareClass.B:
+            profile.max_parallel_dots = 100_000
+            profile.max_quantum_loops = 100
+            profile.real_time_fps = 30
+        elif hw_class == HardwareClass.C:
+            profile.max_parallel_dots = 10_000
+            profile.max_quantum_loops = 10
+            profile.real_time_fps = 30
+        else:  # Class D
+            profile.max_parallel_dots = 1_000
+            profile.max_quantum_loops = 1
+            profile.real_time_fps = 15
     
-    def scale_model(self, new_num_experts=None):
-        """Dynamically scale model capacity"""
-        if new_num_experts is not None:
-            for moe_layer in self.moe_layers:
-                moe_layer.scale_experts(new_num_experts)
-            print(f"Scaled model to {new_num_experts} experts per layer")
+    def optimize_workload(self, dot_count: int, operation_type: str) -> Dict[str, any]:
+        """Determine optimal hardware allocation for workload"""
+        profile = self.profile
+        
+        # Classify operation by hardware affinity
+        if operation_type in ['matrix', 'tensor', 'vector']:
+            # GPU/NPU preferred
+            if profile.gpu and profile.gpu.cuda_available:
+                return {
+                    'device': 'cuda',
+                    'batch_size': min(dot_count, 10000),
+                    'parallel_workers': profile.gpu.compute_units
+                }
+            elif profile.npu.available:
+                return {
+                    'device': 'npu',
+                    'batch_size': min(dot_count, 5000),
+                    'parallel_workers': 16
+                }
+        
+        # CPU fallback or preferred for certain operations
+        return {
+            'device': 'cpu',
+            'batch_size': min(dot_count, 1000),
+            'parallel_workers': profile.cpu.threads
+        }
+    
+    def get_summary(self) -> str:
+        """Get human-readable hardware summary"""
+        p = self.profile
+        summary = f"""
+╔══════════════════════════════════════════════════════════════╗
+║          Angeh Hardware Profile - Class {p.hardware_class.value.upper()}          ║
+╠══════════════════════════════════════════════════════════════╣
+║ CPU:     {p.cpu.cores} cores / {p.cpu.threads} threads ({p.cpu.architecture})
+║          {', '.join(p.cpu.extensions) if p.cpu.extensions else 'No SIMD extensions detected'}
+║ GPU:     {p.gpu.model if p.gpu else 'None detected'}
+║          {f'{p.gpu.vram_mb}MB VRAM, {p.gpu.compute_units} CUs' if p.gpu else ''}
+║ NPU:     {p.npu.type if p.npu.available else 'Not available'}
+║ Memory:  {p.memory.total_ram_mb}MB RAM ({p.memory.available_ram_mb}MB available)
+║ Quantum: {f'{p.quantum.qubits} qubits' if p.quantum.qubits > 0 else 'Not available'}
+╠══════════════════════════════════════════════════════════════╣
+║ Capabilities:
+║  • Max Parallel Dots:    {p.max_parallel_dots:,}
+║  • Max Quantum Loops:    {p.max_quantum_loops:,}
+║  • Real-time FPS:        {p.real_time_fps}
+╚══════════════════════════════════════════════════════════════╝
+"""
+        return summary
 
 # ============================================================
-# DOT NAVIGATOR
+# GLOBAL INSTANCE
 # ============================================================
-class DotNavigator:
-    """Navigate dot space with quantum awareness"""
-    def __init__(self, model, tokenizer, quantum_enabled=False):
-        self.model = model
-        self.tokenizer = tokenizer
-        self.dots = []
-        self.device = next(model.parameters()).device
-        self.quantum_enabled = quantum_enabled and QUANTUM_AVAILABLE
-        self.runtime = AngehRuntimeBridge() if self.quantum_enabled else None
-    
-    def index_files(self, file_paths):
-        """Index .angeh files"""
-        parser = DotParser(quantum_enabled=self.quantum_enabled)
-        print(f"Indexing {len(file_paths)} files...")
-        count = 0
-        
-        for fp in file_paths:
-            try:
-                text = Path(fp).read_text(encoding="utf-8", errors='replace')
-                for raw_line in text.splitlines():
-                    tokens, vector, quantum_dot = parser.parse_line(raw_line)
-                    if not tokens:
-                        continue
-                    
-                    if vector:
-                        vec_tensor = torch.tensor(vector, dtype=torch.float, device=self.device)
-                    else:
-                        with torch.no_grad():
-                            ids = self.tokenizer.encode(" ".join(tokens))
-                            if not ids:
-                                continue
-                            input_ids = torch.tensor(ids, dtype=torch.long, device=self.device).unsqueeze(1)
-                            emb = self.model.embed(input_ids) if isinstance(self.model.embed, nn.Embedding) else self.model.embed.embedding(input_ids)
-                            vec_tensor = emb.mean(dim=0).squeeze(0)
-                    
-                    self.dots.append((raw_line, vec_tensor, quantum_dot))
-                    count += 1
-            except Exception as e:
-                print(f"Error indexing {fp}: {e}")
-        
-        print(f"Indexed {count} dots.")
-    
-    def search(self, query_text):
-        """Search for most similar dot"""
-        if not self.dots:
-            return "Index is empty."
-        
-        with torch.no_grad():
-            ids = self.tokenizer.encode(query_text)
-            if not ids:
-                return "Unknown tokens in query."
-            input_ids = torch.tensor(ids, dtype=torch.long, device=self.device).unsqueeze(1)
-            emb = self.model.embed(input_ids) if isinstance(self.model.embed, nn.Embedding) else self.model.embed.embedding(input_ids)
-            query_vec = emb.mean(dim=0).squeeze(0)
-        
-        compatible_dots = [d for d in self.dots if d[1].shape == query_vec.shape]
-        if not compatible_dots:
-            return "No compatible dots found."
-        
-        dot_vecs = torch.stack([d[1] for d in compatible_dots])
-        scores = torch.nn.functional.cosine_similarity(query_vec.unsqueeze(0), dot_vecs)
-        best_idx = torch.argmax(scores).item()
-        
-        return compatible_dots[best_idx][0]
 
-# ============================================================
-# DATASET
-# ============================================================
-class MergedDotDataset(Dataset):
-    """Dataset merging all .angeh files"""
-    def __init__(self, file_paths, tokenizer, seq_len=32, quantum_enabled=False):
-        self.parser = DotParser(quantum_enabled=quantum_enabled)
-        self.seq_len = seq_len
-        self.tok = tokenizer
-        
-        all_tokens = []
-        print(f"Loading {len(file_paths)} datasets...")
-        
-        for fp in file_paths:
-            try:
-                text = Path(fp).read_text(encoding="utf-8", errors='replace')
-                for raw_line in text.splitlines():
-                    tokens, _, _ = self.parser.parse_line(raw_line)
-                    if tokens:
-                        all_tokens.extend(tokens)
-            except Exception as e:
-                print(f"Warning: Could not read {fp}: {e}")
-        
-        print(f"Total tokens found: {len(all_tokens)}")
-        
-        if not all_tokens:
-            all_tokens = ["<unk>"] * (seq_len + 1)
-        
-        self.tok.build_vocab([" ".join(all_tokens)])
-        ids = self.tok.encode(" ".join(all_tokens))
-        
-        if len(ids) <= seq_len:
-            ids = ids * (seq_len // len(ids) + 2)
-        
-        self.data = []
-        for i in range(0, len(ids) - seq_len, max(1, seq_len // 2)):
-            self.data.append((ids[i:i+seq_len], ids[i+1:i+seq_len+1]))
-    
-    def __len__(self):
-        return len(self.data)
-    
-    def __getitem__(self, idx):
-        src, tgt = self.data[idx]
-        return torch.tensor(src), torch.tensor(tgt)
+# Create global hardware optimizer instance
+hardware_optimizer = HardwareOptimizer()
 
-# ============================================================
-# SIMPLE TOKENIZER
-# ============================================================
-class SimpleTokenizer:
-    """Simple tokenizer"""
-    def __init__(self, vocab=None):
-        self.vocab = vocab or {}
-        self.id2token = []
-    
-    def build_vocab(self, texts):
-        tokens = set()
-        for txt in texts:
-            tokens.update(txt.strip().split())
-        
-        self.id2token = sorted(list(tokens))
-        if "<pad>" not in self.id2token:
-            self.id2token.insert(0, "<pad>")
-        if "<unk>" not in self.id2token:
-            self.id2token.insert(1, "<unk>")
-        
-        self.vocab = {t: i for i, t in enumerate(self.id2token)}
-    
-    def encode(self, text):
-        return [self.vocab.get(t, self.vocab["<unk>"]) for t in text.strip().split()]
-    
-    def decode(self, ids):
-        return " ".join(self.id2token[i] for i in ids if i < len(self.id2token))
-
-# ============================================================
-# DISTRIBUTED TRAINING
-# ============================================================
-def setup_distributed(rank, world_size):
-    """Initialize distributed training"""
-    os.environ['MASTER_ADDR'] = 'localhost'
-    os.environ['MASTER_PORT'] = '12355'
-    dist.init_process_group("gloo", rank=rank, world_size=world_size)
-
-def cleanup_distributed():
-    """Cleanup distributed training"""
-    dist.destroy_process_group()
-
-def train_distributed(rank, world_size, model, dataset, epochs, lr, quantum_enhance):
-    """Distributed training function"""
-    setup_distributed(rank, world_size)
-    
-    model = model.to(rank)
-    model = DDP(model, device_ids=[rank] if torch.cuda.is_available() else None)
-    
-    sampler = DistributedSampler(dataset, num_replicas=world_size, rank=rank)
-    loader = DataLoader(dataset, batch_size=32, sampler=sampler)
-    
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-    criterion = nn.CrossEntropyLoss()
-    
-    for epoch in range(epochs):
-        sampler.set_epoch(epoch)
-        total_loss = 0.0
-        
-        for src, tgt in loader:
-            src, tgt = src.t().to(rank), tgt.t().to(rank)
-            
-            optimizer.zero_grad()
-            logits = model(src, quantum_enhance=quantum_enhance)
-            loss = criterion(logits.view(-1, logits.size(-1)), tgt.reshape(-1))
-            loss.backward()
-            optimizer.step()
-            
-            total_loss += loss.item()
-        
-        if rank == 0:
-            print(f"Epoch {epoch+1}/{epochs} - Loss: {total_loss/len(loader):.4f}")
-    
-    cleanup_distributed()
-
-# ============================================================
-# STANDARD TRAINING
-# ============================================================
-def train(model, dataloader, epochs=3, lr=1e-3, device="cpu", quantum_enhance=False):
-    """Standard training"""
-    model.to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-    criterion = nn.CrossEntropyLoss()
-    model.train()
-    
-    print(f"Training on {device} (quantum_enhance={quantum_enhance})...")
-    for epoch in range(1, epochs + 1):
-        total_loss = 0.0
-        batch_count = 0
-        
-        for src, tgt in dataloader:
-            src, tgt = src.t().to(device), tgt.t().to(device)
-            
-            optimizer.zero_grad()
-            logits = model(src, quantum_enhance=quantum_enhance)
-            loss = criterion(logits.view(-1, logits.size(-1)), tgt.reshape(-1))
-            loss.backward()
-            optimizer.step()
-            
-            total_loss += loss.item()
-            batch_count += 1
-        
-        avg_loss = total_loss / max(1, batch_count)
-        print(f"Epoch {epoch}/{epochs} - Loss: {avg_loss:.4f}")
-
-# ============================================================
-# STREAMING INFERENCE
-# ============================================================
-def generate_stream(model, tokenizer, prompt, max_len=50, device="cpu", temperature=1.0, quantum_enhance=False):
-    """Streaming token generation"""
-    model.eval()
-    model.to(device)
-    
-    ids = tokenizer.encode(prompt)
-    if not ids:
-        ids = [tokenizer.vocab.get("<unk>", 0)]
-    
-    input_ids = torch.tensor(ids, dtype=torch.long, device=device).unsqueeze(1)
-    yield prompt + " "
-    
-    with torch.no_grad():
-        for _ in range(max_len):
-            logits = model(input_ids, quantum_enhance=quantum_enhance)
-            last_logits = logits[-1, 0] / max(temperature, 1e-5)
-            probs = torch.softmax(last_logits, dim=0)
-            
-            next_id = torch.multinomial(probs, 1).item()
-            token = tokenizer.id2token[next_id]
-            yield token + " "
-            
-            input_ids = torch.cat([input_ids, torch.tensor([[next_id]], device=device)], dim=0)
-
-# ============================================================
-# MODEL SERVING API
-# ============================================================
-app = Flask(__name__)
-global_model = None
-global_tokenizer = None
-global_device = "cpu"
-global_quantum_enabled = False
-
-@app.route('/api/health', methods=['GET'])
-def health():
-    """Health check"""
-    return jsonify({
-        'status': 'healthy',
-        'model_loaded': global_model is not None,
-        'quantum_enabled': global_quantum_enabled,
-        'device': global_device
-    })
-
-@app.route('/api/predict', methods=['POST'])
-def predict():
-    """Prediction endpoint"""
-    try:
-        data = request.json
-        prompt = data.get('text', '')
-        max_len = data.get('max_len', 50)
-        temperature = data.get('temperature', 1.0)
-        quantum = data.get('quantum', False) and global_quantum_enabled
-        
-        result = []
-        for token in generate_stream(global_model, global_tokenizer, prompt, 
-                                     max_len=max_len, device=global_device,
-                                     temperature=temperature, quantum_enhance=quantum):
-            result.append(token)
-        
-        return jsonify({
-            'success': True,
-            'result': ''.join(result),
-            'quantum_enhanced': quantum
-        })
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-@app.route('/api/search', methods=['POST'])
-def search():
-    """Dot search endpoint"""
-    try:
-        data = request.json
-        query = data.get('query', '')
-        
-        navigator = DotNavigator(global_model, global_tokenizer, quantum_enabled=global_quantum_enabled)
-        # Would need indexed dots - simplified for API
-        
-        return jsonify({
-            'success': True,
-            'result': f"Search for: {query}",
-            'message': 'Full indexing required for production use'
-        })
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-@app.route('/api/scale', methods=['POST'])
-def scale_model():
-    """Dynamic model scaling"""
-    try:
-        data = request.json
-        num_experts = data.get('num_experts')
-        
-        if num_experts:
-            global_model.scale_model(new_num_experts=num_experts)
-            return jsonify({
-                'success': True,
-                'message': f'Scaled model to {num_experts} experts per layer'
-            })
-        else:
-            return jsonify({'success': False, 'error': 'num_experts required'}), 400
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-def start_api_server(model, tokenizer, device, quantum_enabled, port=5000):
-    """Start Flask API server"""
-    global global_model, global_tokenizer, global_device, global_quantum_enabled
-    global_model = model
-    global_tokenizer = tokenizer
-    global_device = device
-    global_quantum_enabled = quantum_enabled
-    
-    print(f"\n🚀 Starting API server on port {port}")
-    print(f"   Quantum features: {'enabled' if quantum_enabled else 'disabled'}")
-    print(f"   Device: {device}")
-    print(f"\nEndpoints:")
-    print(f"   GET  /api/health")
-    print(f"   POST /api/predict")
-    print(f"   POST /api/search")
-    print(f"   POST /api/scale")
-    
-    app.run(host='0.0.0.0', port=port, threaded=True)
-
-# ============================================================
-# MAIN
-# ============================================================
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="77D Real AI Engine - FULLY ENHANCED")
-    parser.add_argument("--train", action="store_true", help="Train model")
-    parser.add_argument("--prompt", type=str, default="Hello", help="Generation prompt")
-    parser.add_argument("--run", action="store_true", help="Run inference")
-    parser.add_argument("--model_path", type=str, default="77d_engine.pt", help="Model path")
-    parser.add_argument("--data_dir", type=str, default=os.path.dirname(os.path.abspath(__file__)), help="Data directory")
-    parser.add_argument("--epochs", type=int, default=5, help="Training epochs")
-    parser.add_argument("--experts", type=int, default=8, help="Number of experts")
-    parser.add_argument("--layers", type=int, default=4, help="Number of layers")
-    parser.add_argument("--navigate", action="store_true", help="Dot navigation mode")
-    parser.add_argument("--quantum", action="store_true", help="Enable quantum features")
-    parser.add_argument("--distributed", action="store_true", help="Distributed training")
-    parser.add_argument("--world_size", type=int, default=2, help="Number of processes for distributed")
-    parser.add_argument("--serve", action="store_true", help="Start API server")
-    parser.add_argument("--port", type=int, default=5000, help="API server port")
+    print(hardware_optimizer.get_summary())
     
-    args = parser.parse_args()
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    # Test workload optimization
+    print("\n🔧 Workload Optimization Examples:")
+    print("\n1. Matrix operations (10,000 dots):")
+    print(json.dumps(hardware_optimizer.optimize_workload(10000, 'matrix'), indent=2))
     
-    # Check quantum availability
-    if args.quantum and not QUANTUM_AVAILABLE:
-        print("Warning: Quantum features requested but angeh_bridge not available.")
-        args.quantum = False
-    
-    data_files = [os.path.join(args.data_dir, f) for f in os.listdir(args.data_dir) if f.endswith('.angeh')]
-    
-    if args.train:
-        print(f"\n{'='*60}")
-        print(f"TRAINING MODE")
-        print(f"{'='*60}")
-        print(f"Files: {len(data_files)}")
-        print(f"Quantum: {'enabled' if args.quantum else 'disabled'}")
-        print(f"Distributed: {'yes' if args.distributed else 'no'}")
-        print(f"{'='*60}\n")
-        
-        tokenizer = SimpleTokenizer()
-        dataset = MergedDotDataset(data_files, tokenizer, quantum_enabled=args.quantum)
-        
-        if len(dataset) == 0:
-            print("Error: No data found.")
-            sys.exit(1)
-        
-        vocab_size = len(tokenizer.vocab)
-        print(f"Vocabulary size: {vocab_size}")
-        
-        model = InfiniteMoETransformer(
-            vocab_size=vocab_size,
-            num_experts=args.experts,
-            num_layers=args.layers,
-            quantum_features=args.quantum
-        )
-        
-        if args.distributed:
-            mp.spawn(train_distributed,
-                    args=(args.world_size, model, dataset, args.epochs, 1e-3, args.quantum),
-                    nprocs=args.world_size)
-        else:
-            loader = DataLoader(dataset, batch_size=32, shuffle=True)
-            train(model, loader, epochs=args.epochs, device=device, quantum_enhance=args.quantum)
-        
-        torch.save({
-            "model_state": model.state_dict(),
-            "vocab": tokenizer.vocab,
-            "id2token": tokenizer.id2token,
-            "config": {
-                "vocab_size": vocab_size,
-                "num_experts": args.experts,
-                "num_layers": args.layers,
-                "quantum_features": args.quantum
-            }
-        }, args.model_path)
-        
-        print(f"\n✓ Model saved to {args.model_path}")
-    
-    elif args.run or args.navigate or args.serve:
-        if not os.path.exists(args.model_path):
-            print(f"Error: Model file {args.model_path} not found.")
-            sys.exit(1)
-        
-        ckpt = torch.load(args.model_path, map_location=device)
-        tokenizer = SimpleTokenizer()
-        tokenizer.vocab = ckpt["vocab"]
-        tokenizer.id2token = ckpt["id2token"]
-        
-        config = ckpt.get("config", {"vocab_size": len(tokenizer.vocab)})
-        quantum_features = config.get("quantum_features", False) and QUANTUM_AVAILABLE
-        
-        model = InfiniteMoETransformer(
-            vocab_size=config["vocab_size"],
-            num_experts=config.get("num_experts", 8),
-            num_layers=config.get("num_layers", 4),
-            quantum_features=quantum_features
-        )
-        model.load_state_dict(ckpt["model_state"])
-        model.to(device)
-        model.eval()
-        
-        if args.serve:
-            start_api_server(model, tokenizer, device, quantum_features and args.quantum, args.port)
-        elif args.navigate:
-            print(f"\n--- Navigating for: '{args.prompt}' ---\n")
-            navigator = DotNavigator(model, tokenizer, quantum_enabled=args.quantum)
-            navigator.index_files(data_files)
-            result = navigator.search(args.prompt)
-            print(f"Result: {result}\n")
-        else:
-            print(f"\n--- Generating: '{args.prompt}' ---\n")
-            for token in generate_stream(model, tokenizer, args.prompt, device=device, quantum_enhance=args.quantum):
-                print(token, end="", flush=True)
-            print("\n\n--- End ---")
-    
-    else:
-        parser.print_help()
+    print("\n2. Sequential logic (1,000 dots):")
+    print(json.dumps(hardware_optimizer.optimize_workload(1000, 'sequential'), indent=2))

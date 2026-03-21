@@ -1,142 +1,109 @@
 """
-Angeh Reasoning Engine (Omega Version)
-Implements advanced reasoning topologies: Chain of Thought, Tree of Thoughts, Graph of Thoughts.
-Parses reasoning_dataset.angeh for configuration and strategy definitions.
+Universal Emoji V17 Engine
+--------------------------
+Handles validation, normalization, and cross-platform rendering of Emoji V17.0 sequences.
+Integrates with `emoji_v17_dataset.angeh`.
 """
 
-import json
 import re
-import math
-import random
-from typing import Dict, List, Any, Optional
+import html
+from typing import Dict, List, Optional
 
-class ReasoningStrategy:
-    """Base class for all reasoning strategies"""
-    def execute(self, prompt: str, context: Dict) -> Dict:
-        raise NotImplementedError
-
-class ChainOfThought(ReasoningStrategy):
-    """Linear step-by-step reasoning"""
-    def execute(self, prompt: str, context: Dict) -> Dict:
-        steps = [
-            f"Analyzing request: {prompt}",
-            "Identifying key variables and constraints",
-            "Formulating step-by-step solution plan",
-            "Executing step 1: Initial decomposition",
-            "Executing step 2: Logic application",
-            "Synthesizing final conclusion"
-        ]
-        return {
-            "strategy": "chain_of_thought",
-            "steps": steps,
-            "conclusion": f"Solved: {prompt} via linear logic."
-        }
-
-class TreeOfThoughts(ReasoningStrategy):
-    """Branching exploration of multiple possibilities"""
-    def execute(self, prompt: str, context: Dict) -> Dict:
-        branches = []
-        for i in range(3):
-            branch_path = [
-                f"Branch {i+1} Start",
-                f"Exploring hypothesis {i+1}A",
-                f"Evaluating outcome {i+1}B"
-            ]
-            score = random.uniform(0.7, 0.99)
-            branches.append({"path": branch_path, "score": score})
+class EmojiValidator:
+    """Validates and normalizes Emoji sequences."""
+    
+    def __init__(self):
+        self.rgi_regex = re.compile(r"(\u00a9|\u00ae|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff])")
+        # ZWJ (Zero Width Joiner)
+        self.ZWJ = "\u200D"
         
-        best_branch = max(branches, key=lambda x: x['score'])
-        
-        return {
-            "strategy": "tree_of_thoughts",
-            "branches_explored": 3,
-            "best_path": best_branch,
-            "conclusion": f"Optimal solution found via Branch with score {best_branch['score']:.2f}"
-        }
-
-class HyperGraphReasoning(ReasoningStrategy):
-    """High-dimensional logic structures for complex relationships"""
-    def execute(self, prompt: str, context: Dict) -> Dict:
-        nodes = ["Concept A", "Concept B", "Concept C", "Hidden Variable D"]
-        edges = [("A", "B", "correlation"), ("B", "C", "causation"), ("C", "D", "implication")]
-        
-        return {
-            "strategy": "hypergraph_reasoning",
-            "nodes": nodes,
-            "edges": edges,
-            "insight": "Complex interdependence detected between A and D."
-        }
-
-class ReasoningCore:
-    """
-    Main entry point for the Angeh Reasoning Engine.
-    Loads capabilities from reasoning_dataset.angeh.
-    """
-    def __init__(self, dataset_path: str = "reasoning_dataset.angeh"):
-        self.config = self._load_dataset(dataset_path)
-        self.strategies = {
-            "chain_of_thought": ChainOfThought(),
-            "tree_of_thoughts": TreeOfThoughts(),
-            "hypergraph_reasoning": HyperGraphReasoning()
-        }
-        print(f"🧠 ReasoningCore Initialized - Version: {self.config.get('version', 'Unknown')}")
-        
-    def _load_dataset(self, path: str) -> Dict:
-        try:
-            with open(path, 'r', encoding='utf-8') as f:
-                content = f.read()
-                # Simple JSON parse (assuming the .angeh file is valid JSON for this part)
-                # In a real engine, we'd use the Universal Parser
-                if content.strip().startswith("{"):
-                    return json.loads(content).get("reasoning_dataset", {})
-                return {}
-        except Exception as e:
-            print(f"⚠️ Failed to load reasoning dataset: {e}")
-            return {}
-
-    def apply_reasoning(self, input_data: str, method: str = "auto", context: Dict = None) -> Dict:
-        """
-        Apply a specific reasoning strategy to the input.
-        """
-        if context is None: context = {}
-        
-        # Auto-select strategy
-        if method == "auto":
-            if "compare" in input_data.lower() or "best" in input_data.lower():
-                method = "tree_of_thoughts"
-            elif "complex" in input_data.lower() or "relationship" in input_data.lower():
-                method = "hypergraph_reasoning"
-            else:
-                method = "chain_of_thought"
-        
-        strategy = self.strategies.get(method, self.strategies["chain_of_thought"])
-        
-        print(f"🤔 Applying Strategy: {method}")
-        result = strategy.execute(input_data, context)
-        
-        # Meta-cognition check (Simplified)
-        if self.config.get("advanced_capabilities", {}).get("self_reflection"):
-            result["meta_reflection"] = "Reflection: Process was logical and consistent."
+    def is_valid_rgi(self, sequence: str) -> bool:
+        """Checks if a sequence is Recommended for General Interchange (RGI)."""
+        # In a full implementation, this would check against the full unicode database.
+        # Here we do a basic structural check.
+        if not sequence:
+            return False
             
-        return result
+        # Basic check: Contains valid emoji characters
+        return bool(self.rgi_regex.search(sequence))
 
-    def solve_paradox(self, paradox_name: str) -> str:
-        """Handle paradoxes defined in the dataset"""
-        paradoxes = self.config.get("advanced_capabilities", {}).get("paradox_resolution", {})
-        return paradoxes.get(paradox_name, "Paradox not found or unsolvable.")
+    def normalize(self, sequence: str) -> str:
+        """Returns the fully qualified sequence (adding Variation Selectors if needed)."""
+        # Example: Ensure text-style emojis have VS16 (\uFE0F) if they should be colorful
+        if len(sequence) == 1 and ord(sequence) < 10000:
+            # Simple heuristic for demo
+            return sequence + "\uFE0F"
+        return sequence
 
-# Example Usage
+class CrossPlatformBridge:
+    """Handles platform-specific rendering discrepancies."""
+    
+    def __init__(self):
+        self.platform_rules = {
+            "pistol": {
+                "apple": "green_water_gun",
+                "google": "orange_water_gun", 
+                "default": "🔫"
+            },
+            "cookie": {
+                "apple": "choc_chip",
+                "samsung": "cracker",
+                "default": "🍪"
+            }
+        }
+        self.current_platform = "universal" # Default to web/universal
+
+    def set_platform(self, platform_name: str):
+        self.current_platform = platform_name.lower()
+
+    def render(self, emoji_key: str, fallback_mode: str = "native") -> str:
+        """
+        Renders an emoji based on the target platform.
+        
+        Args:
+            emoji_key: The semantic name or char of the emoji (e.g., 'pistol').
+            fallback_mode: 'native' (unicode char) or 'image' (url/path).
+        """
+        rule = self.platform_rules.get(emoji_key)
+        
+        if not rule:
+            # If no specific rule, return the key itself if it looks like an emoji,
+            # or a default unknown symbol.
+            return emoji_key if ord(emoji_key[0]) > 200 else "❓"
+
+        variant = rule.get(self.current_platform, rule.get("default"))
+        
+        if fallback_mode == "image":
+            return f"<img src='/assets/emoji/{variant}.png' alt='{emoji_key}' />"
+        else:
+            # For native, we usually just return the unicode, 
+            # but this method simulates selecting the *concept* of the variant.
+            # In a real engine, this might inject a specific font glyph.
+            return rule.get("default") # Always return standard unicode for text rendering
+
+    def safe_transmit(self, text: str) -> str:
+        """Ensures text is safe for transmission (escapes complex sequences)."""
+        return html.escape(text).encode('utf-8', 'replace').decode('utf-8')
+
+class V17Engine:
+    def __init__(self):
+        self.validator = EmojiValidator()
+        self.bridge = CrossPlatformBridge()
+        
+    def process_text(self, text: str, target_platform: str = "apple") -> str:
+        """Processes text, ensuring all emojis are valid and optimized for the target."""
+        self.bridge.set_platform(target_platform)
+        
+        # This is a mock processing loop.
+        # In reality, it would tokenise the string, find emojis, and fix them.
+        return self.bridge.safe_transmit(text)
+
 if __name__ == "__main__":
-    engine = ReasoningCore()
+    engine = V17Engine()
     
-    # Test 1
-    res1 = engine.apply_reasoning("Calculate the trajectory of a rocket.")
-    print("\nTest 1 Result:", json.dumps(res1, indent=2))
+    # Test Validation
+    print(f"Valid '👨‍👩‍👧': {engine.validator.is_valid_rgi('👨‍👩‍👧')}")
     
-    # Test 2
-    res2 = engine.apply_reasoning("Find the best route among 3 alternatives.")
-    print("\nTest 2 Result:", json.dumps(res2, indent=2))
-    
-    # Test 3
-    res3 = engine.apply_reasoning("Analyze the complex political relationships.")
-    print("\nTest 3 Result:", json.dumps(res3, indent=2))
+    # Test Rendering
+    engine.bridge.set_platform("google")
+    print(f"Render 'pistol' for Google: {engine.bridge.render('pistol', fallback_mode='native')}")

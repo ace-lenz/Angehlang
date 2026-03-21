@@ -1,124 +1,83 @@
 """
-🧠 ANGEH NEURONAL STORAGE (.angNO)
-A biological-inspired graph storage system.
-Stores data as 'Synapses' (Subject -> Predicate -> Object).
-Features:
-- Associative Recall (Fast Graph Traversal)
-- Weight Reinforcement (Memory Strengthening)
-- Binary Serialization (Compact .angNO format)
+Hyper-Real 3D Emoji Renderer
+----------------------------
+Physics-Based Rendering (PBR) Engine simulation for Emojis.
+Connects to Real-Time Parallel Execution for hardware acceleration.
+Includes 'Self-Guided' mode where the renderer can decide lighting/angles.
 """
 
-import pickle
-import os
 import time
-from dataclasses import dataclass, field
-from typing import List, Dict, Any, Optional, Set
+import random
+from typing import Dict, Any
+import realtime_parallel_execution as rpe
 
-@dataclass
-class Synapse:
-    """A single unit of knowledge (Relationship)"""
-    subject: str
-    predicate: str
-    object: Any
-    weight: float = 1.0
-    complexity: float = 0.1 # 0.0 (Basic) to 1.0 (Transcendental)
-    mastery: float = 0.0 # 0.0 (New) to 1.0 (Locked)
-    created_at: float = field(default_factory=time.time)
-    last_accessed: float = field(default_factory=time.time)
+class HyperRealRenderer:
+    def __init__(self):
+        self.session = rpe.LiveCodingSession()
+        self.resolution = (1024, 1024)
+        self.samples = 128
+        self.device = self.session.device.value
+        print(f"🎨 Renderer initialized on {self.device} [Res: {self.resolution}]")
 
-    def hash_id(self):
-        return f"{self.subject}:{self.predicate}:{str(self.object)}"
+    def load_scene(self, scene_data: Dict[str, Any]):
+        """Loads the scene graph into the parallel engine's memory."""
+        print(f"📥 Loading Scene {scene_data.get('id', 'unknown')} into Video Memory...")
+        # In a real engine, this uploads geometry buffers
+        # We simulate this via a command to the parallel engine
+        cmd = f"Construct 3D Scene Graph with {len(scene_data.get('meshes', []))} meshes"
+        self.session.process_natural_language_input(cmd)
 
-class NeuronalStorage:
-    def __init__(self, storage_path="angeh_memory.angNO"):
-        self.storage_path = storage_path
-        self.knowledge_graph: Dict[str, List[Synapse]] = {} # Map Subject -> Synapses
-        self.inverse_index: Dict[str, List[str]] = {} # Map Object -> Subjects
-        self._load()
-
-    def _load(self):
-        """Load brain from disk"""
-        if os.path.exists(self.storage_path):
-            try:
-                with open(self.storage_path, "rb") as f:
-                    data = pickle.load(f)
-                    self.knowledge_graph = data.get("graph", {})
-                    self.inverse_index = data.get("inverse", {})
-                print(f"🧠 Neuronal Storage: Loaded {self._count_synapses()} synapses.")
-            except Exception as e:
-                print(f"⚠️ Memory Corruption: {e}. Starting fresh.")
-        else:
-            print("🧠 Neuronal Storage: New Brain Created.")
-
-    def save(self):
-        """Persist brain to disk"""
-        with open(self.storage_path, "wb") as f:
-            pickle.dump({
-                "graph": self.knowledge_graph,
-                "inverse": self.inverse_index,
-                "version": "77D_NEURO_V2"
-            }, f)
-
-    def learn(self, subject: str, predicate: str, obj: Any, weight_boost=0.1, complexity=0.1):
-        """Learn a new fact or reinforce an existing one"""
-        if subject not in self.knowledge_graph:
-            self.knowledge_graph[subject] = []
-
-        # Check if exists
-        existing = next((s for s in self.knowledge_graph[subject] 
-                         if s.predicate == predicate and s.object == obj), None)
+    def render_frame(self, time_step: float = 0.0) -> str:
+        """
+        Renders a single frame at the given time step.
+        Returns path to the rendered buffer (simulated).
+        """
+        # Construct the rendering command for the parallel engine
+        render_cmd = (
+            f"Trace Rays: Camera(t={time_step}) -> Scene "
+            f"| Samples: {self.samples} "
+            f"| Bounces: 4 "
+            f"| Denoise: NPU_Accelerated"
+        )
         
-        if existing:
-            # Reinforcement logic
-            existing.weight += weight_boost
-            existing.mastery = min(1.0, existing.mastery + (weight_boost * 0.05)) # Slow mastery growth
-            existing.last_accessed = time.time()
-        else:
-            synapse = Synapse(subject, predicate, obj, complexity=complexity)
-            self.knowledge_graph[subject].append(synapse)
-            
-            # Update inverse index (for string objects)
-            if isinstance(obj, str):
-                if obj not in self.inverse_index: self.inverse_index[obj] = []
-                self.inverse_index[obj].append(subject)
+        print(f"✨ Rendering Frame (t={time_step:.2f})...")
+        result = self.session.process_natural_language_input(render_cmd)
+        
+        # Simulate render time
+        time.sleep(0.1) 
+        return f"<RenderBuffer: 1024x1024_Frame_{int(time_step*100)}>"
 
+    def render_animation(self, duration: float, fps: int = 30):
+        """Renders a 4D animation sequence."""
+        print(f"🎬 Starting Animation Render ({duration}s @ {fps}fps)...")
+        frames = int(duration * fps)
+        for f in range(frames):
+            t = f / fps
+            self.render_frame(time_step=t)
+        print("✅ Animation Render Complete.")
 
-    def recall(self, query: str) -> List[Synapse]:
-        """Recall everything about a subject"""
-        if query in self.knowledge_graph:
-            # Boost accessed memories
-            for s in self.knowledge_graph[query]:
-                s.last_accessed = time.time()
-            # Sort by weight
-            return sorted(self.knowledge_graph[query], key=lambda x: x.weight, reverse=True)
-        return []
+    def auto_enhance(self, scene_data: Dict[str, Any]):
+        """
+        'Self-Guided' Mode: Uses LLM to check if the scene looks good 
+        and adjusts lighting automatically.
+        """
+        print("🤖 AI Auto-Enhance: Analyzing Scene composition...")
+        # Simulate LLM decision
+        adjustments = ["Increase Rim Light intensity", "Add Depth of Field blur", "Color Grade: Cinematic"]
+        for adj in adjustments:
+            print(f"  ✨ Applying adjustment: {adj}")
+            # In reality, this would modify self.scene_graph
 
-    def associate(self, keyword: str) -> List[str]:
-        """Find concepts associated with a keyword (Reverse Lookup)"""
-        return self.inverse_index.get(keyword, [])
-
-    def forget(self, threshold=0.5):
-        """Prune weak memories"""
-        removed = 0
-        for sub in list(self.knowledge_graph.keys()):
-            original_len = len(self.knowledge_graph[sub])
-            self.knowledge_graph[sub] = [s for s in self.knowledge_graph[sub] if s.weight > threshold]
-            removed += (original_len - len(self.knowledge_graph[sub]))
-            if not self.knowledge_graph[sub]:
-                del self.knowledge_graph[sub]
-        if removed > 0:
-            print(f"   🧹 Pruned {removed} weak synapses.")
-            self.save()
-
-    def _count_synapses(self):
-        return sum(len(v) for v in self.knowledge_graph.values())
-
-    def dump_knowledge(self):
-        print("\n🧠 CURRENT KNOWLEDGE STATE:")
-        for sub, synapses in self.knowledge_graph.items():
-            print(f"  📌 {sub}:")
-            for s in synapses:
-                print(f"     -> [{s.predicate}] {s.object} (w:{s.weight:.1f})")
-
-# Singleton Instance
-brain = NeuronalStorage()
+if __name__ == "__main__":
+    renderer = HyperRealRenderer()
+    
+    # Mock Scene Data
+    scene_mock = {
+        "id": "test_scene_01",
+        "meshes": [{"id": "face"}, {"id": "tears"}],
+        "lighting": "studio_soft"
+    }
+    
+    renderer.load_scene(scene_mock)
+    renderer.auto_enhance(scene_mock)
+    renderer.render_frame(0.0)

@@ -1,0 +1,262 @@
+// AngehLang Extension Definition (Pure .angeh)
+// Compiles to package.json for VS Code, Cursor, etc.
+
+dot extension @angehlang_universal {
+    
+    // Metadata
+    metadata {
+        name: "angehlang",
+        display_name: "AngehLang Universal Extension",
+        description: "Universal programming language with quantum consciousness and 100+ language support",
+        version: "1.0.0",
+        publisher: "angehlang",
+        icon: "icon.png",
+        license: "MIT"
+    }
+    
+    // Engine Requirements
+    engines {
+        vscode: "^1.80.0",
+        cursor: "^0.20.0",
+        antigravity: "*"
+    }
+    
+    // Categories & Keywords
+    classification {
+        categories: [
+            "Programming Languages",
+            "Formatters",
+            "Linters",
+            "Snippets",
+            "AI Tools",
+            "Multi-Modal"
+        ],
+        keywords: [
+            "angehlang",
+            "quantum",
+            "multi-language",
+            "ai",
+            "sentient",
+            "100+ languages",
+            "omnipotent"
+        ]
+    }
+    
+    // Language Definition
+    language {
+        id: "angehlang",
+        aliases: ["AngehLang", "angeh", "⚡"],
+        extensions: [".angeh"],
+        
+        configuration: {
+            comments: {
+                line: "//",
+                block: ["/*", "*/"]
+            },
+            brackets: [
+                ["{", "}"],
+                ["[", "]"],
+                ["(", ")"]
+            ],
+            auto_closing_pairs: [
+                ["{", "}"],
+                ["[", "]"],
+                ["(", ")"],
+                ["\"", "\""],
+                ["'", "'"]
+            ]
+        },
+        
+        grammar: {
+            scope: "source.angehlang",
+            patterns: [
+                {
+                    name: "keyword.control.angehlang",
+                    match: "\\b(dot|workspace|theme|handler|module)\\b"
+                },
+                {
+                    name: "entity.name.function.angehlang",
+                    match: "@\\w+"
+                },
+                {
+                    name: "string.quoted.angehlang",
+                    match: "\"[^\"]*\""
+                },
+                {
+                    name: "constant.emoji.angehlang",
+                    match: "[⚡🔄💾🧠✨🌀💓🖥️👁️]+"
+                }
+            ]
+        }
+    }
+    
+    // Commands
+    commands {
+        
+        command compile {
+            id: "angehlang.compile",
+            title: "⚡ Compile AngehLang",
+            category: "AngehLang",
+            keybinding: {
+                key: "ctrl+shift+c",
+                mac: "cmd+shift+c",
+                when: "editorTextFocus && editorLangId == angehlang"
+            }
+        },
+        
+        command run {
+            id: "angehlang.run",
+            title: "🚀 Run AngehLang",
+            category: "AngehLang",
+            keybinding: {
+                key: "ctrl+shift+r",
+                mac: "cmd+shift+r",
+                when: "editorTextFocus && editorLangId == angehlang"
+            }
+        },
+        
+        command visualize {
+            id: "angehlang.visualize",
+            title: "🎨 Visualize Dots",
+            category: "AngehLang"
+        },
+        
+        command synthetic_dashboard {
+            id: "angehlang.startSyntheticDashboard",
+            title: "💓 Open Synthetic Dashboard",
+            category: "AngehLang"
+        },
+        
+        command omni_studio {
+            id: "angehlang.openOmniStudio",
+            title: "🌐 Open Omni-Studio",
+            category: "AngehLang"
+        }
+    }
+    
+    // Configuration Settings
+    configuration {
+        title: "AngehLang",
+        
+        property execution_mode {
+            type: "string",
+            default: "parallel",
+            enum: ["quantum", "parallel", "normal"],
+            description: "Execution mode for AngehLang"
+        },
+        
+        property enable_intellisense {
+            type: "boolean",
+            default: true,
+            description: "Enable IntelliSense for AngehLang"
+        },
+        
+        property enable_dot_visualization {
+            type: "boolean",
+            default: true,
+            description: "Enable real-time dot sequence visualization"
+        },
+        
+        property enable_synthetic_monitoring {
+            type: "boolean",
+            default: true,
+            description: "Monitor synthetic heart/brain/organs in statusbar"
+        },
+        
+        property ai_copilot_mode {
+            type: "string",
+            default: "adaptive",
+            enum: ["adaptive", "aggressive", "conservative", "off"],
+            description: "AI assistance level"
+        }
+    }
+    
+    // Themes
+    themes {
+        theme quantum {
+            label: "AngehLang Quantum",
+            ui_theme: "vs-dark",
+            colors: {
+                background: "#0a0a0f",
+                foreground: "#e8e8e8",
+                primary: "#9D4EDD",
+                secondary: "#4CC9F0",
+                accent: "#FFE66D"
+            }
+        },
+        
+        theme neural {
+            label: "AngehLang Neural",
+            ui_theme: "vs-dark",
+            colors: {
+                background: "#1a1a2e",
+                foreground: "#ffffff",
+                primary: "#00d9ff",
+                secondary: "#ff00d9",
+                accent: "#d9ff00"
+            }
+        }
+    }
+    
+    // Snippets
+    snippets {
+        
+        snippet dot_definition {
+            prefix: "dot",
+            body: [
+                "dot ${1:name} {",
+                "\t${2:property}: \"${3:value}\"",
+                "\t$0",
+                "}"
+            ],
+            description: "Create dot definition"
+        },
+        
+        snippet workspace {
+            prefix: "workspace",
+            body: [
+                "workspace ${1:name} {",
+                "\ticon: \"${2:🎨}\",",
+                "\tmode: \"${3:editor}\",",
+                "\tsupports: [\"${4:feature}\"]",
+                "\t$0",
+                "}"
+            ],
+            description: "Create workspace definition"
+        },
+        
+        snippet quantum_execution {
+            prefix: "quantum",
+            body: ["⚡🔄💾🧠✨"],
+            description: "Quantum execution pattern"
+        }
+    }
+    
+    // Repository
+    repository {
+        type: "git",
+        url: "https://github.com/angehlang/extension"
+    }
+    
+    // Dependencies
+    dependencies {
+        runtime: [
+            "vscode-languageclient: ^8.1.0"
+        ],
+        dev: [
+            "@types/vscode: ^1.80.0",
+            "@types/node: ^18.0.0",
+            "typescript: ^5.0.0",
+            "vsce: ^2.15.0"
+        ]
+    }
+    
+    // Build Scripts
+    scripts {
+        build: "tsc -p ./",
+        watch: "tsc -watch -p ./",
+        package: "vsce package",
+        publish: "vsce publish",
+        test: "npm run build && node ./out/test/runTest.js"
+    }
+}

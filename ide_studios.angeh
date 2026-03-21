@@ -1,0 +1,59 @@
+// AngehLang IDE - Advanced Studios
+// Note: These define the "Apps within the App"
+
+// -----------------------------------------------------------------------------
+// 1. VIDEO STUDIO (vid.angeh)
+// -----------------------------------------------------------------------------
+dot studio video_hub {
+    definition_file: "../../AngehLanguages/vid.angeh";
+    ui_layout: "premiere_style";
+    
+    components: [
+        {area: "timeline", type: "multi_track_sequencer", features: ["zoom", "slice", "drag"]},
+        {area: "preview", type: "webgl_player", features: ["transport_controls", "resolution_selector"]},
+        {area: "library", type: "asset_browser", features: ["synthetic_actors", "env_maps"]},
+        {area: "inspector", type: "property_grid", features: ["transform", "effects", "color_grading"]}
+    ];
+}
+
+// -----------------------------------------------------------------------------
+// 2. SPACETIME LAB (77d.angeh)
+// -----------------------------------------------------------------------------
+dot studio spacetime_lab {
+    definition_file: "../../AngehLanguages/77d.angeh";
+    ui_layout: "blender_style";
+    
+    components: [
+        {area: "viewport", type: "three_js_canvas", features: ["orbit_cam", "gizmo"]},
+        {area: "outliner", type: "tree_view", features: ["scene_hierarchy"]},
+        {area: "properties", type: "tabbed_inspector", features: ["physics", "material", "quantum_state"]}
+    ];
+}
+
+// -----------------------------------------------------------------------------
+// 3. AUTOMATION HIVE (automate.angeh)
+// -----------------------------------------------------------------------------
+dot studio automation_hive {
+    definition_file: "../../AngehLanguages/automate.angeh";
+    ui_layout: "node_editor_style";
+    
+    components: [
+        {area: "canvas", type: "infinite_grid", features: ["pan_zoom", "connection_lines"]},
+        {area: "node_palette", type: "list_view", features: ["triggers", "actions", "logic"]},
+        {area: "console", type: "log_output", features: ["execution_trace"]}
+    ];
+}
+
+// -----------------------------------------------------------------------------
+// 4. IMAGE CANVAS (image.angeh)
+// -----------------------------------------------------------------------------
+dot studio image_canvas {
+    definition_file: "../../AngehLanguages/image.angeh";
+    ui_layout: "photoshop_style";
+    
+    components: [
+        {area: "canvas", type: "raster_surface", features: ["brush", "layers", "transform"]},
+        {area: "toolbar", type: "tool_strip", features: ["select", "crop", "text", "magic_wand"]},
+        {area: "ai_panel", type: "input_form", features: ["prompt_box", "generate_btn", "style_selector"]}
+    ];
+}

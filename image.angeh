@@ -1,0 +1,118 @@
+// Image Programming Language (image.angeh)
+// Version: 9.0 (Neural-Pixel Edition)
+// Description: A language for programmatic image manipulation, generative art,
+// medical imaging analysis, and holographic display control.
+
+dot pixel_lang_config {
+    bit_depth: 32_bit_float, // HDR
+    color_model: "LAB_Spectral",
+    max_dimension: "unlimited",
+    acceleration: "tensor_core_gpu",
+    layer_limit: "infinite"
+}
+
+// -----------------------------------------------------------------------------
+// 1. PIXEL OPERATIONS (The "Brush")
+// -----------------------------------------------------------------------------
+dot pixel_ops {
+    "crop": "✂️🖼️",
+    "resize": "📏🖼️",
+    "rotate": "🔄🖼️",
+    "mask": "🎭🖌️",
+    "blend": "🥣🎨",
+    "gradient": "🌈📉",
+    "filter_convolution": "🍩📉"
+}
+
+// -----------------------------------------------------------------------------
+// 2. CANVAS & DRAWING (The "Surface")
+// -----------------------------------------------------------------------------
+dot canvas {
+    "new_layer": "➕📄",
+    "vector_path": "✒️📐",
+    "rasterize": "🏁🔳",
+    "flood_fill": "🪣💦",
+    "text_render": "📝🎨"
+}
+
+// -----------------------------------------------------------------------------
+// 3. GENERATIVE AI (Diffusion & Style)
+// -----------------------------------------------------------------------------
+// Control Stable Diffusion / Midjourney style models via code.
+dot diffusion_model {
+    "txt2img": "💬➡️🖼️",
+    "img2img": "🖼️➡️🖼️",
+    "inpainting": "🎨🩹",
+    "outpainting": "🖼️🔭",
+    "control_net": "🕸️🎮", // Pose/Depth control
+    "lora_weights": "⚖️🧠"
+}
+
+// -----------------------------------------------------------------------------
+// 4. MEDICAL IMAGING (DICOM/Science)
+// -----------------------------------------------------------------------------
+// Professional grade analysis for doctors and researchers.
+dot medical_imaging {
+    "load_dicom": "🏥📥",
+    "segment_organ": "🫀🔪",
+    "detect_tumor": "⚠️🦠",
+    "volume_render_3d": "🧊🦵", // CT Scan to 3D
+    "heatmap_analysis": "🌡️🗺️"
+}
+
+// -----------------------------------------------------------------------------
+// 5. NEURAL STYLE & ART (Aesthetics)
+// -----------------------------------------------------------------------------
+dot neural_style {
+    "transfer_style": "🎨🔄",  // "Make this photo look like Van Gogh"
+    "upscale_ai": "🧼🔍",      // Super-resolution
+    "restore_face": "👴➡️👶",  // Old photo restoration
+    "colorize": "⚫➡️🌈"       // B&W to Color
+}
+
+// -----------------------------------------------------------------------------
+// 6. HOLOGRAPHIC & LIGHT FIELD
+// -----------------------------------------------------------------------------
+// Export for Looking Glass or future holographic displays.
+dot holographic_display {
+    "light_field_capture": "📷🌌",
+    "calculate_depth_map": "🗺️📉",
+    "generate_quilt": "🏁🖼️",  // Multi-view quilt
+    "parallax_adjust": "👀↔️"
+}
+
+// -----------------------------------------------------------------------------
+// 7. COMPUTER VISION ANALYSIS
+// -----------------------------------------------------------------------------
+dot computer_vision {
+    "detect_face": "😀🔍",
+    "ocr_text": "📄🔡",
+    "segment_semantic": "🏘️🎨", // "Color all cars red, all trees green"
+    "track_object": "🏎️🎯"
+}
+
+// EXAMPLE PROGRAM: "Medical Diagnosis Assistant"
+/*
+dot_image cancer_screen {
+    // 1. Load MRI Scan
+    var scan = 🏥📥("patient_x_brain_mri.dcm")
+    
+    // 2. Pre-process
+    scan = 🧼🔍(scan, method: "denoise_ai")
+    
+    // 3. AI Analysis
+    var tumor_mask = ⚠️🦠(scan, sensitivity: 0.99)
+    
+    // 4. Visualization
+    var 3d_model = 🧊🦵(scan)
+    
+    // 5. Highlight Danger
+    if (tumor_mask.exists) {
+        3d_model.apply_texture(tumor_mask, color: "red_glow")
+        print("Anomaly Detected ⚠️")
+    }
+    
+    // 6. Export for Doctor
+    🏁🖼️ export_hologram(3d_model, "diagnosis_view.holo")
+}
+*/

@@ -1,0 +1,38 @@
+// AngehLang IDE - UI Master Definition V2 (Windowed)
+
+dot ui_theme {
+    primary: "#9D4EDD";
+    secondary: "#4CC9F0"; 
+    accent: "#FFE66D";
+    bg: "#000000"; // Deep Void
+    desktop_wallpaper: "neural_network_4k_animated";
+}
+
+// Global "Desktop" Container
+dot component desktop {
+    layout: "absolute_coordinate_system";
+    features: ["context_menu", "icon_grid", "widget_layer"];
+}
+
+// The Taskbar / Dock
+dot component taskbar {
+    position: "bottom";
+    height: "48px";
+    style: "macos_dock_glass";
+    items: ["start_menu", "running_apps", "system_tray"];
+}
+
+// Window Chrome
+dot component window_frame {
+    controls: ["close", "maximize", "minimize"];
+    title_bar: "draggable_area";
+    content_area: "scrollable_viewport";
+    status_bar: "bottom_info";
+}
+
+// Notification Toast
+dot component notification_center {
+    position: "top_right";
+    stacking: "vertical_overlap";
+    auto_dismiss: 5000;
+}

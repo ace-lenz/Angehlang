@@ -1,0 +1,279 @@
+(def-module collections
+  "Quantum-aware collections for the Angeh Reality Fabric - Enhanced Version
+   All collections preserve entanglement and support superposition states
+   Now with comprehensive error handling and validation")
+
+(import type-system)
+
+;; ============================================================
+;; ERROR HANDLING PRIMITIVES
+;; ============================================================
+
+(def-type ErrorLevel
+  (enum (INFO WARNING ERROR CRITICAL)))
+
+(def-type ValidationError
+  (struct (
+    (message string)
+    (level ErrorLevel)
+    (context (new-hash-map))
+  )))
+
+(def-fn validate-not-nil (value name)
+  "Validate value is not nil"
+  (when (nil? value)
+    (error (str "ValidationError: " name " cannot be nil")))
+  value)
+
+(def-fn validate-type (value expected-type name)
+  "Validate value has expected type"
+  (when (not (type? value expected-type))
+    (error (str "TypeError: " name " must be " expected-type 
+                ", got " (type-of value))))
+  value)
+
+(def-fn validate-positive (value name)
+  "Validate value is positive number"
+  (when (or (not (number? value)) (<= value 0))
+    (error (str "ValueError: " name " must be positive number, got " value)))
+  value)
+
+(def-fn validate-bounds (idx collection name)
+  "Validate index is within bounds"
+  (when (or (< idx 0) (>= idx (len collection)))
+    (error (str "IndexError: " name " " idx 
+                " out of bounds for collection of size " (len collection))))
+  idx)
+
+(def-fn safe-execute (fn fallback error-msg)
+  "Execute function with fallback on error"
+  (try
+    (fn)
+    (catch e
+      (log-error error-msg e)
+      fallback)))
+
+;; ============================================================
+;; QUANTUM STACK - LIFO with Enhanced Error Handling
+;; ============================================================
+(def-type Stack
+  (struct (
+    (items (new-array))
+    (entanglements (new-hash-map))
+    (quantum-state 'collapsed)
+    (max-size 1000000)  ;; Memory safety limit
+  )))
+
+(def-fn new-stack (&optional max-size)
+  "Create a new quantum-aware stack with optional size limit"
+  (let ((size (or max-size 1000000)))
+    (validate-positive size "max-size")
+    (Stack (new-array) (new-hash-map) 'collapsed size)))
+
+(def-fn stack-push! (stack value)
+  "Push value onto stack, preserving quantum state"
+  (validate-not-nil stack "stack")
+  (validate-type stack Stack "stack")
+  
+  ;; Check capacity
+  (when (>= (len (stack.items stack)) (stack.max-size stack))
+    (error (str "StackOverflow: Cannot exceed max size of " 
+                (stack.max-size stack))))
+  
+  (try
+    (let ((idx (len (stack.items stack))))
+      (array-push! (stack.items stack) value)
+      ;; Track entanglement if value has quantum signature
+      (when (has-quantum-signature? value)
+        (hash-set! (stack.entanglements stack) idx (get-quantum-id value)))
+      value)
+    (catch e
+      (error (str "StackPushError: " e)))))
+
+(def-fn stack-pop! (stack)
+  "Pop value from stack, maintaining entanglement"
+  (validate-not-nil stack "stack")
+  (validate-type stack Stack "stack")
+  
+  (if (> (len (stack.items stack)) 0)
+    (try
+      (let ((value (array-pop! (stack.items stack))))
+        ;; Clean up entanglement tracking
+        (hash-delete! (stack.entanglements stack) (len (stack.items stack)))
+        value)
+      (catch e
+        (error (str "StackPopError: " e))))
+    (error "StackUnderflow: Cannot pop from empty stack")))
+
+(def-fn stack-peek (stack)
+  "Peek at top of stack without removing"
+  (validate-not-nil stack "stack")
+  (validate-type stack Stack "stack")
+  
+  (if (> (len (stack.items stack)) 0)
+    (safe-execute
+      (fn () (get (stack.items stack) (- (len (stack.items stack)) 1)))
+      nil
+      "StackPeekError")
+    (error "StackEmpty: Cannot peek empty stack")))
+
+(def-fn stack-size (stack)
+  "Get current stack size"
+  (validate-not-nil stack "stack")
+  (validate-type stack Stack "stack")
+  (len (stack.items stack)))
+
+(def-fn stack-empty? (stack)
+  "Check if stack is empty"
+  (validate-not-nil stack "stack")
+  (= (stack-size stack) 0))
+
+;; ============================================================
+;; QUANTUM QUEUE - FIFO with Enhanced Error Handling
+;; ============================================================
+(def-type Queue
+  (struct (
+    (items (new-array))
+    (head 0)
+    (tail 0)
+    (entanglements (new-hash-map))
+    (max-size 1000000)
+  )))
+
+(def-fn new-queue (&optional max-size)
+  "Create a new quantum-aware queue with optional size limit"
+  (let ((size (or max-size 1000000)))
+    (validate-positive size "max-size")
+    (Queue (new-array) 0 0 (new-hash-map) size)))
+
+(def-fn queue-enqueue! (queue value)
+  "Add value to end of queue with validation"
+  (validate-not-nil queue "queue")
+  (validate-type queue Queue "queue")
+  
+  ;; Check capacity
+  (when (>= (- (queue.tail queue) (queue.head queue)) (queue.max-size queue))
+    (error (str "QueueOverflow: Cannot exceed max size of " 
+                (queue.max-size queue))))
+  
+  (try
+    (let ((idx (queue.tail queue)))
+      (array-push! (queue.items queue) value)
+      (when (has-quantum-signature? value)
+        (hash-set! (queue.entanglements queue) idx (get-quantum-id value)))
+      (set! (queue.tail queue) (+ (queue.tail queue) 1))
+      value)
+    (catch e
+      (error (str "QueueEnqueueError: " e)))))
+
+(def-fn queue-dequeue! (queue)
+  "Remove value from front of queue with validation"
+  (validate-not-nil queue "queue")
+  (validate-type queue Queue "queue")
+  
+  (if (< (queue.head queue) (queue.tail queue))
+    (try
+      (let ((value (get (queue.items queue) (queue.head queue))))
+        (hash-delete! (queue.entanglements queue) (queue.head queue))
+        (set! (queue.head queue) (+ (queue.head queue) 1))
+        
+        ;; Periodic cleanup to prevent memory leaks
+        (when (and (> (queue.head queue) 100)
+                   (= (mod (queue.head queue) 100) 0))
+          (queue-compact! queue))
+        
+        value)
+      (catch e
+        (error (str "QueueDequeueError: " e))))
+    (error "QueueEmpty: Cannot dequeue from empty queue")))
+
+(def-fn queue-compact! (queue)
+  "Compact queue by removing processed items"
+  (when (> (queue.head queue) 0)
+    (let ((new-items (array-slice (queue.items queue) (queue.head queue) (queue.tail queue))))
+      (set! (queue.items queue) new-items)
+      (set! (queue.tail queue) (- (queue.tail queue) (queue.head queue)))
+      (set! (queue.head queue) 0))))
+
+(def-fn queue-size (queue)
+  "Get current queue size"
+  (validate-not-nil queue "queue")
+  (- (queue.tail queue) (queue.head queue)))
+
+(def-fn queue-empty? (queue)
+  "Check if queue is empty"
+  (validate-not-nil queue "queue")
+  (= (queue.head queue) (queue.tail queue)))
+
+;; ============================================================
+;; QUANTUM LIST - Dynamic Array with Enhanced Safety
+;; ============================================================
+(def-type QList
+  (struct (
+    (items (new-array))
+    (superposition-mask (new-array))
+    (entanglement-graph (new-hash-map))
+    (max-size 10000000)
+  )))
+
+(def-fn new-qlist (&optional max-size)
+  "Create a new quantum list with optional size limit"
+  (let ((size (or max-size 10000000)))
+    (validate-positive size "max-size")
+    (QList (new-array) (new-array) (new-hash-map) size)))
+
+(def-fn qlist-add! (qlist value)
+  "Add value to quantum list with capacity check"
+  (validate-not-nil qlist "qlist")
+  (validate-type qlist QList "qlist")
+  
+  (when (>= (len (qlist.items qlist)) (qlist.max-size qlist))
+    (error (str "QListOverflow: Cannot exceed max size of " 
+                (qlist.max-size qlist))))
+  
+  (try
+    (array-push! (qlist.items qlist) value)
+    (array-push! (qlist.superposition-mask qlist) false)
+    value
+    (catch e
+      (error (str "QListAddError: " e)))))
+
+(def-fn qlist-get (qlist idx)
+  "Get value at index with bounds checking"
+  (validate-not-nil qlist "qlist")
+  (validate-type qlist QList "qlist")
+  (validate-bounds idx (qlist.items qlist) "index")
+  
+  (safe-execute
+    (fn ()
+      (if (get (qlist.superposition-mask qlist) idx)
+        (collapse-superposition (get (qlist.items qlist) idx))
+        (get (qlist.items qlist) idx)))
+    nil
+    "QListGetError"))
+
+(def-fn qlist-set! (qlist idx value)
+  "Set value at index with validation"
+  (validate-not-nil qlist "qlist")
+  (validate-type qlist QList "qlist")
+  (validate-bounds idx (qlist.items qlist) "index")
+  
+  (try
+    (array-set! (qlist.items qlist) idx value)
+    (array-set! (qlist.superposition-mask qlist) idx false)
+    value
+    (catch e
+      (error (str "QListSetError: " e)))))
+
+;; Export enhanced API with error handling
+(export
+  ;; Error handling
+  validate-not-nil validate-type validate-positive validate-bounds safe-execute
+  ;; Stack (enhanced)
+  new-stack stack-push! stack-pop! stack-peek stack-size stack-empty?
+  ;; Queue (enhanced)
+  new-queue queue-enqueue! queue-dequeue! queue-size queue-empty? queue-compact!
+  ;; Quantum List (enhanced)
+  new-qlist qlist-add! qlist-get qlist-set! qlist-size
+  ;; Utilities
+  has-quantum-signature? get-quantum-id collapse-superposition)

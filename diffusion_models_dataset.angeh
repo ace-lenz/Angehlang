@@ -1,0 +1,90 @@
+// Diffusion Models Dataset
+// Version: 1.0
+// Description: Comprehensive guide to diffusion architectures, sampling, and control
+
+dot diffusion_config {
+  type: "latent_diffusion",
+  resolution: [1024, 1024],
+  scheduler: "ddim"
+}
+
+// Core Architectures
+dot architectures {
+  unet: {
+    channels: [320, 640, 1280],
+    attention_heads: 8,
+    transformer_depth: 2,
+    context_dim: 768
+  },
+  
+  dit: { // Diffusion Transformer
+    patch_size: 2,
+    hidden_size: 1152,
+    depth: 28,
+    num_heads: 16
+  },
+  
+  consistency_models: {
+    distillation: "on_policy",
+    steps: 1, // Single-step generation
+    teacher: "sdxl_base"
+  }
+}
+
+// Sampling Methods
+dot samplers {
+  euler_ancestral: { steps: 20, sigma_min: 0.002, sigma_max: 80.0 },
+  dpm_plus_plus: { order: 2, algorithm: "2m", s_churn: 0.0 },
+  lcm: { steps: 4, guidance_scale: 1.0 }, // Latent Consistency Model
+  ddim: { eta: 0.0, steps: 50 }
+}
+
+// Conditioning & Control
+dot conditioning {
+  text_encoder: {
+    clip_g: "frozen",
+    clip_l: "frozen",
+    t5_xxl: "optional"
+  },
+  
+  controlnet: {
+    canny: { weight: 1.0, start: 0.0, end: 1.0 },
+    depth: { weight: 1.0, start: 0.0, end: 1.0 },
+    pose: { weight: 1.0, start: 0.0, end: 1.0 },
+    ip_adapter: { scale: 0.6, image_encoder: "clip_vit_h" }
+  },
+  
+  lora: {
+    rank: 4,
+    alpha: 1.0,
+    target_modules: ["to_k", "to_q", "to_v", "to_out.0"]
+  }
+}
+
+// Advanced Workflows
+dot workflows {
+  inpainting: {
+    mask_blur: 4,
+    fill_mode: "latent_noise",
+    denoising_strength: 0.75
+  },
+  
+  outpainting: {
+    pixels: 128,
+    direction: ["left", "right", "up", "down"],
+    coherence: "high"
+  },
+  
+  upscaling: {
+    method: "latent_upscale",
+    factor: 2.0,
+    refiner: "sdxl_refiner"
+  },
+  
+  video_diffusion: {
+    frames: 24,
+    fps: 8,
+    motion_bucket_id: 127,
+    temporal_attention: true
+  }
+}

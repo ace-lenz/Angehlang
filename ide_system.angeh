@@ -1,0 +1,35 @@
+// AngehLang IDE - System Core
+// Description: Defines file system, version control, and browser integration.
+
+dot file_system {
+    root: "/project";
+    virtual_drivers: ["local_storage", "memory_buffer"];
+    watcher: "active_polling";
+    exclude: ["node_modules", ".git", "dist"];
+}
+
+dot source_control {
+    system: "git_quantum_wrapper";
+    features: [
+        "stage_changes",
+        "commit",
+        "branch_management",
+        "conflict_resolution_ai"
+    ];
+}
+
+dot browser_preview {
+    engine: "chromium_embedded";
+    port: 3000;
+    features: ["live_reload", "console_mirror", "network_monitor"];
+}
+
+dot extensions {
+    marketplace: "angeh_native_registry";
+    installed: [
+        "vscode_keybindings",
+        "prettier_formatting",
+        "77d_intellisense",
+        "python_debugger"
+    ];
+}

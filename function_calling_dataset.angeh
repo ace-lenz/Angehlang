@@ -1,0 +1,67 @@
+{
+  "function_calling_dataset": {
+    "version": "1.0",
+    "description": "Comprehensive dataset for AI Function Calling, Tool Use, and API Integration mapped to Angeh Lang dot patterns",
+    "core_concepts": {
+      "function_call": "📞🔧 (Phone tool) - Invoking external functions",
+      "tool_use": "🔧🤖 (Tool robot) - Using tools to accomplish tasks",
+      "api_integration": "🔗🌐 (Link globe) - Connecting to APIs",
+      "schema_definition": "📐📦 (Square container) - Defining function signatures",
+      "parameter_binding": "🔗📝 (Link write) - Mapping arguments"
+    },
+    "function_types": {
+      "retrieval": "🔍📚 (Search book) - Fetch information",
+      "computation": "🧮⚡ (Abacus lightning) - Perform calculations",
+      "generation": "✨📤 (Sparkle outbox) - Create content",
+      "transformation": "🔄📦 (Cycle container) - Modify data",
+      "action": "🎬🔧 (Movie tool) - Execute side effects",
+      "validation": "✅📐 (Check square) - Verify correctness"
+    },
+    "openai_functions": {
+      "tools_array": "🔧📦 (Tool container) - Tools definition array",
+      "function_object": "📞📦 (Phone container) - Function object",
+      "parameters_schema": "📐🔢 (Square number) - JSON Schema params",
+      "tool_choice": "🎯🔧 (Target tool) - Force or auto tool use",
+      "parallel_tool_calls": "⚡🔧🔧 (Lightning tools) - Multiple calls"
+    },
+    "anthropic_tools": {
+      "tool_use_block": "🔧📦 (Tool container) - Tool use content block",
+      "tool_result": "📤🔧 (Outbox tool) - Tool execution result",
+      "input_schema": "📐📥 (Square input) - Input schema definition",
+      "cache_control": "💾🔧 (Storage tool) - Caching tool definitions"
+    },
+    "gemini_functions": {
+      "function_declarations": "📜🔧 (Scroll tool) - Declare functions",
+      "function_response": "📤📜 (Outbox scroll) - Function response",
+      "grounding": "⚓🔍 (Anchor search) - Grounded generation"
+    },
+    "mcp_protocol": {
+      "resources": "📦🌐 (Container globe) - MCP Resources",
+      "tools": "🔧🌐 (Tool globe) - MCP Tools",
+      "prompts": "📝🌐 (Write globe) - MCP Prompts",
+      "sampling": "🎲🌐 (Dice globe) - MCP Sampling",
+      "json_rpc": "📦🔗 (Container link) - JSON-RPC transport"
+    },
+    "execution_patterns": {
+      "sequential": "➡️🔧➡️ (Arrow tool arrow) - One at a time",
+      "parallel": "⚡🔧🔧 (Lightning tools) - Concurrent execution",
+      "conditional": "❓🔧 (Question tool) - If-then execution",
+      "iterative": "🔄🔧 (Cycle tool) - Loop until done",
+      "fallback": "🔙🔧 (Back tool) - Retry with alternative"
+    },
+    "error_handling": {
+      "retry_logic": "🔄⚠️ (Cycle warning) - Retry on failure",
+      "timeout": "⏱️❌ (Timer cross) - Time limit exceeded",
+      "validation_error": "📐❌ (Square cross) - Invalid parameters",
+      "permission_denied": "🔒❌ (Lock cross) - Access denied",
+      "rate_limit": "⏱️🚫 (Timer forbidden) - Too many requests"
+    },
+    "best_practices": {
+      "clear_descriptions": "📝✨ (Write sparkle) - Explicit function docs",
+      "typed_parameters": "📐🔢 (Square number) - Strong typing",
+      "idempotency": "🔄= (Cycle equal) - Safe to retry",
+      "minimal_scope": "🎯📦 (Target container) - Single responsibility",
+      "error_messages": "⚠️📝 (Warning write) - Helpful errors"
+    }
+  }
+}

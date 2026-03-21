@@ -1,0 +1,163 @@
+﻿python : Traceback (most 
+recent call last):
+At line:1 char:1
++ python ..\Angehlang_stand
+alone\core\interpreter.py 
+..\Angehlang_stand ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
+    + CategoryInfo         
+     : NotSpecified: (Tra  
+  ceback (most recent ca   
+ ll last)::String) [],     
+RemoteException
+    + FullyQualifiedErrorI 
+   d : NativeCommandError
+ 
+Standalone Engine Operational
+Testing AI Integration...
+≡ƒº¼ [AGENT-SPAWN] Instantiating AI Entity: 'Oracle'
+≡ƒºá [AGENT-ASK] Querying 'Oracle'...
+[Mock AI] I am Oracle. Setup Ollama on localhost:11434 for real thought generation.
+≡ƒîÉ [A2A-BROADCAST] OmniBrain -> ALL: Initialization complete
+≡ƒö« [INTENT] Leveraging AI to infer action for: 'sort list' on data [3, 1, 2]
+≡ƒº¼ [AGENT-SPAWN] Instantiating AI Entity: '__INTENT_CORE__'
+≡ƒºá [AGENT-ASK] Querying '__INTENT_CORE__'...
+Running end-to-end test with program: (+ 10 20)
+  File "C:\Users\Lenon\Desk
+top\77Dimension\Angehlang_s
+tandalone\core\interpreter.
+py", line 531, in <module>
+    main()
+  File "C:\Users\Lenon\Desk
+top\77Dimension\Angehlang_s
+tandalone\core\interpreter.
+py", line 518, in main
+    tokens = evaluate([Symb
+ol('tokenize'), 
+test_program], global_env)
+             ^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^
+  File "C:\Users\Lenon\Desk
+top\77Dimension\Angehlang_s
+tandalone\core\interpreter.
+py", line 128, in evaluate
+    val = evaluate(expr, 
+Env(params, vals, env))
+          ^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Lenon\Desk
+top\77Dimension\Angehlang_s
+tandalone\core\interpreter.
+py", line 110, in evaluate
+    return 
+special_forms[op](args, 
+env)
+           ^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^
+  File "C:\Users\Lenon\Desk
+top\77Dimension\Angehlang_s
+tandalone\core\interpreter.
+py", line 142, in let_form
+    val = evaluate(expr, 
+local_env)
+          
+^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Lenon\Desk
+top\77Dimension\Angehlang_s
+tandalone\core\interpreter.
+py", line 110, in evaluate
+    return 
+special_forms[op](args, 
+env)
+           ^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^
+  File "C:\Users\Lenon\Desk
+top\77Dimension\Angehlang_s
+tandalone\core\interpreter.
+py", line 148, in 
+begin_form
+    val = evaluate(expr, 
+env)
+          
+^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Lenon\Desk
+top\77Dimension\Angehlang_s
+tandalone\core\interpreter.
+py", line 110, in evaluate
+    return 
+special_forms[op](args, 
+env)
+           ^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^
+  File "C:\Users\Lenon\Desk
+top\77Dimension\Angehlang_s
+tandalone\core\interpreter.
+py", line 182, in 
+while_form
+    val = evaluate(body, 
+env)
+          
+^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Lenon\Desk
+top\77Dimension\Angehlang_s
+tandalone\core\interpreter.
+py", line 110, in evaluate
+    return 
+special_forms[op](args, 
+env)
+           ^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^
+  File "C:\Users\Lenon\Desk
+top\77Dimension\Angehlang_s
+tandalone\core\interpreter.
+py", line 142, in let_form
+    val = evaluate(expr, 
+local_env)
+          
+^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Lenon\Desk
+top\77Dimension\Angehlang_s
+tandalone\core\interpreter.
+py", line 110, in evaluate
+    return 
+special_forms[op](args, 
+env)
+           ^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^
+  File "C:\Users\Lenon\Desk
+top\77Dimension\Angehlang_s
+tandalone\core\interpreter.
+py", line 174, in cond_form
+    res = evaluate(expr, 
+env)
+          
+^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Lenon\Desk
+top\77Dimension\Angehlang_s
+tandalone\core\interpreter.
+py", line 121, in evaluate
+    vals = [evaluate(arg, 
+env) for arg in args]
+           ^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Lenon\Desk
+top\77Dimension\Angehlang_s
+tandalone\core\interpreter.
+py", line 121, in 
+<listcomp>
+    vals = [evaluate(arg, 
+env) for arg in args]
+            
+^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Lenon\Desk
+top\77Dimension\Angehlang_s
+tandalone\core\interpreter.
+py", line 131, in evaluate
+    raise 
+TypeError(f"{proc} is not 
+a function")
+TypeError: new-token is 
+not a function

@@ -1,0 +1,61 @@
+(def-module universal-icon-system
+  "🖼️ Angeh Icon: 4D Photonic Transmogrification for App Identity")
+
+(import 🎨)
+(import 🌐)
+(import 🏗️)
+(import 🛸)
+
+;; ============================================================
+;; ICON TYPES
+;; ============================================================
+
+(def-type DotIcon
+  (struct (
+    (icon-id (gensym 'ICON))
+    (source-image-path string)
+    (photonic-pattern genome)   ; Compressed dot-representation
+    (resolution-depth int)       ; 4D fidelity level
+    (target-package symbol)
+  )))
+
+;; ============================================================
+;; CORE OPERATIONS
+;; ============================================================
+
+(def-fn transmogrify-to-dot-icon! (image-path target)
+  "Converts a standard image (PNG/JPG/SVG) into a resonant photonic icon"
+  (print (str "📸 🖼️ [TRANSMOGRIFY] Converting " image-path " for " target "..."))
+  (let ((raw-data (read-image-bytes image-path))
+        (dot-pattern (🎨.si-autonomous-complete! raw-data))) ; Use SI to enhance details
+    (print "✨ 🖼️ [REIFIED] Photonic pattern locked.")
+    (DotIcon (gensym 'ICON) image-path dot-pattern 1024 target)))
+
+(def-fn attach-icon-to-app! (icon payload)
+  "Links a generated dot-icon to a launcher payload or build context"
+  (print (str "🔗 🖼️ [ATTACH] Linking icon " (icon.icon-id icon) " to " (payload.source payload)))
+  (attach-metadata! (payload.source payload) 'ICON (icon.photonic-pattern icon))
+  (print "✅ Icon successfully identity-bound."))
+
+(def-fn preview-icon! (icon)
+  "Renders a high-fidelity preview of the dot-icon in the current view layer"
+  (print (str "👁️ 🖼️ [PREVIEW] Manifesting icon on Photonic DOM..."))
+  (let ((preview-el (🌐.pdom-create-element "canvas" (qhash-map "id" "icon-preview") (list))))
+    (🌐.update-pdom-state! "icon-preview" (qhash-map "pattern" (icon.photonic-pattern icon)))
+    (🌐.render-ui preview-el)))
+
+;; ============================================================
+;; UTILITY TOOLS
+;; ============================================================
+
+(def-fn auto-generate-logo! (app-name style-mood)
+  "Generates a new AI logo from scratch using the Style engine"
+  (print (str "🤖 🖼️ [GENERATE] Creating new logo for: " app-name))
+  (let ((template (🎨.hybrid-trillion-gen! (struct ((aesthetic-mood style-mood) (target-file-count 1))))))
+    (transmogrify-to-dot-icon! template app-name)))
+
+(export
+  transmogrify-to-dot-icon!
+  attach-icon-to-app!
+  preview-icon!
+  auto-generate-logo!)

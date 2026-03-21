@@ -1,0 +1,3 @@
+﻿Standalone Engine Operational
+Testing AI Integration...
+Runtime Error in ..\Angehlang_standalone\core\dummy.angeh: 'charmap' codec can't encode character '\U0001f9ec' in position 0: character maps to <undefined>

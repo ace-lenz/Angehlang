@@ -1,0 +1,51 @@
+﻿python : Traceback (most 
+recent call last):
+At line:1 char:32
++ ... NG="utf-8"; python ..
+\Angehlang_standalone\core\
+interpreter.py ..\Ang ...
++                 ~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo         
+     : NotSpecified: (Tra  
+  ceback (most recent ca   
+ ll last)::String) [],     
+RemoteException
+    + FullyQualifiedErrorI 
+   d : NativeCommandError
+ 
+  File "C:\Users\Lenon\Desk
+top\77Dimension\Angehlang_s
+tandalone\core\interpreter.
+py", line 528, in <module>
+Standalone Engine Operational
+Testing AI Integration...
+≡ƒº¼ [AGENT-SPAWN] Instantiating AI Entity: 'Oracle'
+≡ƒºá [AGENT-ASK] Querying 'Oracle'...
+[Mock AI] I am Oracle. Setup Ollama on localhost:11434 for real thought generation.
+≡ƒîÉ [A2A-BROADCAST] OmniBrain -> ALL: Initialization complete
+≡ƒö« [INTENT] Leveraging AI to infer action for: 'sort list' on data [3, 1, 2]
+≡ƒº¼ [AGENT-SPAWN] Instantiating AI Entity: '__INTENT_CORE__'
+≡ƒºá [AGENT-ASK] Querying '__INTENT_CORE__'...
+Running end-to-end test with program: (+ 10 20)
+    main()
+  File "C:\Users\Lenon\Desk
+top\77Dimension\Angehlang_s
+tandalone\core\interpreter.
+py", line 515, in main
+    tokens = 
+evaluate(['tokenize', 
+test_program], global_env)
+             ^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^
+  File "C:\Users\Lenon\Desk
+top\77Dimension\Angehlang_s
+tandalone\core\interpreter.
+py", line 131, in evaluate
+    raise 
+TypeError(f"{proc} is not 
+a function")
+TypeError: tokenize is not 
+a function

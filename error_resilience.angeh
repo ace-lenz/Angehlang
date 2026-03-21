@@ -1,0 +1,472 @@
+(def-module error-resilience
+  "Comprehensive Error Handling & Self-Healing System")
+
+(import type-system)
+(import collections)
+
+;; ============================================================
+;; ERROR TYPES & SEVERITY
+;; ============================================================
+(def-type ErrorSeverity
+  (enum 'critical 'high 'medium 'low 'info))
+
+(def-type ErrorCategory
+  (enum 'file-io 'network 'memory 'validation 'concurrency 
+        'dependency 'quantum 'api 'model 'data-corruption))
+
+(def-type ErrorInfo
+  (struct (
+    (category ErrorCategory)
+    (severity ErrorSeverity)
+    (message string)
+    (stack-trace (new-qlist))
+    (recovery-attempted bool)
+    (recovery-successful bool)
+    (timestamp number)
+    (context (new-qhash-map))
+  )))
+
+;; ============================================================
+;; GLOBAL ERROR HANDLER
+;; ============================================================
+(def-type ErrorHandler
+  (struct (
+    (error-log (new-qlist))
+    (recovery-strategies (new-qhash-map))
+    (circuit-breakers (new-qhash-map))
+    (retry-policies (new-qhash-map))
+    (fallback-handlers (new-qhash-map))
+    (error-count (new-qhash-map))
+    (auto-heal-enabled bool)
+  )))
+
+(def-fn error-handler-new ()
+  "Create global error handler"
+  (let ((handler (ErrorHandler
+                   (new-qlist)
+                   (new-qhash-map)
+                   (new-qhash-map)
+                   (new-qhash-map)
+                   (new-qhash-map)
+                   (new-qhash-map)
+                   true)))
+    (register-default-strategies! handler)
+    handler))
+
+;; ============================================================
+;; INPUT VALIDATION
+;; ============================================================
+(def-fn validate-input (value constraints)
+  "Comprehensive input validation"
+  (let ((errors (new-qlist)))
+    ;; Type validation
+    (when (qhash-has-key? constraints 'type)
+      (let ((expected-type (qhash-get constraints 'type)))
+        (when (not (is-type? value expected-type))
+          (qlist-add! errors (concat "Type mismatch: expected " 
+                                    (symbol->string expected-type))))))
+    
+    ;; Range validation for numbers
+    (when (and (is-number? value) (qhash-has-key? constraints 'range))
+      (let ((range (qhash-get constraints 'range)))
+        (when (< value (first range))
+          (qlist-add! errors "Value below minimum"))
+        (when (> value (second range))
+          (qlist-add! errors "Value above maximum"))))
+    
+    ;; Length validation for strings/lists
+    (when (qhash-has-key? constraints 'max-length)
+      (let ((max-len (qhash-get constraints 'max-length)))
+        (when (> (length value) max-len)
+          (qlist-add! errors (concat "Length exceeds maximum of " 
+                                    (number->string max-len))))))
+    
+    ;; Pattern validation for strings
+    (when (and (is-string? value) (qhash-has-key? constraints 'pattern))
+      (let ((pattern (qhash-get constraints 'pattern)))
+        (when (not (matches-pattern? value pattern))
+          (qlist-add! errors "Value does not match required pattern"))))
+    
+    ;; Return validation result
+    (if (= (qlist-size errors) 0)
+      (struct ((valid true) (value value)))
+      (struct ((valid false) (errors errors))))))
+
+(def-fn validate-not-null (value error-msg)
+  "Check for null/undefined"
+  (if (or (null? value) (undefined? value))
+    (error error-msg)
+    value))
+
+(def-fn validate-bounds (index collection)
+  "Validate array/list bounds"
+  (when (or (< index 0) (>= index (length collection)))
+    (error (concat "Index out of bounds: " (number->string index)))))
+
+;; ============================================================
+;; TRY-CATCH-FINALLY
+;; ============================================================
+(def-fn try-catch (try-fn catch-fn finally-fn)
+  "Try-catch-finally pattern"
+  (let ((result nil)
+        (error nil))
+    (try
+      (set! result (try-fn))
+      (catch e
+        (set! error e)
+        (set! result (catch-fn e))))
+    
+    ;; Always execute finally
+    (when finally-fn
+      (finally-fn))
+    
+    ;; Return result or re-throw
+    (if error
+      (if result
+        result
+        (throw error))
+      result)))
+
+(def-fn safe-execute (fn default-value)
+  "Execute with default fallback"
+  (try-catch
+    fn
+    (lambda (e) default-value)
+    nil))
+
+;; ============================================================
+;; RETRY MECHANISM
+;; ============================================================
+(def-type RetryPolicy
+  (struct (
+    (max-attempts number)
+    (initial-delay number)
+    (max-delay number)
+    (exponential-backoff bool)
+    (retry-on (new-qlist))  ;; List of retryable error types
+  )))
+
+(def-fn retry-with-backoff (fn retry-policy)
+  "Retry operation with exponential backoff"
+  (let ((attempts 0)
+        (delay (retry-policy.initial-delay retry-policy))
+        (result nil)
+        (last-error nil))
+    
+    (while (< attempts (retry-policy.max-attempts retry-policy))
+      (set! attempts (+ attempts 1))
+      
+      (try-catch
+        (lambda ()
+          (set! result (fn))
+          (set! attempts 999999))  ;; Success - break loop
+        
+        (lambda (error)
+          (set! last-error error)
+          
+          (when (< attempts (retry-policy.max-attempts retry-policy))
+            ;; Sleep before retry
+            (sleep delay)
+            
+            ;; Exponential backoff
+            (when (retry-policy.exponential-backoff retry-policy)
+              (set! delay (* delay 2))
+              (when (> delay (retry-policy.max-delay retry-policy))
+                (set! delay (retry-policy.max-delay retry-policy))))))
+        
+        nil))
+    
+    (if result
+      result
+      (throw last-error))))
+
+(def-fn create-retry-policy (max-attempts initial-delay)
+  "Create default retry policy"
+  (RetryPolicy max-attempts initial-delay 30000 true (new-qlist)))
+
+;; ============================================================
+;; CIRCUIT BREAKER
+;; ============================================================
+(def-type CircuitBreaker
+  (struct (
+    (name symbol)
+    (state symbol)  ;; 'closed 'open 'half-open
+    (failure-threshold number)
+    (success-threshold number)
+    (timeout number)
+    (failure-count number)
+    (success-count number)
+    (last-failure-time number)
+  )))
+
+(def-fn circuit-breaker-new (name failure-threshold timeout)
+  "Create circuit breaker"
+  (CircuitBreaker name 'closed failure-threshold 5 timeout 0 0 0))
+
+(def-fn circuit-breaker-call (breaker fn)
+  "Call function through circuit breaker"
+  (match (breaker.state breaker)
+    ('open
+      ;; Check if timeout expired
+      (if (> (current-time) (+ (breaker.last-failure-time breaker) 
+                               (breaker.timeout breaker)))
+        ;; Try half-open
+        (begin
+          (set! (breaker.state breaker) 'half-open)
+          (circuit-breaker-exec breaker fn))
+        ;; Still open - reject immediately
+        (throw (struct ((error "Circuit breaker open")
+                       (retry-after (breaker.timeout breaker)))))))
+    
+    ('closed
+      (circuit-breaker-exec breaker fn))
+    
+    ('half-open
+      (circuit-breaker-exec breaker fn))))
+
+(def-fn circuit-breaker-exec (breaker fn)
+  "Execute through circuit breaker"
+  (try-catch
+    (lambda ()
+      (let ((result (fn)))
+        ;; Success
+        (set! (breaker.success-count breaker) 
+              (+ (breaker.success-count breaker) 1))
+        (set! (breaker.failure-count breaker) 0)
+        
+        ;; Reset if enough successes in half-open
+        (when (and (eq? (breaker.state breaker) 'half-open)
+                  (>= (breaker.success-count breaker) 
+                      (breaker.success-threshold breaker)))
+          (set! (breaker.state breaker) 'closed)
+          (set! (breaker.success-count breaker) 0))
+        
+        result))
+    
+    (lambda (error)
+      ;; Failure
+      (set! (breaker.failure-count breaker) 
+            (+ (breaker.failure-count breaker) 1))
+      (set! (breaker.last-failure-time breaker) (current-time))
+      (set! (breaker.success-count breaker) 0)
+      
+      ;; Open circuit if threshold exceeded
+      (when (>= (breaker.failure-count breaker) 
+                (breaker.failure-threshold breaker))
+        (set! (breaker.state breaker) 'open))
+      
+      (throw error))
+    
+    nil))
+
+;; ============================================================
+;; RESOURCE MANAGEMENT
+;; ============================================================
+(def-fn with-resource (acquire-fn release-fn use-fn)
+  "Ensure resource cleanup"
+  (let ((resource (acquire-fn)))
+    (try-catch
+      (lambda () (use-fn resource))
+      (lambda (e) (throw e))
+      (lambda () (release-fn resource)))))
+
+(def-fn check-memory-available (required-bytes)
+  "Check if memory is available"
+  (let ((available (get-available-memory)))
+    (when (< available required-bytes)
+      (error (concat "Insufficient memory: need " 
+                    (number->string required-bytes)
+                    " bytes, have "
+                    (number->string available))))))
+
+(def-fn enforce-timeout (fn timeout-ms)
+  "Enforce execution timeout"
+  (let ((start-time (current-time))
+        (result nil)
+        (timed-out false))
+    
+    ;; Execute with timeout check
+    (with-timeout timeout-ms
+      (set! result (fn)))
+    
+    result))
+
+;; ============================================================
+;; FILE I/O ERROR HANDLING
+;; ============================================================
+(def-fn safe-read-file (filepath)
+  "Read file with error handling"
+  (try-catch
+    (lambda ()
+      ;; Check file exists
+      (when (not (file-exists? filepath))
+        (error (concat "File not found: " filepath)))
+      
+      ;; Check permissions
+      (when (not (can-read-file? filepath))
+        (error (concat "Permission denied: " filepath)))
+      
+      ;; Read file
+      (read-file filepath))
+    
+    (lambda (error)
+      ;; Log error
+      (log-error 'file-io error)
+      
+      ;; Try recovery strategies
+      (cond
+        ;; Try backup file
+        ((file-exists? (concat filepath ".backup"))
+         (read-file (concat filepath ".backup")))
+        
+        ;; Try cache
+        ((has-cached-file? filepath)
+         (get-cached-file filepath))
+        
+        ;; Give up
+        (else (throw error))))
+    
+    nil))
+
+(def-fn safe-write-file (filepath content)
+  "Write file with error handling"
+  (try-catch
+    (lambda ()
+      ;; Check disk space
+      (when (< (get-free-disk-space) (length content))
+        (error "Insufficient disk space"))
+      
+      ;; Create backup
+      (when (file-exists? filepath)
+        (copy-file filepath (concat filepath ".backup")))
+      
+      ;; Write atomically
+      (let ((temp-file (concat filepath ".tmp")))
+        (write-file temp-file content)
+        (rename-file temp-file filepath)))
+    
+    (lambda (error)
+      ;; Restore from backup if write failed
+      (when (file-exists? (concat filepath ".backup"))
+        (copy-file (concat filepath ".backup") filepath))
+      (throw error))
+    
+    ;; Cleanup temp files
+    (lambda ()
+      (when (file-exists? (concat filepath ".tmp"))
+        (delete-file (concat filepath ".tmp"))))))
+
+;; ============================================================
+;; NETWORK ERROR HANDLING
+;; ============================================================
+(def-fn safe-network-request (url options)
+  "Network request with retries and timeout"
+  (let ((retry-policy (create-retry-policy 3 1000)))
+    (retry-with-backoff
+      (lambda ()
+        (enforce-timeout
+          (lambda ()
+            (try-catch
+                (lambda () (http-request url options))
+              (lambda (error)
+                (match (error.type error)
+                  ('timeout (throw-retriable-error "Request timeout"))
+                  ('connection (throw-retriable-error "Connection failed"))
+                  ('dns (throw-retriable-error "DNS resolution failed"))
+                  (else (throw error))))
+              nil))
+          (or (options.timeout options) 30000)))
+      retry-policy)))
+
+;; ============================================================
+;; SELF-HEALING
+;; ============================================================
+(def-fn auto-heal (component error)
+  "Attempt automatic healing"
+  (match component
+    ('file-system
+      ;; Try to recover from backup
+      (restore-from-backup))
+    
+    ('network
+      ;; Reconnect
+      (reconnect-network))
+    
+    ('memory
+      ;; Force garbage collection
+      (force-gc)
+      (clear-caches))
+    
+    ('quantum-state
+      ;; Re-initialize quantum state
+      (reinit-quantum-state))
+    
+    (else
+      false)))
+
+(def-fn health-check ()
+  "Comprehensive health check"
+  (struct (
+    (memory-ok (< (get-memory-usage) 0.9))
+    (disk-ok (> (get-free-disk-space) 100000000))
+    (network-ok (check-network-available))
+    (quantum-coherent (check-quantum-coherence))
+    (cache-valid (validate-cache-integrity))
+  )))
+
+;; ============================================================
+;; ERROR LOGGING
+;; ============================================================
+(def-fn log-error (category error)
+  "Log error with context"
+  (let ((error-info (ErrorInfo
+                      category
+                      'high
+                      (error.message error)
+                      (get-stack-trace)
+                      false
+                      false
+                      (current-time)
+                      (new-qhash-map))))
+    
+    ;; Log to file
+    (append-to-log-file error-info)
+    
+    ;; Trigger alerts if critical
+    (when (eq? (error-info.severity error-info) 'critical)
+      (send-alert error-info))))
+
+;; Export public API
+(export
+  ;; Error handling
+  error-handler-new
+  try-catch
+  safe-execute
+  
+  ;; Validation
+  validate-input
+  validate-not-null
+  validate-bounds
+  
+  ;; Retry & Circuit Breaker
+  retry-with-backoff
+  create-retry-policy
+  circuit-breaker-new
+  circuit-breaker-call
+  
+  ;; Resource management
+  with-resource
+  check-memory-available
+  enforce-timeout
+  
+  ;; Safe operations
+  safe-read-file
+  safe-write-file
+  safe-network-request
+  
+  ;; Self-healing
+  auto-heal
+  health-check
+  
+  ;; Logging
+  log-error)

@@ -1,0 +1,36 @@
+// AngehLang IDE - Pure Native Implementation
+// Version: 13.0 (Omni-Present Edition)
+
+dot ide_config {
+    engine_core: "quantum_native_v13";
+    compiler_target: "webgl_holographic_html5_full_feature";
+    resolution: "infinite_canvas";
+}
+
+// -----------------------------------------------------------------------------
+// 1. IMPORTS
+// -----------------------------------------------------------------------------
+include "ide_ui.angeh";
+include "ide_studios.angeh";
+include "ide_ai.angeh";
+include "ide_system.angeh";
+
+// -----------------------------------------------------------------------------
+// 2. DATA BINDINGS
+// -----------------------------------------------------------------------------
+dot memory_cortex {
+    import "../../AngehLanguages/77d.angeh" as spacetime;
+    import "../../AngehLanguages/vid.angeh" as video;
+    import "../../AngehLanguages/automate.angeh" as auto;
+    import "../../AngehLanguages/image.angeh" as img;
+}
+
+// -----------------------------------------------------------------------------
+// 3. BOOT
+// -----------------------------------------------------------------------------
+dot boot_sequence {
+    init: "system.check_integrity()";
+    mount: "ui.render(full_desktop_mode)";
+    workers: "start_service_workers()";
+    ai: "connect_hive_mind()";
+}

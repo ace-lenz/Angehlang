@@ -1,0 +1,87 @@
+// Embodied AI Dataset
+// Version: 1.0
+// Description: Physics simulation, robotics control, sensor fusion, and sim-to-real transfer
+
+dot embodied_config {
+  environment: "physically_realistic",
+  agent_type: "general_purpose_robot",
+  control_freq: "100hz"
+}
+
+// Perception & Sensing
+dot perception {
+  modalities: {
+    vision: ["rgb", "depth", "segmentation", "optical_flow"],
+    proprioception: ["joint_angles", "torque", "velocity"],
+    tactile: ["force", "texture", "slip"],
+    audio: ["spatial", "semantic"]
+  },
+  
+  fusion: {
+    architecture: "transformer_fusion",
+    temporal: "recurrent_state",
+    calibration: "online_auto"
+  },
+  
+  slam: { // Simultaneous Localization and Mapping
+    method: "neural_implicit",
+    loop_closure: "visual_place_recognition",
+    semantic_map: true
+  }
+}
+
+// Control & Planning
+dot control {
+  low_level: {
+    controller: "impedance_control",
+    safety: "collision_avoidance",
+    compliance: "variable_stiffness"
+  },
+  
+  high_level: {
+    planner: "pddl_stream",
+    hierarchy: "options_framework",
+    horizon: "long_term"
+  },
+  
+  reinforcement_learning: {
+    algorithm: "ppo_lagrangian",
+    reward_shaping: "inverse_rl",
+    exploration: "intrinsic_curiosity"
+  }
+}
+
+// Simulation & Transfer
+dot sim_to_real {
+  domain_randomization: {
+    visual: ["lighting", "texture", "camera_params"],
+    dynamics: ["friction", "mass", "damping"]
+  },
+  
+  adaptation: {
+    meta_learning: "maml",
+    online_id: "system_id",
+    residual_policy: true
+  },
+  
+  digital_twin: {
+    fidelity: "high",
+    synchronization: "realtime",
+    physics: "nvidia_physx"
+  }
+}
+
+// Manipulation & Locomotion
+dot skills {
+  manipulation: {
+    grasping: "6dof_graspnet",
+    dexterous: "in_hand_reorientation",
+    tool_use: "affordance_learning"
+  },
+  
+  locomotion: {
+    gait: "adaptive_terrain",
+    balance: "mpc_stabilization",
+    navigation: "socially_aware"
+  }
+}

@@ -1,0 +1,37 @@
+// AngehLang IDE - AI Intelligence & Agents
+// Description: Defines the swarm of AI agents available in the IDE.
+
+dot ai_core {
+    provider: "gemini_pro_1.5_ultra";
+    context_window: "2M_tokens";
+    mode: "agentic_swarm";
+}
+
+dot agents {
+    "orchestrator": {
+        role: "Project Manager",
+        capabilities: ["plan", "delegate", "verify"],
+        color: "💜"
+    },
+    "composer": {
+        role: "Senior Engineer",
+        capabilities: ["write_code", "refactor", "debug"],
+        color: "🟦"
+    },
+    "visual_designer": {
+        role: "UI/UX Expert",
+        capabilities: ["design_system", "css_wizardry", "layout"],
+        color: "🎨"
+    },
+    "qa_tester": {
+        role: "Quality Assurance",
+        capabilities: ["unit_test", "e2e_test", "security_audit"],
+        color: "🛡️"
+    }
+}
+
+dot chats {
+    "main_chat": "💬 General Assistance",
+    "composer_mode": "✨ Code Generation",
+    "terminal_agent": "🤖 CLI Helper"
+}

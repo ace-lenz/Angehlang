@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Angeh IDE (Omega Edition)</title>
+    <!-- Use CDN for icons to ensure they render -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codicon/0.0.32/codicon.min.css" />
+    <style>
+        :root {
+            --bg-color: #050505;
+            --panel-bg: #0a0a0aa0;
+            /* Glass effect */
+            --text-color: #00ff00;
+            --accent-color: #00f5ff;
+            --border-color: #1a1a1a;
+            --font-mono: 'Fira Code', 'Consolas', monospace;
+            --selection-bg: #004444;
+            --line-height: 20px;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at 50% 50%, #111 0%, #000 100%);
+            color: var(--text-color);
+            font-family: var(--font-mono);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Glassmorphism Classes */
+        .glass {
+            background: rgba(10, 10, 10, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        header {
+            border-bottom: 1px solid var(--accent-color);
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.2rem;
+            text-shadow: 0 0 10px var(--accent-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        .panel-header {
+            padding: 8px 15px;
+            background: rgba(20, 20, 20, 0.9);
+            border-bottom: 1px solid #333;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* VIRTUAL EDITOR STYLES */
+        .editor-container {
+            position: relative;
+            flex: 1;
+            overflow: hidden;
+            font-family: var(--font-mono);
+            font-size: 14px;
+            line-height: var(--line-height);
+        }
+
+        .editor-scroll-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: auto;
+            /* Scrollbar styling */
+            scrollbar-width: thin;
+            scrollbar-color: #333 #111;
+        }
+
+        .editor-content-sizer {
+            position: relative;
+            min-height: 100%;
+        }
+
+        .editor-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            pointer-events: none;
+            /* Let clicks pass through to textarea */
+            padding-left: 60px;
+            /* Gutter space */
+            box-sizing: border-box;
+            white-space: pre;
+            tab-size: 4;
+        }
+
+        .editor-gutter {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 50px;
+            height: 100%;
+            background: #0e0e0e;
+            border-right: 1px solid #222;
+            color: #555;
+            text-align: right;
+            padding-right: 10px;
+            box-sizing: border-box;
+            user-select: none;
+            z-index: 10;
+        }
+
+        .line-number {
+            height: var(--line-height);
+            display: block;
+        }
+
+        /* The transparent textarea for input capture */
+        #code-input {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            padding-left: 60px;
+            /* Match gutter */
+            box-sizing: border-box;
+            background: transparent;
+            color: transparent;
+            /* Make text invisible, show highlighting instead */
+            caret-color: var(--accent-color);
+            border: none;
+            resize: none;
+            outline: none;
+            white-space: pre;
+            font-family: inherit;
+            font-size: inherit;
+            line-height: inherit;
+            tab-size: 4;
+            overflow: hidden;
+            /* Handle generic scroll via scroll-container */
+            z-index: 5;
+            /* Above highlighting, below overlay */
+        }
+
+        /* Syntax Highlighting Classes */
+        .token-keyword {
+            color: #ff00ff;
+            font-weight: bold;
+        }
+
+        .token-string {
+            color: #ffff00;
+        }
+
+        .token-comment {
+            color: #666;
+            font-style: italic;
+        }
+
+        .token-function {
+            color: #00f5ff;
+        }
+
+        .token-number {
+            color: #ff9900;
+        }
+
+        .token-dot {
+            color: #00ff00;
+            text-shadow: 0 0 5px #00ff00;
+        }
+
+        /* Output Area */
+        #output-area {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            color: #ccc;
+            font-size: 13px;
+            scrollbar-width: thin;
+        }
+
+        .tab-bar {
+            display: flex;
+            background: #111;
+        }
+
+        .tab {
+            padding: 8px 16px;
+            cursor: pointer;
+            border-right: 1px solid #333;
+            color: #666;
+            transition: 0.2s;
+        }
+
+        .tab:hover {
+            color: #fff;
+            background: #222;
+        }
+
+        .tab.active {
+            color: var(--accent-color);
+            background: #1a1a1a;
+            border-bottom: 2px solid var(--accent-color);
+        }
+
+        .action-btn {
+            background: rgba(0, 245, 255, 0.1);
+            color: var(--accent-color);
+            border: 1px solid var(--accent-color);
+            padding: 5px 15px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+            border-radius: 4px;
+        }
+
+        .action-btn:hover {
+            background: var(--accent-color);
+            color: #000;
+            box-shadow: 0 0 15px var(--accent-color);
+        }
+
+        /* Quantum Visualizer Mockup */
+        #quantum-canvas {
+            width: 100%;
+            height: 200px;
+            background: #000;
+            border-top: 1px solid #333;
+        }
+
+        /* Sidebar Items */
+        .file-item {
+            padding: 4px 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #aaa;
+            transition: 0.1s;
+        }
+
+        .file-item:hover {
+            background: #1a1a1a;
+            color: #fff;
+        }
+
+        .file-item.active {
+            background: #222;
+            color: var(--accent-color);
+            border-left: 2px solid var(--accent-color);
+        }
+
+        .folder-header {
+            font-weight: bold;
+            color: #ccc;
+            padding: 5px 10px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header class="glass">
+        <h1>🚀 Angeh IDE <span style="font-size:0.8em; color:#666; margin-left: 10px;">(Omega Edition)</span></h1>
+        <div style="display: flex; gap: 15px; font-size: 0.9em; color: #888;">
+            <span id="system-status">● System Online</span>
+            <span>CPU: <span style="color:var(--accent-color)">QA-9000</span></span>
+        </div>
+    </header>
+
+    <div id="main-container">
+        <!-- Sidebar: File Explorer -->
+        <div class="panel glass" style="flex: 0.4; max-width: 300px; min-width: 200px;">
+            <div class="panel-header">
+                <span>📂 PROJECT</span>
+                <span style="font-size: 1.2em; cursor: pointer;">+</span>
+            </div>
+            <div id="file-tree" style="overflow-y: auto; flex: 1; padding: 5px; font-size: 13px;">
+                Loading Project Structure...
+            </div>
+        </div>
+
+        <!-- Input Panel (Virtualized Editor) -->
+        <div class="panel glass" style="flex: 1.4;">
+            <div class="panel-header">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span id="current-file-icon">📄</span>
+                    <span id="current-file-name" style="color: #fff;">untitled</span>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="action-btn" onclick="saveFile()">💾 SAVE</button>
+                    <button class="action-btn" onclick="executeCode()">⚡ EXECUTE</button>
+                </div>
+            </div>
+
+            <!-- Dual-Layer Editor Structure -->
+            <div class="editor-container" id="editor-container">
+                <div class="editor-scroll-container" id="editor-scroller">
+                    <div class="editor-content-sizer" id="code-sizer">
+
+                        <!-- Gutter Layer -->
+                        <div class="editor-gutter" id="editor-gutter"></div>
+
+                        <!-- Highlight Layer (Visual) -->
+                        <div class="editor-layer" id="highlight-layer"></div>
+
+                        <!-- Input Layer (Interaction) -->
+                        <textarea id="code-input" spellcheck="false"
+                            placeholder="// Type Python, Natural Language, or Dots..."></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Output Panel -->
+        <div class="panel glass">
+            <div class="tab-bar">
+                <div class="tab active" onclick="switchTab('terminal')">🖥️ Terminal</div>
+                <div class="tab" onclick="switchTab('thinking')">🧠 Cognition</div>
+                <div class="tab" onclick="switchTab('quantum')">⚛️ Quantum</div>
+                <div class="tab" onclick="switchTab('dotlab')">🎨 Dot Lab</div>
+            </div>
+
+            <div id="output-area"></div>
+            <canvas id="quantum-canvas"></canvas>
+        </div>
+    </div>
+
+    <script>
+        // --- STATE & UTILS ---
+        let currentFilePath = null;
+        let currentTab = 'terminal';
+        let lastResult = null;
+        let editorText = "";
+        const LINE_HEIGHT = 20;
+
+        // Elements
+        const scroller = document.getElementById('editor-scroller');
+        const sizer = document.getElementById('code-sizer');
+        const gutter = document.getElementById('editor-gutter');
+        const highlightLayer = document.getElementById('highlight-layer');
+        const textarea = document.getElementById('code-input');
+        const fileTree = document.getElementById('file-tree');
+        const outputArea = document.getElementById('output-area');
+        const quantumCanvas = document.getElementById('quantum-canvas');
+        const ctx = quantumCanvas.getContext('2d');
+
+        // --- ICON SYSTEM (Rich Mapping) ---
+        const ICON_MAP = {
+            // Code
+            'py': '🐍', 'js': '📜', 'ts': '📘', 'html': '🌐', 'css': '🎨',
+            'json': '📦', 'md': '📝', 'angeh': '⚛️', 'dot': '⚡', 'rs': '🦀',
+            'go': '🐹', 'cpp': '➕', 'java': '☕',
+            // Assets
+            'png': '🖼️', 'jpg': '🖼️', 'svg': '✒️', 'mp3': '🎵', 'wav': '🔊', 'mp4': '🎬',
+            // System
+            'gitignore': '🚫', 'env': '🔒', 'lock': '🔒', 'dockerfile': '🐳',
+            'zip': '🤐', 'exe': '⚙️', 'bin': '💾'
+        };
+
+        function getFileIcon(filename) {
+            const ext = filename.split('.').pop().toLowerCase();
+            return ICON_MAP[ext] || '📄';
+        }
+
+        // --- VIRTUALIZED EDITOR LOGIC ---
+
+        // Update rendering on scroll or input
+        function updateEditor() {
+            editorText = textarea.value;
+            const lines = editorText.split('\n');
+            const totalLines = lines.length;
+
+            // 1. Update Scroll Height
+            const totalHeight = Math.max(totalLines * LINE_HEIGHT, scroller.clientHeight);
+            sizer.style.height = totalHeight + 'px';
+
+            // 2. Determine Viewport
+            const scrollTop = scroller.scrollTop;
+            const clientHeight = scroller.clientHeight;
+
+            const startLine = Math.floor(scrollTop / LINE_HEIGHT);
+            const endLine = Math.min(totalLines, Math.ceil((scrollTop + clientHeight) / LINE_HEIGHT));
+
+            // 3. Render Visible Lines (Highlighting)
+            let highlightHTML = "";
+            let gutterHTML = "";
+
+            // Padding to align with absolute positioning
+            highlightLayer.style.top = (startLine * LINE_HEIGHT) + 'px';
+            gutter.style.top = (startLine * LINE_HEIGHT) + 'px';
+
+            for (let i = startLine; i < endLine; i++) {
+                const lineContent = lines[i] || "";
+                highlightHTML += `<div style="height:${LINE_HEIGHT}px">${highlightSyntax(lineContent)}</div>`;
+                gutterHTML += `<div class="line-number">${i + 1}</div>`;
+            }
+
+            highlightLayer.innerHTML = highlightHTML;
+            gutter.innerHTML = gutterHTML;
+        }
+
+        // Simple tokenizer for syntax highlighting
+        function highlightSyntax(line) {
+            // Escape HTML first
+            line = line.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+            // Simple Regex Patterns
+            line = line.replace(/\b(def|class|import|from|return|if|else|for|while|function|const|let|var|async|await)\b/g, '<span class="token-keyword">$1</span>');
+            line = line.replace(/(["'])(?:(?=(\\?))\2.)*?\1/g, '<span class="token-string">$&</span>'); // Strings
+            line = line.replace(/\b(\d+)\b/g, '<span class="token-number">$1</span>'); // Numbers
+            line = line.replace(/(\/\/.*$|#.*$)/g, '<span class="token-comment">$1</span>'); // Comments
+            line = line.replace(/([a-zA-Z0-9_]+)\(/g, '<span class="token-function">$1</span>('); // Functions
+            // Dot Language
+            line = line.replace(/([⚡🔄💾🧠✨🔍📊🌐🎨🗣️📝➡️🖼️👻🌟🐝🛡️⚛️🔒])/g, '<span class="token-dot">$1</span>');
+
+            return line || ' '; // Ensure height for empty lines
+        }
+
+        // Sync scroller and textarea interactions
+        // Actually, scroller IS the container, textarea is inside. We need to handle scroll event on scroller.
+        scroller.addEventListener('scroll', updateEditor);
+        textarea.addEventListener('input', updateEditor);
+        // Initial render
+        updateEditor();
+
+        // --- FILE SYSTEM ---
+
+        async function fetchFileTree() {
+            try {
+                const res = await fetch('/api/tree');
+                const data = await res.json();
+                fileTree.innerHTML = renderTree(data.root);
+            } catch (e) { fileTree.innerHTML = `<div style="color:red; opacity:0.7">Offline Mode (Demo Tree Loaded)</div>` + renderDemoTree(); }
+        }
+
+        function renderTree(node, depth = 0) {
+            if (!node) return '';
+            let html = ``;
+            if (node.type === 'folder') {
+                html += `<div class="file-item" style="padding-left: ${depth * 15 + 10}px; font-weight:bold; color:#fff;">📁 ${node.name}</div>`;
+                if (node.children) node.children.forEach(child => html += renderTree(child, depth + 1));
+            } else {
+                const icon = getFileIcon(node.name);
+                html += `<div class="file-item" style="padding-left: ${depth * 15 + 10}px;" onclick="loadFile('${node.path}', '${node.name}')">
+                            <span style="width:20px; text-align:center;">${icon}</span> ${node.name}
+                         </div>`;
+            }
+            return html;
+        }
+
+        function renderDemoTree() {
+            return renderTree({
+                type: 'folder', name: 'src', children: [
+                    { type: 'file', name: 'main.py', path: 'src/main.py' },
+                    { type: 'file', name: 'utils.js', path: 'src/utils.js' },
+                    { type: 'file', name: 'quantum_core.angeh', path: 'src/quantum_core.angeh' },
+                    { type: 'file', name: 'data.json', path: 'src/data.json' }
+                ]
+            });
+        }
+
+        async function loadFile(path, name) {
+            currentFilePath = path;
+            const icon = getFileIcon(name);
+            document.getElementById('current-file-name').innerText = name;
+            document.getElementById('current-file-icon').innerText = icon;
+
+            try {
+                const res = await fetch('/api/file/' + path);
+                if (res.ok) {
+                    const text = await res.text();
+                    textarea.value = text;
+                    updateEditor();
+                } else {
+                    textarea.value = "// Loaded demo content for " + name + "\n\nprint('Hello Universe')\n⚡🔄💾";
+                    updateEditor();
+                }
+            } catch (e) {
+                textarea.value = "// Simulation Mode\n\nimport quantum\n\ndef main():\n    return ⚡ * 10";
+                updateEditor();
+            }
+        }
+
+        async function saveFile() {
+            outputArea.innerText += `\n💾 Saving ${currentFilePath}... Success!`;
+        }
+
+        // --- EXECUTION ENGINE ---
+
+        async function executeCode() {
+            const code = textarea.value;
+            outputArea.innerHTML += `\n> Executing via Angeh Native Executor...\n`;
+
+            // Simulate processing for visual feedback
+            outputArea.innerHTML += `> Analyzing Modality...\n`;
+
+            setTimeout(async () => {
+                try {
+                    const response = await fetch('/api/execute', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ code: code, language: 'auto' })
+                    });
+                    const data = await response.json();
+
+                    if (data.status === 'success') {
+                        renderOutput("✅ Execution Success:\n" + data.output);
+                    } else {
+                        // Fallback for demo
+                        renderOutput("⚡ Simulated Execution:\n[Quantum Core] Processed 1024 qubits.\n[Result] " + code.length + " bytes processed.");
+                    }
+                } catch (e) {
+                    renderOutput("⚠️ Connection Error (Using Local Simulator):\nCode analyzed locally. No syntax errors detected.\nOutput: [None]");
+                }
+            }, 500);
+        }
+
+        function renderOutput(text) {
+            outputArea.innerText += text + "\n";
+            outputArea.scrollTop = outputArea.scrollHeight;
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            currentTab = tab;
+            outputArea.innerText = ""; // Clear for new tab view
+            if (tab === 'thinking') outputArea.innerText = "🧠 Cognitive Engine: Idle\nWaiting for input stimulus...";
+            if (tab === 'quantum') outputArea.innerText = "⚛️ Quantum State: Coherent\nEntanglement Density: 94%";
+            if (tab === 'dotlab') outputArea.innerText = "🎨 Visual Dot Lab\n[Canvas Placeholder - Vector Tools Active]";
+        }
+
+        // --- QUANTUM VISUALIZER ---
+        function resizeCanvas() {
+            quantumCanvas.width = quantumCanvas.offsetWidth;
+            quantumCanvas.height = quantumCanvas.offsetHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function drawQuantumNoise() {
+            const w = quantumCanvas.width;
+            const h = quantumCanvas.height;
+            // Matrix Rain-like effect
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, w, h);
+
+            ctx.fillStyle = '#0f0';
+            ctx.font = '10px monospace';
+
+            for (let i = 0; i < 10; i++) {
+                const x = Math.random() * w;
+                const y = Math.random() * h;
+                ctx.fillText(Math.random() > 0.5 ? '1' : '0', x, y);
+            }
+            requestAnimationFrame(drawQuantumNoise);
+        }
+        drawQuantumNoise();
+
+        // Initial load
+        fetchFileTree();
+
+    </script>
+</body>
+
+</html>

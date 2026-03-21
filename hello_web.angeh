@@ -1,0 +1,9 @@
+
+(import 🌐)
+
+(def-fn run-hello-web ()
+  (log-info "🌍 [PHOTONIC WEB] Initializing Hyper-Experience...")
+  (print "💠 Message Transceived: 'Hellow World'")
+  (render-ui (Container (children (list (Text "Hellow World"))))))
+
+(run-hello-web)

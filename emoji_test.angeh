@@ -1,0 +1,10 @@
+
+(log-info "🌌 [EMOJI TEST] Testing Photonic Symbolic Shortcuts...")
+
+;; 1. The compound shortcut
+(🖨️👋🌏)
+
+;; 2. Individual emoji operators
+(🖨️ (str 👋 " " 🌏 " from individual symbols!"))
+
+(log-info "✅ Emoji Transception Complete.")

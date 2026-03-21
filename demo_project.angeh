@@ -1,0 +1,70 @@
+{
+  "project_name": "Demo Visual Project",
+  "version": "8.0",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "viewport": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 1080,
+      "scale": 1.0,
+      "rotation": 0.0
+    },
+    "render_context": {
+      "render_mode": "3d",
+      "quality": "high",
+      "antialiasing": true,
+      "shadows": true,
+      "effects": true
+    },
+    "nodes": {
+      "node-1": {
+        "node_id": "node-1",
+        "node_type": "animation",
+        "position": [100, 100],
+        "properties": {
+            "duration": 5.0,
+            "easing": "ease-in-out"
+        },
+        "inputs": {},
+        "outputs": {
+            "animated_object": {
+                "type": "object",
+                "value": null,
+                "connections": []
+            }
+        },
+        "visual_properties": {
+          "color": "#FF6B6B",
+          "size": [100, 60],
+          "icon": "🎬",
+          "selected": false,
+          "visible": true
+        }
+      },
+      "node-2": {
+        "node_id": "node-2",
+        "node_type": "3d_object",
+        "position": [300, 200],
+        "properties": {
+            "type": "cube",
+            "size": [2.0, 2.0, 2.0]
+        },
+        "inputs": {},
+        "outputs": {},
+        "visual_properties": {
+          "color": "#9B59B6",
+          "size": [100, 60],
+          "icon": "立方体",
+          "selected": false,
+          "visible": true
+        }
+      }
+    },
+    "connections": [
+        ["node-2", "object_3d", "node-1", "target"]
+    ]
+  }
+}

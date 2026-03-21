@@ -1,0 +1,45 @@
+{
+  "image_to_dots_dataset": {
+    "version": "2.0",
+    "description": "Complete mapping of visual elements and images to Angeh Lang dot patterns - enhanced with Diffusion and ControlNet definitions",
+    "basic_visual_elements": {
+      "colors": {
+        "primary": {
+          "red": "🔴", "blue": "🔵", "yellow": "🟡", "green": "🟢",
+          "orange": "🟠", "purple": "🟣", "pink": "🌸", "white": "⚪", "black": "⚫"
+        },
+        "latents": {
+          "noise": "🌫️🎲 (Fog dice) - Random gaussian noise",
+          "latent_space": "🧠🌌 (Brain galaxy) - Compressed feature space",
+          "embedding": "🔢📦 (Number box) - Vector representation",
+          "attention_map": "👀🗺️ (Eye map) - Focus areas"
+        }
+      },
+      "modern_concepts": {
+        "diffusion": {
+          "denoise": "🧹🌫️ (Broom fog) - Removing noise step-by-step",
+          "guidance": "🧭⚖️ (Compass scale) - CFG scale control",
+          "scheduler": "📅⚙️ (Calendar gear) - Noise schedule (DDIM, Euler)",
+          "lora": "🧠🤏 (Brain pinch) - Low-Rank Adaptation weights"
+        },
+        "control": {
+          "controlnet": "🎮🕸️ (Game web) - Structural guidance",
+          "canny": "📏✏️ (Measure pencil) - Edge detection",
+          "depth": "📉👀 (Chart eye) - Depth map",
+          "pose": "💃💀 (Dance skull) - Skeleton structure"
+        },
+        "generation_flows": {
+          "txt2img": "📝➡️🖼️",
+          "img2img": "🖼️➡️🖼️",
+          "inpainting": "🖼️🩹🖌️",
+          "upscaling": "🖼️🔍⬆️"
+        }
+      }
+    },
+    "translation_patterns": {
+      "generate_image": "⚡📝➡️🖼️",
+      "apply_lora": "⚡🧠🤏🔗",
+      "controlnet_process": "⚡🎮🕸️✨"
+    }
+  }
+}

@@ -1,0 +1,35 @@
+// AngehLang VOS Kernel (Virtual Operating System)
+// Description: Defines the core logic for the in-browser OS.
+
+dot kernel_config {
+    architecture: "wasm_simulated_quantum";
+    process_scheduler: "preemptive_priority_queue";
+    filesystem: "indexed_db_persistent";
+    memory_limit: "unlimited_virtual";
+}
+
+dot window_manager {
+    style: "glass_morphism_pro";
+    behaviors: ["draggable", "resizable", "snapping", "minimizable"];
+    z_index_handling: "active_focus_top";
+    animations: "quantum_fade_in_out";
+}
+
+dot shell_environment {
+    user: "root@77d-singularity";
+    supported_commands: [
+        "cd", "ls", "cat", "nano", 
+        "python", "node", "angeh", 
+        "compile", "deploy"
+    ];
+    aliases: {
+        "ll": "ls -la",
+        "g": "git_quantum"
+    };
+}
+
+dot process_registry {
+    "ide_core": { pid: 1, priority: "critical" },
+    "renderer": { pid: 2, priority: "high" },
+    "ai_daemon": { pid: 3, priority: "background" }
+}

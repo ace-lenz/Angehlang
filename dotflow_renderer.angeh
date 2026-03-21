@@ -1,0 +1,62 @@
+(def-module dotflow-renderer
+  "DotFlow Renderer: 2D Holographic and 3D Voxel Photonic Rendering")
+
+(import type-system)
+(import collections)
+(import dotflow-core)
+
+(def-type PhotonicGrid
+  (struct (
+    (width int)
+    (height int)
+    (dots (new-qhash-map)) ; (x,y) -> PhotonicDot
+  )))
+
+(def-type QuantumFrameBuffer
+  (struct (
+    (timeline (new-qhash-map)) ; time_index -> PhotonicGrid
+    (frame-rate int)           ; 10,000+ FPS
+    (sub-frame-precision int)  ; 100fs
+  )))
+
+(def-type VoxelSpace
+  (struct (
+    (dimensions (array 100 100 100))
+    (voxels (new-qhash-map)) ; (x,y,z) -> PhotonicDot
+    (z-buffer (new-qhash-map)) ; (x,y) -> closest_z
+  )))
+
+(def-fn renderer-create ()
+  (struct (
+    (grid (PhotonicGrid 7680 4320 (new-qhash-map))) ; 8K UHD
+    (voxels (VoxelSpace (array 1000 1000 1000) (new-qhash-map) (new-qhash-map))) ; Billion Voxel simulation
+    (frames (QuantumFrameBuffer (new-qhash-map) 10000 10))
+  )))
+
+(def-fn render-rect! (renderer x y w h λ t)
+  (let ((grid (renderer.grid renderer)))
+    (for-each i (range y (+ y h))
+      (for-each j (range x (+ x w))
+        (if (and (< i (grid.height grid)) (< j (grid.width grid)))
+            (qhash-set! (grid.dots grid) (str j "," i) 
+                        (PhotonicDot (gensym 'dot2d) (array j i 0 t) λ 'HORIZONTAL (new-qlist) 'GRID_LED)))))
+    (print (str "🔴 Rendering Photonic Rect at " x "," y " t=" t " λ=" λ))))
+
+(def-fn render-voxel! (renderer x y z size λ t)
+  (let ((v-space (renderer.voxels renderer)))
+    (for-each i (range x (+ x size))
+      (for-each j (range y (+ y size))
+        (for-each k (range z (+ z size))
+          (let ((dot (PhotonicDot (gensym 'voxel) (array i j k t) λ 'VERTICAL (new-qlist) 'VOXEL_CELL)))
+            (qhash-set! (v-space.voxels v-space) (str i "," j "," k) dot)
+            ;; Update Holographic Z-Buffer
+            (let ((coord2d (str i "," j))
+                  (current-z (qhash-get (v-space.z-buffer v-space) coord2d 9999)))
+              (if (< k current-z)
+                  (qhash-set! (v-space.z-buffer v-space) coord2d k)))))))
+    (print (str "📦 Rendering Voxel Cube at " x "," y "," z " size " size " t=" t " λ=" λ))))
+
+(export
+  renderer-create
+  render-rect!
+  render-voxel!)

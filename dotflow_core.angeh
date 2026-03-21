@@ -1,0 +1,150 @@
+(def-module dotflow-core
+  "DotFlow Core: Photonic Virtual Machine and Quantized Data Structures")
+
+(import type-system)
+(import collections)
+
+;; ============================================================
+;; PHOTONIC QUANTIZATION CONSTANTS
+;; ============================================================
+
+(def-type Quantization
+  (struct (
+    (spatial float)   ; 0.1nm precision
+    (temporal float)  ; 1fs precision
+    (spectral float)  ; 0.1nm spectral precision
+    (time-slice int)  ; 100fs time slices
+  )))
+
+(def-const DOTFLOW_QUANTIZATION
+  (Quantization 0.01 0.0001 0.01 10)) ; 0.01nm spatial, 0.1fs temporal
+
+;; ============================================================
+;; PHOTONIC REGISTER & QUANTUM STATES
+;; ============================================================
+
+(def-type PhotonicDot
+  (struct (
+    (id symbol)
+    (position (array 0 0 0 0)) ; X, Y, Z, T (4D)
+    (wavelength float)         ; λ (e.g., 700.0)
+    (polarization symbol)      ; 'HORIZONTAL (RED) | 'VERTICAL (BLACK)
+    (entanglement-chain (struct (
+      (past symbol)            ; Past state ID
+      (future symbol)          ; Future state ID
+      (parallel symbol)        ; Parallel dimension ID
+    )))
+    (entangled-dots (new-qlist)) ; Current Entanglement cluster
+    (hardware-map symbol)      ; Optical waveguide address
+  )))
+
+(def-type PhotonicLink
+  (struct (
+    (source-id symbol)
+    (target-id symbol)
+    (interaction symbol) ; 'TRANSMISSION | 'TRANSFORMATION | 'ACTIVATION | 'DARK
+  )))
+
+(def-type PhotonicRegister
+  (struct (
+    (id symbol)
+    (state int)         ; 8-bit state
+    (wavelengths (array 700 750 800 850 900 950 1000 1050))
+    (photons (new-qlist)) ; List of active photons (PhotonicDot)
+  )))
+
+(def-fn register-create (reg-id initial-value)
+  (let ((reg (PhotonicRegister
+               reg-id
+               (bitwise-and initial-value 255)
+               (array 700 750 800 850 900 950 1000 1050)
+               (new-qlist))))
+    (register-update-photons! reg)
+    reg))
+
+(def-fn register-update-photons! (reg)
+  "Updates the photonic representation based on 8-bit state"
+  (qlist-clear! (reg.photons reg))
+  (for-each i (range 0 8)
+    (let ((bit (bitwise-and (shift-right (reg.state reg) (- 7 i)) 1))
+          (wl (get (reg.wavelengths reg) i)))
+      (qlist-add! (reg.photons reg)
+                  (PhotonicDot
+                    (gensym 'photon)
+                    (array 0 0 0 0)
+                    (float wl)
+                    (if (= bit 1) 'HORIZONTAL 'VERTICAL)
+                    (struct ((past 'NONE) (future 'NONE) (parallel 'NONE)))
+                    (new-qlist)
+                    (if (= bit 1) 'OPTICAL_PORT_A 'DARK_PORT))))))
+
+;; ============================================================
+;; PHOTONIC CONNECTION RULES (Logic Layer)
+;; ============================================================
+
+(def-fn link-dots! (dot-a dot-b)
+  "Applies Photonic Connection Rules per Spec v4.0"
+  (let ((state-a (dot-a.polarization dot-a))
+        (state-b (dot-b.polarization dot-b))
+        (link-type 'DARK))
+    
+    (cond
+      ((and (= state-a 'HORIZONTAL) (= state-b 'HORIZONTAL)) (set! link-type 'TRANSMISSION)) ; 🔴 → 🔴
+      ((and (= state-a 'HORIZONTAL) (= state-b 'VERTICAL)) (set! link-type 'TRANSFORMATION)) ; 🔴 → ⚫
+      ((and (= state-a 'VERTICAL) (= state-b 'HORIZONTAL)) (set! link-type 'ACTIVATION))     ; ⚫ → 🔴
+      (else (set! link-type 'DARK))) ; ⚫ → ⚫
+    
+    (print (str "🔗 Photonic Link [" (dot-a.id dot-a) " → " (dot-b.id dot-b) "]: " link-type))))
+
+(def-fn entangle-dots! (dot-a dot-b type)
+  "Binds two dots into a 4D Entanglement Chain"
+  (match type
+    ('PAST (set! (dot-a.entanglement-chain.past dot-a) (dot-b.id dot-b)))
+    ('FUTURE (set! (dot-a.entanglement-chain.future dot-a) (dot-b.id dot-b)))
+    ('PARALLEL (set! (dot-a.entanglement-chain.parallel dot-a) (dot-b.id dot-b))))
+  (qlist-add! (dot-a.entangled-dots dot-a) (dot-b.id dot-b))
+  (print (str "🔮 Quantum Binding: " (dot-a.id dot-a) " entangled with " (dot-b.id dot-b) " [" type "]")))
+
+;; ============================================================
+;; PHOTONIC VIRTUAL MACHINE (PVM)
+;; ============================================================
+
+(def-type PVM
+  (struct (
+    (registers (new-qlist))
+    (pc int)
+    (clock-speed float)
+    (status symbol) ; 'IDLE | 'RUNNING | 'ERROR
+  )))
+
+(def-fn pvm-create ()
+  (let ((pvm (PVM (new-qlist) 0 100e9 'IDLE)))
+    (for-each i (range 0 8)
+      (qlist-add! (pvm.registers pvm) (register-create (gensym 'R) 0)))
+    pvm))
+
+(def-fn pvm-execute-opcode! (pvm pattern args)
+  "Executes a photonic opcode pattern"
+  (match pattern
+    ('RRB (pvm-op-add! pvm args))
+    ('RBR (pvm-op-sub! pvm args))
+    ('BRR (pvm-op-jmp! pvm args))
+    ('RRR (pvm-op-cmp! pvm args))
+    ('REGSET (pvm-op-set! pvm args))
+    (else (error "Invalid Photonic Pattern"))))
+
+(def-fn pvm-op-add! (pvm args)
+  (let ((r1 (get (pvm.registers pvm) (get args 0)))
+        (r2 (get (pvm.registers pvm) (get args 1))))
+    (set! (r1.state r1) (bitwise-and (+ (r1.state r1) (r2.state r2)) 255))
+    (register-update-photons! r1)))
+
+(def-fn pvm-op-set! (pvm args)
+  (let ((r (get (pvm.registers pvm) (get args 0))))
+    (set! (r.state r) (bitwise-and (get args 1) 255))
+    (register-update-photons! r)))
+
+(export
+  register-create
+  pvm-create
+  pvm-execute-opcode!)

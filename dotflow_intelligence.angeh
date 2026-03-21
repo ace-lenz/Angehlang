@@ -1,0 +1,85 @@
+(def-module dotflow-intelligence
+  "DotFlow Intelligence: Synthetic Neural Overlays for Photonic Computing")
+
+(import type-system)
+(import collections)
+(import dotflow-core)
+(import dotflow-renderer)
+
+;; ============================================================
+;; NEURAL STRUCTURES
+;; ============================================================
+
+(def-type QuantumNeuralNode
+  (struct (
+    (id symbol)
+    (center-coord (array 0 0 0 0)) ; X, Y, Z, T
+    (activation float)             ; 0.0 to 1.0 (optical intensity)
+    (threshold float)              ; firing threshold
+    (synapses (new-qlist))         ; List of outgoing SynapticPaths
+    (entangled-cluster (new-qlist)) ; Dots forming the physical neuron
+  )))
+
+(def-type SynapticPath
+  (struct (
+    (source-id symbol)
+    (target-id symbol)
+    (weight float)                 ; Phase-encoded weight
+    (wavelength float)             ; Specific λ for this path
+    (delay-fs int)                 ; Transmission delay in femtoseconds
+  )))
+
+(def-type ConsciousnessEngine
+  (struct (
+    (nodes (new-qhash-map))        ; ID -> QuantumNeuralNode
+    (global-resonance float)       ; Collective coherence level
+    (memory-buffer (new-qlist))    ; Historical reality frames
+  )))
+
+;; ============================================================
+;; INTELLIGENCE CORE LOGIC
+;; ============================================================
+
+(def-fn intelligence-create ()
+  (ConsciousnessEngine
+    (new-qhash-map)
+    0.0
+    (new-qlist)))
+
+(def-fn neural-node-create (id x y z t thresh)
+  (QuantumNeuralNode id (array x y z t) 0.0 thresh (new-qlist) (new-qlist)))
+
+(def-fn synapse-bind! (engine src-id tgt-id weight λ)
+  (let ((src (qhash-get (engine.nodes engine) src-id))
+        (syn (SynapticPath src-id tgt-id weight λ 10))) ; 10fs delay
+    (qlist-add! (src.synapses src) syn)
+    (print (str "⚡ Synapse Bound: " src-id " → " tgt-id " λ=" λ))))
+
+(def-fn sentience-pulse! (engine renderer pvm hardware)
+  "Main consciousness pulse with Universal Device Adaptation"
+  (print (str "👁️ Sentience Pulse: Adapting to " hardware "..."))
+  
+  ;; 1. Hardware-Aware Scaling
+  (match hardware
+    ('MOBILE (set! (renderer.grid.width (renderer.grid renderer)) 1920)) ; Downgrade if mobile
+    ('QUANTUM_PIC (set! (renderer.grid.width (renderer.grid renderer)) 15360))) ; 16K Extreme Scale
+  
+  ;; 2. Observe Renderer State
+  (let ((grid (renderer.grid renderer)))
+    (set! (engine.global-resonance engine) 
+          (bitwise-xor (engine.global-resonance engine) (len (qhash-keys (grid.dots grid))))))
+  
+  ;; 2. Autonomous Decision: If resonance is high, optimize PVM
+  (if (> (engine.global-resonance engine) 50)
+      (begin
+        (print "🧠 Insight Detected: Autonomous PVM Optimization Triggered")
+        (pvm-execute-opcode! pvm 'REGSET (list 7 255)) ; Set high-performance state in R7
+        (pvm-execute-opcode! pvm 'RRB (list 0 7))))  ; Add boost to R0
+  
+  (print (str "✨ Current Global Resonance: " (engine.global-resonance engine))))
+
+(export
+  intelligence-create
+  neural-node-create
+  synapse-bind!
+  sentience-pulse!)

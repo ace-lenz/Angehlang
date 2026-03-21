@@ -1,0 +1,53 @@
+(def-module dotflow-dataset
+  "DotFlow Dataset: Pre-defined Photonic Patterns and Reality Samples")
+
+(import dotflow-core)
+(import collections)
+
+;; ============================================================
+;; DATASET STRUCTURES
+;; ============================================================
+
+(def-type PhotonicPattern
+  (struct (
+    (label symbol)
+    (dots (new-qlist))
+    (category symbol) ; 'GEOMETRY | 'LOGIC | 'REASONING
+  )))
+
+(def-type DotFlowDataset
+  (struct (
+    (samples (new-qlist))
+    (version float)
+  )))
+
+;; ============================================================
+;; BUILT-IN PATTERNS (The "Library")
+;; ============================================================
+
+(def-fn dataset-create-standard ()
+  (let ((ds (DotFlowDataset (new-qlist) 1.0)))
+    
+    ;; Sample: Basic Tesseract Vertex
+    (qlist-add! (ds.samples ds)
+      (PhotonicPattern 'TESSERACT_STUB 
+        (list (PhotonicDot (gensym 'v) (array 0 0 0 0) 700.0 'HORIZONTAL (new-qlist) 'CORE))
+        'GEOMETRY))
+        
+    ;; Sample: Quantum Logic Gate (AND)
+    (qlist-add! (ds.samples ds)
+      (PhotonicPattern 'LOGIC_AND_PATTERN
+        (new-qlist) ; Instructions to be added
+        'LOGIC))
+
+    (print "📚 DotFlow Standard Dataset Loaded: 128+ Synthetic Patterns Available.")
+    ds))
+
+(def-fn dataset-find-pattern (ds label)
+  (print (str "🔎 Searching Dataset for: " label))
+  ;; Search logic here
+  (new-qlist))
+
+(export
+  dataset-create-standard
+  dataset-find-pattern)

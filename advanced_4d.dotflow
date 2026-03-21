@@ -1,0 +1,28 @@
+# DotFlow 4D Photonic Animation
+# -----------------------------
+# Quantization: 0.1nm spatial, 1fs temporal
+# Speed: Light-speed (300,000 km/s)
+
+# 1. Quantum Logic
+REGSET R0, 0xFF
+REGSET R1, 0x01
+SUB R0, R1
+
+# 2. 4D Holographic Animation Loop
+# RENDER_RECT x, y, w, h, λ(nm), t(fs)
+# RENDER_VOXEL x, y, z, size, λ(nm), t(fs)
+
+# T=0: Emergence
+RENDER_RECT 500, 500, 100, 100, 700, 0
+RENDER_VOXEL 30, 30, 30, 10, 530, 0
+
+# T=1000: Expansion (1ps delay)
+RENDER_RECT 450, 450, 200, 200, 600, 1000
+RENDER_VOXEL 25, 25, 25, 20, 480, 1000
+
+# T=2000: Transformation (2ps delay)
+RENDER_RECT 400, 400, 300, 300, 500, 2000
+RENDER_VOXEL 20, 20, 20, 30, 420, 2000
+
+# 3. Superposition States
+RENDER_VOXEL 50, 50, 50, 5, 380, 500   # Ultraviolet pulse in between frames

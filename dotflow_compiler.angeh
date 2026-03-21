@@ -1,0 +1,76 @@
+(def-module dotflow-compiler
+  "DotFlow Compiler: Parses DSL into structural instructions and grids")
+
+(import collections)
+
+(def-fn compiler-compile (source)
+  (let ((lines (str-split source "\n"))
+        (instructions (new-qlist))
+        (grid-commands (new-qlist)))
+    
+    (for-each line lines
+      (let ((trimmed (str-trim line)))
+        (if (and (not (str-empty? trimmed)) (not (str-starts-with? trimmed "#")))
+            (begin
+              ;; Simple pattern matching simulation in Angehlang
+              (cond
+                ((str-starts-with? trimmed "REGSET") (qlist-add! instructions (parse-regset trimmed)))
+                ((str-starts-with? trimmed "ADD") (qlist-add! instructions (parse-add trimmed)))
+                ((str-starts-with? trimmed "LINK") (qlist-add! instructions (parse-link trimmed)))
+                ((str-starts-with? trimmed "ENTANGLE") (qlist-add! instructions (parse-entangle trimmed)))
+                ((str-starts-with? trimmed "COLLAPSE") (qlist-add! instructions (parse-collapse trimmed)))
+                ((str-starts-with? trimmed "RENDER_RECT") (qlist-add! grid-commands (parse-rect trimmed)))
+                ((str-starts-with? trimmed "RENDER_VOXEL") (qlist-add! grid-commands (parse-voxel trimmed))))))))
+    
+    (struct (
+      (instructions instructions)
+      (grid_commands grid-commands)))))
+
+(def-fn parse-regset (line)
+  (let ((parts (str-split (str-replace line "," "") " ")))
+    (struct (
+      (pattern 'REGSET)
+      (args (list (extract-reg (get parts 1)) (str->int (get parts 2))))))))
+
+(def-fn parse-add (line)
+  (let ((parts (str-split (str-replace line "," "") " ")))
+    (struct (
+      (pattern 'RRB)
+      (args (list (extract-reg (get parts 1)) (extract-reg (get parts 2))))))))
+
+(def-fn parse-rect (line)
+  (let ((parts (str-split (str-replace line "," "") " ")))
+    (struct (
+      (type 'RECT)
+      (params (list (str->int (get parts 1)) (str->int (get parts 2)) (str->int (get parts 3)) (str->int (get parts 4)) (str->int (get parts 5)) (str->int (get parts 6))))))))
+
+(def-fn parse-voxel (line)
+  (let ((parts (str-split (str-replace line "," "") " ")))
+    (struct (
+      (type 'VOXEL)
+      (params (list (str->int (get parts 1)) (str->int (get parts 2)) (str->int (get parts 3)) (str->int (get parts 4)) (str->int (get parts 5)) (str->int (get parts 6))))))))
+
+(def-fn parse-link (line)
+  (let ((parts (str-split (str-replace line "," "") " ")))
+    (struct (
+      (pattern 'LINK)
+      (args (list (get parts 1) (get parts 2)))))))
+
+(def-fn parse-entangle (line)
+  (let ((parts (str-split (str-replace line "," "") " ")))
+    (struct (
+      (pattern 'ENTANGLE)
+      (args (list (get parts 1) (get parts 2) (get parts 3)))))))
+
+(def-fn parse-collapse (line)
+  (let ((parts (str-split (str-replace line "," "") " ")))
+    (struct (
+      (pattern 'COLLAPSE)
+      (args (list (get parts 1) (get parts 2)))))))
+
+(def-fn extract-reg (reg-str)
+  "Extracts number from R0, R1, etc"
+  (str->int (str-substring reg-str 1 (len reg-str))))
+
+(export
+  compiler-compile)

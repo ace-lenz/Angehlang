@@ -1,0 +1,102 @@
+(def-module dotflow-main
+  "DotFlow Main: Orchestrates Photonic Execution and Rendering")
+
+(import dotflow-core)
+(import dotflow-renderer)
+(import dotflow-compiler)
+(import dotflow-intelligence)
+(import dotflow-database)
+(import dotflow-dataset)
+(import dotflow-sensor)
+(import dotflow-highway)
+
+(def-type DotFlowSystem
+  (struct (
+    (pvm PVM)
+    (renderer struct)
+    (intelligence struct)
+    (database struct)
+    (dataset struct)
+    (sensor struct)
+    (highway HighwaySubstrate)
+    (hardware-target symbol) ; 'MOBILE | 'DESKTOP | 'QUANTUM_PIC
+    (upa1-header struct)
+  )))
+
+(def-fn dotflow-init (target)
+  (DotFlowSystem
+    (pvm-create)
+    (renderer-create)
+    (intelligence-create)
+    (database-create)
+    (dataset-create-standard)
+    (sensor-create target)
+    (highway-init)
+    target
+    (struct (
+      (magic "UPA1")
+      (version 5.0) ; Upgraded to support Highway
+    ))))
+
+(def-fn dotflow-run-source (system source-code)
+  "Compiles and runs raw DotFlow source code"
+  (let ((compiled (compiler-compile source-code)))
+    (dotflow-run-program system compiled)))
+
+(def-fn dotflow-run-program (system program)
+  "Executes a compiled DotFlow program (list of instructions and render commands)"
+  (print "--- DotFlow Photonic Pipeline Starting ---")
+  
+  ;; Execute PVM Logic
+  ;; Execute PVM Instructions
+  (let ((instrs (get program 'instructions))
+        (pvm (system.pvm system)))
+    (for-each inst instrs
+      (match (get inst 'pattern)
+        ('REGSET (pvm-execute-opcode! pvm 'REGSET (get inst 'args)))
+        ('RRB (pvm-execute-opcode! pvm 'RRB (get inst 'args)))
+        ('LINK (print (str "🔗 Executing Link: " (get inst 'args))))
+        ('ENTANGLE (print (str "🔮 Executing Entanglement: " (get inst 'args))))
+        ('COLLAPSE (collapse-wavefunction! (system.database system) (get (get inst 'args) 0) (get (get inst 'args) 1))))))
+  
+  ;; Execute Rendering
+  (let ((renders (get program 'grid_commands))
+        (renderer (system.renderer system)))
+    (for-each cmd renders
+      (match (get cmd 'type)
+        ('RECT (apply render-rect! (cons renderer (get cmd 'params))))
+        ('VOXEL (apply render-voxel! (cons renderer (get cmd 'params)))))))
+  
+  ;; Database Persistence (Auto-Save State)
+  (database-store! (system.database system) 'PREVIOUS_RUN_STATE (new-qlist) 0)
+
+  ;; Intelligence Feedback Loop with Hardware Context
+  (sentience-pulse! (system.intelligence system) 
+                    (system.renderer system) 
+                    (system.pvm system)
+                    (system.hardware-target system))
+  
+  ;; Flush Highway Packets
+  (highway-flush! (system.highway system))
+  
+  (print "--- DotFlow Highway Pipeline Complete ---"))
+
+(export
+  dotflow-init
+  dotflow-run-program)
+
+;; Example Internal Run (Detecting Hardware)
+(def-fn test-native-run ()
+  (let ((df (dotflow-init 'QUANTUM_PIC))
+        (source "# Native DotFlow UHD 4D Sensor Run
+# 1. Capture photonic data
+# SENSOR_CAPTURE -> AUTOMATIC REALITY INJECTION
+
+REGSET R0, 200
+REGSET R1, 100
+ADD R0, R1
+
+# ULTRA PIXEL UHD RENDERING
+RENDER_RECT 1000, 1000, 500, 500, 650, 0
+RENDER_VOXEL 100, 100, 100, 200, 450, 0"))
+    (dotflow-run-source df source)))

@@ -1,0 +1,83 @@
+(def-module dotflow-highway
+  "DotFlow Highway: Multi-Directional Photonic Communication Substrate")
+
+(import collections)
+
+;; ============================================================
+;; HIGHWAY STRUCTURES
+;; ============================================================
+
+(def-type HighwayPacket
+  (struct (
+    (source-id symbol)
+    (target-id symbol) ; 'BROADCAST for all
+    (payload any)
+    (priority int)    ; 0 (Normal) to 9 (Emergency)
+    (timestamp int)
+  )))
+
+(def-type HighwaySubstrate
+  (struct (
+    (channels (new-qhash-map)) ; Maps channel-id to list of subscribers
+    (buffer (new-qlist))       ; Global packet buffer
+    (status symbol)            ; 'ACTIVE | 'CONGESTED | 'OFFLINE
+  )))
+
+;; ============================================================
+;; HIGHWAY OPERATIONS
+;; ============================================================
+
+(def-fn highway-init ()
+  "Initializes the photonic communication highway"
+  (print "⚡ [HIGHWAY] Igniting photonic communication lanes...")
+  (HighwaySubstrate
+    (new-qhash-map)
+    (new-qlist)
+    'ACTIVE))
+
+(def-fn highway-broadcast! (highway source-id payload &optional (priority 0))
+  "Broadcasts a packet across the entire highway"
+  (let ((packet (HighwayPacket source-id 'BROADCAST payload priority (time-now))))
+    (qlist-append! (highway.buffer highway) packet)
+    (print (str "📤 [HIGHWAY-BROADCAST] " source-id " >> " payload))))
+
+(def-fn highway-publish! (highway channel-id source-id payload)
+  "Publishes a packet to a specific lane/channel"
+  (let ((packet (HighwayPacket source-id channel-id payload 5 (time-now))))
+    (qlist-append! (highway.buffer highway) packet)
+    (print (str "📡 [HIGHWAY-PUBLISH] " source-id " @ " channel-id " >> " payload))))
+
+(def-fn highway-subscribe! (highway channel-id subscriber-id callback)
+  "Registers a listener for a specific highway lane"
+  (let ((subscribers (qhash-get (highway.channels highway) channel-id)))
+    (unless subscribers
+      (let ((new-list (new-qlist)))
+        (qhash-set! (highway.channels highway) channel-id new-list)
+        (set! subscribers new-list)))
+    (qlist-append! subscribers (struct ((id subscriber-id) (fn callback))))
+    (print (str "📥 [HIGHWAY-SUBSCRIBE] " subscriber-id " listening to lane " channel-id))))
+
+(def-fn highway-flush! (highway)
+  "Processes all pending packets and notifies subscribers"
+  (while (> (qlist-length (highway.buffer highway)) 0)
+    (let ((packet (qlist-pop-first! (highway.buffer highway))))
+      (process-packet! highway packet))))
+
+(def-fn process-packet! (highway packet)
+  "Internal: Routes packets to appropriate subscribers"
+  (let ((channel (packet.target-id packet)))
+    (if (= channel 'BROADCAST)
+      (qhash-for-each (lane subscribers) (highway.channels highway)
+        (for-each sub subscribers
+          ((sub.fn sub) packet)))
+      (let ((subscribers (qhash-get (highway.channels highway) channel)))
+        (when subscribers
+          (for-each sub subscribers
+            ((sub.fn sub) packet)))))))
+
+(export
+  highway-init
+  highway-broadcast!
+  highway-publish!
+  highway-subscribe!
+  highway-flush!)

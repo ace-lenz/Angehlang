@@ -1,0 +1,76 @@
+
+(def-module angehlang
+  "Native Angehlang: The Self-Hosted Photonic Core")
+
+;; ============================================================
+;; 1. NATIVE TOKENIZER & PARSER
+;; ============================================================
+
+(def-fn native-tokenize (code)
+  (log-info "⚡ Native Tokenizer: Refracting photonic stream...")
+  (tokenize code))
+
+(def-fn native-parse (tokens)
+  (parse tokens))
+
+;; ============================================================
+;; 2. NATIVE EVALUATOR (Meta-Circular)
+;; ============================================================
+
+(def-fn native-evaluate (expr env)
+  (cond
+    ((string? expr) 
+     (if (symbol? expr)
+         (let ((val (get env expr)))
+           (if (nil? val) 
+               (evaluate expr (create-global-env)) ;; Fallback to substrate for primitives
+               val))
+         expr))
+    ((number? expr) expr)
+    ((list? expr)
+     (let ((op (car expr))
+           (args (cdr expr)))
+       (match op
+         ('quote (car args))
+         ('if (if (native-evaluate (car args) env)
+                  (native-evaluate (get args 1) env)
+                  (native-evaluate (get args 2) env)))
+         ('def (set! env (hash-set! env (car args) (native-evaluate (get args 1) env))))
+         ('lambda (list 'native-lambda (car args) (cdr args)))
+         ('begin (let ((res nil)) (for-each args (lambda (e) (set! res (native-evaluate e env)))) res))
+         ('import (import (car args)))
+         (else 
+          (let ((proc (native-evaluate op env))
+                (vals (map (lambda (a) (native-evaluate a env)) args)))
+            (apply-native proc vals env))))))
+    (else expr)))
+
+(def-fn apply-native (proc vals env)
+  (if (and (list? proc) (equal? (car proc) 'native-lambda))
+      (let ((params (get proc 1))
+            (body (get proc 2))
+            (local-env (copy-env env)))
+        ;; Bind params
+        (for-each (range 0 (len params))
+          (lambda (i) (hash-set! local-env (get params i) (get vals i))))
+        ;; Eval body
+        (let ((res nil))
+          (for-each body (lambda (e) (set! res (native-evaluate e local-env))))
+          res))
+      ;; Fallback to substrate proc
+      (apply proc vals)))
+
+;; ============================================================
+;; 3. NATIVE BOOTSTRAP
+;; ============================================================
+
+(def-fn boot-native (filename)
+  (log-info (str "🚀 Booting native evaluator on: " filename))
+  (let ((code (vfs-read-file filename))
+        (tokens (native-tokenize code))
+        (global-env (create-global-env)))
+    (for-each tokens
+      (lambda (t) 
+        (native-evaluate (native-parse t) global-env)))))
+
+(export native-evaluate boot-native native-tokenize native-parse)

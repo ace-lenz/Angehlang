@@ -1,0 +1,17 @@
+
+(def-module angeh-shell
+  "Native Photonic Shell: CLI and Orchestration")
+
+(import angehlang)
+
+(def-fn run-shell (args)
+  (log-info "💠 [SHELL] Starting Photonic Session...")
+  (if (empty? args)
+      (log-info "💠 Usage: angeh-shell <file.angeh>")
+      (for-each args
+        (lambda (filename)
+          (if (file-exists? filename)
+              (boot-native filename)
+              (log-error (str "❌ File not found: " filename)))))))
+
+(export run-shell)

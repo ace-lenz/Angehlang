@@ -1,0 +1,354 @@
+(def-module collections
+  "Quantum-aware collections for the Angeh Reality Fabric
+   All collections preserve entanglement and support superposition states")
+
+(import type-system)
+
+;; ============================================================
+;; QUANTUM STACK - LIFO with Entanglement Preservation
+;; ============================================================
+(def-type Stack
+  (struct (
+    (items (new-array))
+    (entanglements (new-hash-map))
+    (quantum-state 'collapsed)
+  )))
+
+(def-fn new-stack ()
+  "Create a new quantum-aware stack"
+  (Stack (new-array) (new-hash-map) 'collapsed))
+
+(def-fn stack-push! (stack value)
+  "Push value onto stack, preserving quantum state"
+  (let ((idx (len (stack.items stack))))
+    (array-push! (stack.items stack) value)
+    ;; Track entanglement if value has quantum signature
+    (when (has-quantum-signature? value)
+      (hash-set! (stack.entanglements stack) idx (get-quantum-id value)))
+    value))
+
+(def-fn stack-pop! (stack)
+  "Pop value from stack, maintaining entanglement"
+  (if (> (len (stack.items stack)) 0)
+    (let ((value (array-pop! (stack.items stack))))
+      ;; Clean up entanglement tracking
+      (hash-delete! (stack.entanglements stack) (len (stack.items stack)))
+      value)
+    (error "Stack underflow")))
+
+(def-fn stack-peek (stack)
+  "Peek at top of stack without removing"
+  (if (> (len (stack.items stack)) 0)
+    (get (stack.items stack) (- (len (stack.items stack)) 1))
+    (error "Stack is empty")))
+
+(def-fn stack-size (stack)
+  "Get current stack size"
+  (len (stack.items stack)))
+
+(def-fn stack-empty? (stack)
+  "Check if stack is empty"
+  (= (len (stack.items stack)) 0))
+
+;; ============================================================
+;; QUANTUM QUEUE - FIFO with Entanglement Preservation  
+;; ============================================================
+(def-type Queue
+  (struct (
+    (items (new-array))
+    (head 0)
+    (tail 0)
+    (entanglements (new-hash-map))
+  )))
+
+(def-fn new-queue ()
+  "Create a new quantum-aware queue"
+  (Queue (new-array) 0 0 (new-hash-map)))
+
+(def-fn queue-enqueue! (queue value)
+  "Add value to end of queue"
+  (let ((idx (queue.tail queue)))
+    (array-push! (queue.items queue) value)
+    (when (has-quantum-signature? value)
+      (hash-set! (queue.entanglements queue) idx (get-quantum-id value)))
+    (set! (queue.tail queue) (+ (queue.tail queue) 1))
+    value))
+
+(def-fn queue-dequeue! (queue)
+  "Remove value from front of queue"
+  (if (< (queue.head queue) (queue.tail queue))
+    (let ((value (get (queue.items queue) (queue.head queue))))
+      (hash-delete! (queue.entanglements queue) (queue.head queue))
+      (set! (queue.head queue) (+ (queue.head queue) 1))
+      value)
+    (error "Queue is empty")))
+
+(def-fn queue-peek (queue)
+  "Peek at front of queue"
+  (if (< (queue.head queue) (queue.tail queue))
+    (get (queue.items queue) (queue.head queue))
+    (error "Queue is empty")))
+
+(def-fn queue-size (queue)
+  "Get current queue size"
+  (- (queue.tail queue) (queue.head queue)))
+
+(def-fn queue-empty? (queue)
+  "Check if queue is empty"
+  (= (queue.head queue) (queue.tail queue)))
+
+;; ============================================================
+;; QUANTUM LIST - Dynamic Array with Superposition Support
+;; ============================================================
+(def-type QList
+  (struct (
+    (items (new-array))
+    (superposition-mask (new-array))
+    (entanglement-graph (new-hash-map))
+  )))
+
+(def-fn new-qlist ()
+  "Create a new quantum list supporting superposition"
+  (QList (new-array) (new-array) (new-hash-map)))
+
+(def-fn qlist-add! (qlist value)
+  "Add value to quantum list"
+  (let ((idx (len (qlist.items qlist))))
+    (array-push! (qlist.items qlist) value)
+    (array-push! (qlist.superposition-mask qlist) false)
+    value))
+
+(def-fn qlist-add-superposition! (qlist values weights)
+  "Add value in superposition state with probability weights"
+  (let ((idx (len (qlist.items qlist))))
+    (array-push! (qlist.items qlist) (list values weights))
+    (array-push! (qlist.superposition-mask qlist) true)
+    idx))
+
+(def-fn qlist-get (qlist idx)
+  "Get value at index, collapsing superposition if needed"
+  (if (get (qlist.superposition-mask qlist) idx)
+    (collapse-superposition (get (qlist.items qlist) idx))
+    (get (qlist.items qlist) idx)))
+
+(def-fn qlist-set! (qlist idx value)
+  "Set value at index"
+  (array-set! (qlist.items qlist) idx value)
+  (array-set! (qlist.superposition-mask qlist) idx false)
+  value)
+
+(def-fn qlist-size (qlist)
+  "Get size of quantum list"
+  (len (qlist.items qlist)))
+
+(def-fn qlist-map (qlist fn)
+  "Map function over quantum list, preserving quantum states"
+  (let ((result (new-qlist)))
+    (for-each idx (range 0 (qlist-size qlist))
+      (if (get (qlist.superposition-mask qlist) idx)
+        ;; Preserve superposition through mapping
+        (qlist-add-superposition! result
+          (map fn (car (get (qlist.items qlist) idx)))
+          (cdr (get (qlist.items qlist) idx)))
+        ;; Normal value mapping
+        (qlist-add! result (fn (get (qlist.items qlist) idx)))))
+    result))
+
+;; ============================================================
+;; QUANTUM HASH MAP - Entanglement-Preserving Dictionary
+;; ============================================================
+(def-type QHashMap
+  (struct (
+    (buckets (new-array))
+    (size 0)
+    (capacity 16)
+    (load-factor 0.75)
+    (key-entanglements (new-hash-map))
+  )))
+
+(def-fn new-qhash-map ()
+  "Create a new quantum hash map"
+  (let ((buckets (make-array 16 (fn () (new-array)))))
+    (QHashMap buckets 0 16 0.75 (new-hash-map))))
+
+(def-fn qhash-hash (key capacity)
+  "Quantum-aware hash function"
+  (mod (if (has-quantum-signature? key)
+         (quantum-hash key)
+         (traditional-hash key))
+       capacity))
+
+(def-fn qhash-set! (qmap key value)
+  "Set key-value pair in quantum hash map"
+  (let ((hash-code (qhash-hash key (qmap.capacity qmap)))
+        (bucket (get (qmap.buckets qmap) hash-code)))
+    ;; Track entanglement
+    (when (has-quantum-signature? key)
+      (hash-set! (qmap.key-entanglements qmap) key (get-quantum-id key)))
+    ;; Find existing key or add new
+    (let ((found false))
+      (for-each pair bucket
+        (when (equal? (car pair) key)
+          (set-cdr! pair value)
+          (set! found true)))
+      (when (not found)
+        (array-push! bucket (cons key value))
+        (set! (qmap.size qmap) (+ (qmap.size qmap) 1))))
+    value))
+
+(def-fn qhash-get (qmap key)
+  "Get value for key from quantum hash map"
+  (let ((hash-code (qhash-hash key (qmap.capacity qmap)))
+        (bucket (get (qmap.buckets qmap) hash-code)))
+    (let ((result Nothing))
+      (for-each pair bucket
+        (when (equal? (car pair) key)
+          (set! result (Some (cdr pair)))))
+      result)))
+
+(def-fn qhash-has? (qmap key)
+  "Check if key exists in quantum hash map"
+  (match (qhash-get qmap key)
+    ((Some _) true)
+    (Nothing false)))
+
+(def-fn qhash-delete! (qmap key)
+  "Delete key from quantum hash map"
+  (let ((hash-code (qhash-hash key (qmap.capacity qmap)))
+        (bucket (get (qmap.buckets qmap) hash-code)))
+    (hash-delete! (qmap.key-entanglements qmap) key)
+    (array-filter! bucket (fn (pair) (not (equal? (car pair) key))))
+    (set! (qmap.size qmap) (- (qmap.size qmap) 1))))
+
+(def-fn qhash-keys (qmap)
+  "Get all keys from quantum hash map"
+  (let ((keys (new-array)))
+    (for-each bucket (qmap.buckets qmap)
+      (for-each pair bucket
+        (array-push! keys (car pair))))
+    keys))
+
+(def-fn qhash-values (qmap)
+  "Get all values from quantum hash map"
+  (let ((values (new-array)))
+    (for-each bucket (qmap.buckets qmap)
+      (for-each pair bucket
+        (array-push! values (cdr pair))))
+    values))
+
+;; ============================================================
+;; QUANTUM SET - Unique Elements with Entanglement Tracking
+;; ============================================================
+(def-type QSet
+  (struct (
+    (items (new-qhash-map))
+    (entanglement-clusters (new-hash-map))
+  )))
+
+(def-fn new-qset ()
+  "Create a new quantum set"
+  (QSet (new-qhash-map) (new-hash-map)))
+
+(def-fn qset-add! (qset value)
+  "Add value to quantum set"
+  (qhash-set! (qset.items qset) value true)
+  ;; Track entanglement clusters
+  (when (has-quantum-signature? value)
+    (let ((qid (get-quantum-id value)))
+      (when (not (qhash-has? (qset.entanglement-clusters qset) qid))
+        (qhash-set! (qset.entanglement-clusters qset) qid (new-array)))
+      (let ((cluster (qhash-get (qset.entanglement-clusters qset) qid)))
+        (match cluster
+          ((Some arr) (array-push! arr value))
+          (Nothing (void))))))
+  value)
+
+(def-fn qset-has? (qset value)
+  "Check if value exists in quantum set"
+  (qhash-has? (qset.items qset) value))
+
+(def-fn qset-delete! (qset value)
+  "Remove value from quantum set"
+  (qhash-delete! (qset.items qset) value))
+
+(def-fn qset-size (qset)
+  "Get size of quantum set"
+  ((qset.items qset).size))
+
+(def-fn qset-union (qset1 qset2)
+  "Union of two quantum sets, preserving entanglements"
+  (let ((result (new-qset)))
+    (for-each key (qhash-keys (qset1.items qset1))
+      (qset-add! result key))
+    (for-each key (qhash-keys (qset2.items qset2))
+      (qset-add! result key))
+    result))
+
+(def-fn qset-intersection (qset1 qset2)
+  "Intersection of two quantum sets"
+  (let ((result (new-qset)))
+    (for-each key (qhash-keys (qset1.items qset1))
+      (when (qset-has? qset2 key)
+        (qset-add! result key)))
+    result))
+
+;; ============================================================
+;; ENTANGLEMENT UTILITIES
+;; ============================================================
+(def-fn has-quantum-signature? (value)
+  "Check if value has quantum signature"
+  (and (struct? value)
+       (has-field? value 'quantum-id)))
+
+(def-fn get-quantum-id (value)
+  "Extract quantum ID from value"
+  (if (has-quantum-signature? value)
+    (value.quantum-id value)
+    (error "Value has no quantum signature")))
+
+(def-fn quantum-hash (value)
+  "Compute quantum-aware hash of value"
+  (let ((qid (get-quantum-id value)))
+    ;; Simple hash based on quantum ID (can be improved)
+    (fold + 0 (map char-code (string->list (symbol->string qid))))))
+
+(def-fn traditional-hash (value)
+  "Traditional hash function for non-quantum values"
+  (cond
+    ((number? value) value)
+    ((string? value) (fold + 0 (map char-code (string->list value))))
+    ((symbol? value) (traditional-hash (symbol->string value)))
+    (else 0)))
+
+(def-fn collapse-superposition (superposition-data)
+  "Collapse superposition to single value based on weights"
+  (let ((values (car superposition-data))
+        (weights (cdr superposition-data)))
+    ;; Weighted random selection (simplified)
+    (let ((total-weight (fold + 0 weights))
+          (rand-value (* (random) total-weight)))
+      (let ((cumulative 0))
+        (for-each idx (range 0 (len values))
+          (set! cumulative (+ cumulative (get weights idx)))
+          (when (>= cumulative rand-value)
+            (return (get values idx))))
+        ;; Fallback to first value
+        (get values 0)))))
+
+;; Export public API
+(export
+  ;; Stack
+  new-stack stack-push! stack-pop! stack-peek stack-size stack-empty?
+  ;; Queue
+  new-queue queue-enqueue! queue-dequeue! queue-peek queue-size queue-empty?
+  ;; Quantum List
+  new-qlist qlist-add! qlist-add-superposition! qlist-get qlist-set!
+  qlist-size qlist-map
+  ;; Quantum Hash Map
+  new-qhash-map qhash-set! qhash-get qhash-has? qhash-delete!
+  qhash-keys qhash-values
+  ;; Quantum Set
+  new-qset qset-add! qset-has? qset-delete! qset-size
+  qset-union qset-intersection
+  ;; Utilities
+  has-quantum-signature? get-quantum-id collapse-superposition)

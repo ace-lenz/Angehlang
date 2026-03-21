@@ -1,0 +1,52 @@
+{
+  "code_generation_dataset": {
+    "version": "1.0",
+    "description": "Dataset for AI Code Generation, Coding Assistants, and Developer Tools mapped to Angeh Lang dot patterns",
+    "core_concepts": {
+      "code_generation": "💻✨ (Computer sparkle) - AI writing code",
+      "code_completion": "💻➡️ (Computer arrow) - Finishing code",
+      "code_explanation": "💻📖 (Computer book) - Understanding code",
+      "code_refactoring": "💻🔄 (Computer cycle) - Improving code",
+      "code_review": "💻👀 (Computer eye) - Evaluating code"
+    },
+    "ai_coding_assistants": {
+      "github_copilot": "🐙💻 (Octopus computer) - GitHub Copilot",
+      "cursor_ai": "🖱️🤖 (Mouse robot) - Cursor IDE",
+      "codeium": "💻⚡ (Computer lightning) - Codeium",
+      "tabnine": "⌨️🤖 (Keyboard robot) - Tabnine",
+      "replit_ghostwriter": "👻💻 (Ghost computer) - Replit Ghostwriter",
+      "amazon_codewhisperer": "🔊💻 (Sound computer) - CodeWhisperer",
+      "sourcegraph_cody": "🔍💻 (Search computer) - Sourcegraph Cody"
+    },
+    "foundation_models": {
+      "codex": "📜💻 (Scroll computer) - OpenAI Codex",
+      "codellama": "🦙💻 (Llama computer) - Code Llama",
+      "starcoder": "⭐💻 (Star computer) - StarCoder 2",
+      "deepseek_coder": "🔭💻 (Telescope computer) - DeepSeek Coder",
+      "wizardcoder": "🧙💻 (Wizard computer) - WizardCoder",
+      "phind_model": "🔍💻 (Search computer) - Phind CodeLlama"
+    },
+    "capabilities": {
+      "inline_completion": "➡️💻 (Arrow computer) - Complete current line",
+      "multi_line_suggestion": "📝💻 (Write computer) - Suggest block",
+      "docstring_generation": "📖💻 (Book computer) - Write documentation",
+      "test_generation": "🧪💻 (Test tube computer) - Create tests",
+      "bug_fixing": "🐛🔧 (Bug tool) - Fix errors",
+      "code_translation": "🔄💻 (Cycle computer) - Convert languages"
+    },
+    "techniques": {
+      "fill_in_middle": "📝🔲📝 (Write box write) - FIM completion",
+      "instruction_tuning": "📝🎯 (Write target) - Instruction following",
+      "repo_context": "📁🧠 (Folder brain) - Repository understanding",
+      "ast_awareness": "🌳💻 (Tree computer) - Syntax tree knowledge",
+      "type_inference": "📐💻 (Square computer) - Type understanding"
+    },
+    "benchmarks": {
+      "humaneval": "👤📊 (Person chart) - HumanEval",
+      "mbpp": "💻📊 (Computer chart) - MBPP",
+      "apps": "📱📊 (Phone chart) - APPS",
+      "ds1000": "📊1️⃣ (Chart one) - DS-1000",
+      "swebench": "🕸️📊 (Web chart) - SWE-bench"
+    }
+  }
+}

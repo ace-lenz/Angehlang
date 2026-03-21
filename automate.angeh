@@ -1,0 +1,144 @@
+// Automation Programming Language (automate.angeh)
+// Version: 7.7 (Swarm Intelligence Edition)
+// Description: The universal language for defining autonomous workflows, robotic process automation (RPA),
+// industrial control (IoT/PLC), and digital swarm intelligence.
+
+dot ads_config {
+    engine: "angeh_automation_core",
+    concurrency: "massive_parallel",
+    security_level: "military_grade_encryption",
+    failover: "predictive_immune_system",
+    latency: "realtime_hard"
+}
+
+// -----------------------------------------------------------------------------
+// 1. UNIVERSAL TRIGGERS (The "When")
+// -----------------------------------------------------------------------------
+dot triggers {
+    // Temporal
+    "schedule": "⏰📅",      // Cron/Calendar
+    "interval": "⏱️",        // Every N seconds
+    
+    // Digital
+    "file_event": "📂⚡",     // Create, modify, delete
+    "email_received": "📧📥",
+    "webhook": "🌐🎣",
+    "db_change": "🗄️⚡",
+    
+    // Physical / IoT
+    "sensor_threshold": "🌡️🛑", // Temp, pressure, vibration
+    "geo_fence": "🗺️🚧",
+    "rfid_scan": "🏷️📡",
+    
+    // Cognitive (AI)
+    "sentiment_detected": "😡🔍", // Trigger on angry customer email
+    "object_recognized": "📷👁️",  // Trigger on camera seeing a 'gun' or 'fire'
+    "anomaly_detected": "⚠️🧠"
+}
+
+// -----------------------------------------------------------------------------
+// 2. ACTIONS (The "What")
+// -----------------------------------------------------------------------------
+dot actions {
+    // UI Interaction (RPA)
+    "click": "🖱️",
+    "type_text": "⌨️",
+    "screenshot": "📸",
+    "extract_table": "📊🔍",
+    
+    // Network
+    "http_request": "📡⚡",
+    "ssh_exec": "🔒🐚",
+    "connect_vpn": "🛡️🌐",
+    
+    // Cognitive
+    "ask_llm": "🤖💬",
+    "ocr_read": "📄👁️",
+    "translate": "🗣️🌍"
+}
+
+// -----------------------------------------------------------------------------
+// 3. LOGIC & FLOW (The "How")
+// -----------------------------------------------------------------------------
+dot flows {
+    "if_then": "🤔➡️",
+    "loop_each": "🔄📦",
+    "wait_for": "⏳✋",
+    "fork_parallel": "🔱🚀",  // Run tasks in parallel
+    "race_condition": "🏁⚡", // First to finish wins
+    "retry_logic": "🤕🔄"     // Exponential backoff
+}
+
+// -----------------------------------------------------------------------------
+// 4. SWARM INTELLIGENCE (Multi-Agent/Robot)
+// -----------------------------------------------------------------------------
+// Coordinate 1000s of agents or drones.
+dot swarm_intelligence {
+    "hive_mind_connect": "🐝🔗",
+    "distribute_task": "🍰🔪",
+    "consensus_vote": "🗳️✅",
+    "flocking_rule": "🐦📏",
+    "leader_election": "👑❓"
+}
+
+// -----------------------------------------------------------------------------
+// 5. INDUSTRIAL & ENGINEERING (PLC/SCADA)
+// -----------------------------------------------------------------------------
+// Direct control of factory hardware using Modbus/OPC UA protocols.
+dot engineering_control {
+    "plc_write": "🏭📝",
+    "read_telemetry": "📊📡",
+    "emergency_stop": "🛑🔥",
+    "pid_loop_tune": "🎛️📉",
+    "predictive_maintenance": "🔮🔧"
+}
+
+// -----------------------------------------------------------------------------
+// 6. SYNTHETIC OPTIMIZATION & SELF-HEALING
+// -----------------------------------------------------------------------------
+// The script rewrites itself to get faster.
+dot self_improvement {
+    "measure_performance": "⏱️📊",
+    "optimize_code": "🧬🚀",    // Genetic algorithm on code structure
+    "auto_heal": "🩹✨",        // Fix broken selectors/APIs automatically
+    "learn_from_failure": "🧠📉" 
+}
+
+// -----------------------------------------------------------------------------
+// 7. BIOLOGICAL AUTOMATION (Lab)
+// -----------------------------------------------------------------------------
+dot bio_lab {
+    "pipette_transfer": "🧪💧",
+    "incubate": "🌡️🥚",
+    "sequence_dna": "🧬🔍",
+    "analyze_microscope": "🔬👀"
+}
+
+// EXAMPLE PROGRAM: "Smart Factory Disaster Response"
+/*
+dot_automation factory_guard {
+    // Trigger: Fire detected by vision AI or Heat Sensor > 80C
+    when(📷👁️("fire") OR 🌡️🛑("temp", ">", 80)) {
+        
+        // 1. Physical Safety
+        🛑🔥 "PLANT_SHUTDOWN_PROTOCOL" // PLC Command
+        🚨🔊 "EVACUATION_ALARM"         // IoT Command
+        
+        // 2. Swarm Response
+        🐝🔗 drone_swarm.deploy({
+            mission: "search_and_rescue", 
+            formation: "grid_search"
+        })
+        
+        // 3. Digital Notification
+        📡⚡ api.emergency_services.notify({
+            location: "Sector 7",
+            status: "Critical"
+        })
+        
+        // 4. Post-Incident
+        ⏳✋(event: "fire_out")
+        🧠📉 analyze_root_cause()
+    }
+}
+*/

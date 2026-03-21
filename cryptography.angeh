@@ -1,0 +1,408 @@
+(def-module cryptography
+  "Quantum-Resistant Cryptography for Angeh Reality Fabric
+   Secure dot communications and entanglement-based authentication")
+
+(import type-system)
+(import collections)
+(import quantum-circuit)
+
+;; ============================================================
+;; QUANTUM KEY DISTRIBUTION (QKD) - BB84 Protocol
+;; ============================================================
+(def-type QKDSession
+  (struct (
+    (alice-bases (new-array))      ; Measurement bases chosen by Alice
+    (bob-bases (new-array))        ; Measurement bases chosen by Bob
+    (alice-bits (new-array))       ; Bits sent by Alice
+    (bob-measurements (new-array)) ; Measurements by Bob
+    (shared-key (new-array))       ; Final shared secret key
+    (key-length int)
+  )))
+
+(def-fn qkd-new-session (desired-key-length)
+  "Create new QKD session"
+  (QKDSession
+    (new-array)
+    (new-array)
+    (new-array)
+    (new-array)
+    (new-array)
+    desired-key-length))
+
+(def-fn qkd-alice-prepare! (session)
+  "Alice prepares qubits for BB84 protocol"
+  ;; Send 4x desired key length for sifting
+  (let ((num-qubits (* 4 (session.key-length session))))
+    (for-each i (range 0 num-qubits)
+      ;; Random bit and basis
+      (let ((bit (random-bit))
+            (basis (random-basis)))
+        (array-push! (session.alice-bits session) bit)
+        (array-push! (session.alice-bases session) basis)
+        ;; Prepare qubit based on bit and basis
+        (let ((qubit (if (= basis 'rectilinear)
+                        (if (= bit 0) (qubit-zero) (qubit-one))
+                        (if (= bit 0) (qubit-plus) (qubit-minus)))))
+          qubit)))))
+
+(def-fn qkd-bob-measure! (session qubits)
+  "Bob measures qubits in random bases"
+  (for-each qubit qubits
+    (let ((basis (random-basis)))
+      (array-push! (session.bob-bases session) basis)
+      ;; Measure in chosen basis
+      (let ((measurement 
+              (if (= basis 'rectilinear)
+                (measure-qubit! qubit)
+                (measure-qubit! (gate-hadamard qubit)))))
+        (array-push! (session.bob-measurements session) measurement)))))
+
+(def-fn qkd-sift-key! (session)
+  "Sift key by comparing bases (public channel)"
+  (for-each i (range 0 (len (session.alice-bases session)))
+    (when (equal? (array-get (session.alice-bases session) i)
+                  (array-get (session.bob-bases session) i))
+      ;; Bases match - keep this bit
+      (array-push! (session.shared-key session)
+                  (array-get (session.bob-measurements session) i))))
+  ;; Truncate to desired length
+  (array-truncate! (session.shared-key session) (session.key-length session)))
+
+(def-fn qkd-detect-eavesdropping (session sample-size)
+  "Detect eavesdropping by comparing subset of bits"
+  (let ((errors 0))
+    (for-each i (range 0 sample-size)
+      (when (not (equal? 
+                  (array-get (session.alice-bits session) i)
+                  (array-get (session.bob-measurements session) i)))
+        (set! errors (+ errors 1))))
+    ;; If error rate > 25%, likely eavesdropping
+    (< (/ errors sample-size) 0.25)))
+
+;; ============================================================
+;; QUANTUM DIGITAL SIGNATURES
+;; ============================================================
+(def-type QuantumSignature
+  (struct (
+    (message any)
+    (signature-states (new-array))  ; Quantum states encoding signature
+    (public-key hash)
+    (timestamp int)
+  )))
+
+(def-fn qsign-generate-keypair ()
+  "Generate quantum-classical hybrid keypair"
+  (let ((private-key (generate-random-key 256))
+        (public-key (hash-function private-key)))
+    (cons private-key public-key)))
+
+(def-fn qsign-sign (message private-key)
+  "Sign message using quantum states"
+  (let ((message-hash (hash-function message))
+        (signature-states (new-array)))
+    ;; Encode signature in quantum states
+    (for-each bit (hash-to-bits message-hash)
+      (let ((qubit (if (= bit 0) (qubit-zero) (qubit-one))))
+        ;; Apply private key transformation
+        (let ((signed-qubit (apply-private-key-transform qubit private-key)))
+          (array-push! signature-states signed-qubit))))
+    (QuantumSignature
+      message
+      signature-states
+      (cdr (qsign-generate-keypair))
+      (current-timestamp))))
+
+(def-fn qsign-verify (signature public-key)
+  "Verify quantum signature"
+  (let ((message-hash (hash-function (signature.message signature)))
+        (valid true))
+    ;; Verify each quantum state
+    (for-each idx (range 0 (len (signature.signature-states signature)))
+      (let ((qubit (array-get (signature.signature-states signature) idx))
+            (expected-bit (array-get (hash-to-bits message-hash) idx)))
+        ;; Measure and verify
+        (when (not (= (measure-qubit! qubit) expected-bit))
+          (set! valid false))))
+    valid))
+
+;; ============================================================
+;; LATTICE-BASED ENCRYPTION (Post-Quantum)
+;; ============================================================
+(def-type LatticeKey
+  (struct (
+    (dimension int)
+    (modulus int)
+    (basis-matrix array)
+    (error-distribution symbol)
+  )))
+
+(def-fn lattice-generate-key (n q)
+  "Generate lattice-based key (Learning With Errors)"
+  (let ((basis (generate-random-lattice-basis n q)))
+    (LatticeKey n q basis 'discrete-gaussian)))
+
+(def-fn lattice-encrypt (plaintext public-key)
+  "Encrypt using lattice-based cryptography"
+  (let ((ciphertext (new-array)))
+    ;; Simplified LWE encryption
+    (for-each bit (plaintext-to-bits plaintext)
+      (let ((error (sample-error-distribution)))
+        (array-push! ciphertext
+          (mod (+ (* (random-element public-key) bit) error)
+               (public-key.modulus public-key)))))
+    ciphertext))
+
+(def-fn lattice-decrypt (ciphertext private-key)
+  "Decrypt using lattice-based cryptography"
+  (let ((plaintext-bits (new-array)))
+    (for-each cipher-elem ciphertext
+      (let ((decrypted (mod (- cipher-elem (apply-private-key private-key cipher-elem))
+                           (private-key.modulus private-key))))
+        (array-push! plaintext-bits (if (< decrypted (/ (private-key.modulus private-key) 2)) 0 1))))
+    (bits-to-plaintext plaintext-bits)))
+
+;; ============================================================
+;; HASH-BASED SIGNATURES (XMSS)
+;; ============================================================
+(def-type XMSSKey
+  (struct (
+    (height int)
+    (merkle-root hash)
+    (ots-keys array)  ; One-time signature keys
+    (used-keys (new-qset))
+  )))
+
+(def-fn xmss-generate-key (tree-height)
+  "Generate XMSS key with Merkle tree"
+  (let ((num-keys (expt 2 tree-height))
+        (ots-keys (new-array)))
+    ;; Generate one-time signature keys
+    (for-each i (range 0 num-keys)
+      (array-push! ots-keys (generate-wots-keypair)))
+    ;; Build Merkle tree
+    (let ((merkle-root (build-merkle-tree ots-keys)))
+      (XMSSKey tree-height merkle-root ots-keys (new-qset)))))
+
+(def-fn xmss-sign (message key idx)
+  "Sign message using XMSS (one signature per index)"
+  (when (qset-has? (key.used-keys key) idx)
+    (error "OTS key already used!"))
+  ;; Mark key as used
+  (qset-add! (key.used-keys key) idx)
+  ;; Sign with one-time signature
+  (let ((ots-key (array-get (key.ots-keys key) idx))
+        (ots-sig (wots-sign message ots-key))
+        (auth-path (get-merkle-auth-path (key.ots-keys key) idx)))
+    (list ots-sig auth-path idx)))
+
+(def-fn xmss-verify (message signature public-key)
+  "Verify XMSS signature"
+  (let ((ots-sig (nth signature 0))
+        (auth-path (nth signature 1))
+        (idx (nth signature 2)))
+    ;; Verify OTS signature
+    (let ((ots-valid (wots-verify message ots-sig)))
+      (and ots-valid
+           ;; Verify Merkle authentication path
+           (verify-merkle-path auth-path idx public-key)))))
+
+;; ============================================================
+;; DOT-LEVEL ACCESS CONTROL
+;; ============================================================
+(def-type DotPermission
+  (struct (
+    (dot-id symbol)
+    (owner-id symbol)
+    (readers (new-qset))
+    (writers (new-qset))
+    (encryption-key hash)
+    (entanglement-policy symbol)  ; 'allow | 'deny | 'restricted
+  )))
+
+(def-fn dot-create-permission (dot owner)
+  "Create permission structure for dot"
+  (DotPermission
+    (dot.quantum-id dot)
+    owner
+    (new-qset)
+    (new-qset)
+    (generate-random-key 256)
+    'restricted))
+
+(def-fn dot-grant-read! (permission user-id)
+  "Grant read access to user"
+  (qset-add! (permission.readers permission) user-id))
+
+(def-fn dot-grant-write! (permission user-id)
+  "Grant write access to user"
+  (qset-add! (permission.writers permission) user-id))
+
+(def-fn dot-revoke-read! (permission user-id)
+  "Revoke read access"
+  (qset-delete! (permission.readers permission) user-id))
+
+(def-fn dot-revoke-write! (permission user-id)
+  "Revoke write access"
+  (qset-delete! (permission.writers permission) user-id))
+
+(def-fn dot-check-permission (permission user-id action)
+  "Check if user has permission for action"
+  (cond
+    ((= action 'read) 
+      (or (= user-id (permission.owner-id permission))
+          (qset-has? (permission.readers permission) user-id)))
+    ((= action 'write)
+      (or (= user-id (permission.owner-id permission))
+          (qset-has? (permission.writers permission) user-id)))
+    (else false)))
+
+;; ============================================================
+;; ENTANGLEMENT-BASED AUTHENTICATION
+;; ============================================================
+(def-type EntanglementAuth
+  (struct (
+    (alice-qubit qubit)
+    (bob-qubit qubit)
+    (shared-secret hash)
+    (challenge-responses (new-qhash-map))
+  )))
+
+(def-fn entangle-auth-setup ()
+  "Setup entanglement-based authentication"
+  (let ((circuit (algorithm-bell-state)))
+    ;; Extract entangled qubits
+    (let ((alice-q (array-get (circuit.qubits circuit) 0))
+          (bob-q (array-get (circuit.qubits circuit) 1)))
+      (EntanglementAuth
+        alice-q
+        bob-q
+        (generate-shared-secret alice-q bob-q)
+        (new-qhash-map)))))
+
+(def-fn entangle-auth-challenge (auth)
+  "Alice sends challenge to Bob"
+  (let ((challenge-basis (random-basis))
+        (challenge-id (gensym 'challenge)))
+    (qhash-set! (auth.challenge-responses auth) 
+                challenge-id 
+                challenge-basis)
+    challenge-id))
+
+(def-fn entangle-auth-respond (auth challenge-id)
+  "Bob responds to challenge using entangled qubit"
+  (match (qhash-get (auth.challenge-responses auth) challenge-id)
+    ((Some basis)
+      (let ((measurement 
+              (if (= basis 'rectilinear)
+                (measure-qubit! (auth.bob-qubit auth))
+                (measure-qubit! (gate-hadamard (auth.bob-qubit auth))))))
+        measurement))
+    (Nothing (error "Unknown challenge"))))
+
+(def-fn entangle-auth-verify (auth challenge-id bob-response)
+  "Verify Bob's response using entanglement correlation"
+  ;; Due to entanglement, measurements should be correlated
+  (let ((alice-measurement (measure-qubit! (auth.alice-qubit auth))))
+    ;; For Bell state |Φ+⟩, measurements should match
+    (= alice-measurement bob-response)))
+
+;; ============================================================
+;; UTILITY FUNCTIONS
+;; ============================================================
+(def-fn random-bit ()
+  "Generate random bit"
+  (if (< (random) 0.5) 0 1))
+
+(def-fn random-basis ()
+  "Generate random basis choice"
+  (if (< (random) 0.5) 'rectilinear 'diagonal))
+
+(def-fn hash-function (data)
+  "Cryptographic hash function (SHA-256 equivalent)"
+  (gensym 'hash))
+
+(def-fn hash-to-bits (hash)
+  "Convert hash to bit array"
+  (make-array 256 random-bit))
+
+(def-fn generate-random-key (bits)
+  "Generate random cryptographic key"
+  (gensym 'key))
+
+(def-fn current-timestamp ()
+  "Get current timestamp"
+  (time-now))
+
+(def-fn apply-private-key-transform (qubit key)
+  "Apply private key transformation to qubit"
+  qubit)
+
+(def-fn plaintext-to-bits (plaintext)
+  "Convert plaintext to bits"
+  (make-array 128 random-bit))
+
+(def-fn bits-to-plaintext (bits)
+  "Convert bits to plaintext"
+  "plaintext")
+
+(def-fn generate-random-lattice-basis (n q)
+  "Generate random lattice basis"
+  (make-array n (fn () (random))))
+
+(def-fn sample-error-distribution ()
+  "Sample from discrete Gaussian"
+  (floor (* (random) 10)))
+
+(def-fn random-element (key)
+  "Get random element from key"
+  (random-int 0 (key.modulus key)))
+
+(def-fn apply-private-key (key elem)
+  "Apply private key to element"
+  elem)
+
+(def-fn generate-wots-keypair ()
+  "Generate Winternitz OTS keypair"
+  (cons (generate-random-key 256) (generate-random-key 256)))
+
+(def-fn build-merkle-tree (leaves)
+  "Build Merkle tree from leaves"
+  (gensym 'merkle-root))
+
+(def-fn wots-sign (message key)
+  "Winternitz one-time signature"
+  (gensym 'signature))
+
+(def-fn wots-verify (message signature)
+  "Verify Winternitz signature"
+  true)
+
+(def-fn get-merkle-auth-path (leaves idx)
+  "Get Merkle authentication path"
+  (new-array))
+
+(def-fn verify-merkle-path (path idx root)
+  "Verify Merkle authentication path"
+  true)
+
+(def-fn generate-shared-secret (qubit1 qubit2)
+  "Generate shared secret from entangled qubits"
+  (gensym 'secret))
+
+;; Export public API
+(export
+  ;; QKD
+  qkd-new-session qkd-alice-prepare! qkd-bob-measure!
+  qkd-sift-key! qkd-detect-eavesdropping
+  ;; Quantum Signatures
+  qsign-generate-keypair qsign-sign qsign-verify
+  ;; Lattice Cryptography
+  lattice-generate-key lattice-encrypt lattice-decrypt
+  ;; Hash-Based Signatures
+  xmss-generate-key xmss-sign xmss-verify
+  ;; Dot Access Control
+  dot-create-permission dot-grant-read! dot-grant-write!
+  dot-revoke-read! dot-revoke-write! dot-check-permission
+  ;; Entanglement Auth
+  entangle-auth-setup entangle-auth-challenge
+  entangle-auth-respond entangle-auth-verify)

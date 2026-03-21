@@ -1,0 +1,397 @@
+(def-module concurrency
+  "Dot-Level Parallelism and Concurrency for Angeh Reality Fabric
+   Entanglement synchronization and distributed execution")
+
+(import type-system)
+(import collections)
+(import quantum-ai)
+
+;; ============================================================
+;; DOT EXECUTION CONTEXT
+;; ============================================================
+(def-type ExecutionContext
+  (struct (
+    (context-id symbol)
+    (worker-count int)
+    (active-dots (new-qset))
+    (completed-dots (new-qset))
+    (failed-dots (new-qhash-map))
+    (entanglement-locks (new-qhash-map))
+    (async-results (new-qhash-map))
+  )))
+
+(def-fn new-execution-context (workers)
+  "Create new parallel execution context"
+  (ExecutionContext
+    (gensym 'ctx)
+    workers
+    (new-qset)
+    (new-qset)
+    (new-qhash-map)
+    (new-qhash-map)
+    (new-qhash-map)))
+
+;; ============================================================
+;; PARALLEL DOT EXECUTION
+;; ============================================================
+(def-type AsyncDot
+  (struct (
+    (dot QuantumDot)
+    (computation fn)
+    (dependencies (new-qset))
+    (state symbol)  ; 'pending | 'running | 'completed | 'failed
+    (result any)
+    (start-time int)
+    (end-time int)
+  )))
+
+(def-fn async-dot-new (dot computation)
+  "Create new asynchronous dot computation"
+  (AsyncDot
+    dot
+    computation
+    (new-qset)
+    'pending
+    Nothing
+    0
+    0))
+
+(def-fn async-dot-add-dependency! (async-dot dep-id)
+  "Add dependency to async dot"
+  (qset-add! (async-dot.dependencies async-dot) dep-id))
+
+(def-fn async-dot-ready? (async-dot ctx)
+  "Check if all dependencies are satisfied"
+  (let ((all-ready true))
+    (for-each dep-id (qset->list (async-dot.dependencies async-dot))
+      (when (not (qset-has? (ctx.completed-dots ctx) dep-id))
+        (set! all-ready false)))
+    all-ready))
+
+(def-fn async-dot-execute! (async-dot ctx)
+  "Execute async dot computation"
+  (when (async-dot-ready? async-dot ctx)
+    (set! (async-dot.state async-dot) 'running)
+    (set! (async-dot.start-time async-dot) (time-now))
+    (qset-add! (ctx.active-dots ctx) ((async-dot.dot async-dot).quantum-id))
+    
+    (try
+      (begin
+        ;; Execute computation
+        (let ((result ((async-dot.computation async-dot) (async-dot.dot async-dot))))
+          (set! (async-dot.result async-dot) result)
+          (set! (async-dot.state async-dot) 'completed)
+          (set! (async-dot.end-time async-dot) (time-now))
+          ;; Move to completed
+          (qset-delete! (ctx.active-dots ctx) ((async-dot.dot async-dot).quantum-id))
+          (qset-add! (ctx.completed-dots ctx) ((async-dot.dot async-dot).quantum-id))
+          ;; Store result
+          (qhash-set! (ctx.async-results ctx) 
+                     ((async-dot.dot async-dot).quantum-id)
+                     result)
+          result))
+      (catch error
+        (set! (async-dot.state async-dot) 'failed)
+        (qhash-set! (ctx.failed-dots ctx)
+                   ((async-dot.dot async-dot).quantum-id)
+                   error)
+        (error error)))))
+
+;; ============================================================
+;; DATAFLOW EXECUTION ENGINE
+;; ============================================================
+(def-type DataflowGraph
+  (struct (
+    (nodes (new-qhash-map))      ; dot-id -> AsyncDot
+    (edges (new-qhash-map))      ; dot-id -> list of dependent dot-ids
+    (execution-order (new-qlist))
+  )))
+
+(def-fn dataflow-new ()
+  "Create new dataflow graph"
+  (DataflowGraph
+    (new-qhash-map)
+    (new-qhash-map)
+    (new-qlist)))
+
+(def-fn dataflow-add-node! (graph dot computation)
+  "Add computation node to dataflow graph"
+  (let ((async-dot (async-dot-new dot computation))
+        (dot-id (dot.quantum-id dot)))
+    (qhash-set! (graph.nodes graph) dot-id async-dot)
+    (qhash-set! (graph.edges graph) dot-id (new-qlist))
+    dot-id))
+
+(def-fn dataflow-add-edge! (graph from-id to-id)
+  "Add dependency edge in dataflow graph"
+  ;; from-id must complete before to-id starts
+  (match (qhash-get (graph.nodes graph) to-id)
+    ((Some to-node)
+      (async-dot-add-dependency! to-node from-id)
+      (match (qhash-get (graph.edges graph) from-id)
+        ((Some edge-list)
+          (qlist-add! edge-list to-id))
+        (Nothing (void))))
+    (Nothing (error "Target node not found"))))
+
+(def-fn dataflow-topological-sort! (graph)
+  "Compute topological execution order"
+  (let ((visited (new-qset))
+        (stack (new-stack)))
+    ;; DFS-based topological sort
+    (for-each dot-id (qhash-keys (graph.nodes graph))
+      (when (not (qset-has? visited dot-id))
+        (dataflow-dfs-visit graph dot-id visited stack)))
+    ;; Convert stack to execution order
+    (while (not (stack-empty? stack))
+      (qlist-add! (graph.execution-order graph) (stack-pop! stack)))))
+
+(def-fn dataflow-dfs-visit (graph dot-id visited stack)
+  "DFS visit for topological sort"
+  (qset-add! visited dot-id)
+  (match (qhash-get (graph.edges graph) dot-id)
+    ((Some neighbors)
+      (for-each neighbor (qlist->list neighbors)
+        (when (not (qset-has? visited neighbor))
+          (dataflow-dfs-visit graph neighbor visited stack))))
+    (Nothing (void)))
+  (stack-push! stack dot-id))
+
+(def-fn dataflow-execute-parallel! (graph ctx)
+  "Execute dataflow graph in parallel"
+  ;; Compute execution order
+  (dataflow-topological-sort! graph)
+  
+  ;; Execute in waves based on dependencies
+  (let ((wave-queue (new-queue)))
+    ;; Initialize with nodes that have no dependencies
+    (for-each dot-id (qhash-keys (graph.nodes graph))
+      (match (qhash-get (graph.nodes graph) dot-id)
+        ((Some async-dot)
+          (when (qset-size (async-dot.dependencies async-dot)) 0)
+            (queue-enqueue! wave-queue async-dot))
+        (Nothing (void))))
+    
+    ;; Process waves
+    (while (not (queue-empty? wave-queue))
+      (let ((current-wave (new-array)))
+        ;; Collect ready nodes
+        (while (and (not (queue-empty? wave-queue))
+                   (< (len current-wave) (ctx.worker-count ctx)))
+          (array-push! current-wave (queue-dequeue! wave-queue)))
+        
+        ;; Execute wave in parallel
+        (parallel-for-each async-dot current-wave
+          (async-dot-execute! async-dot ctx))
+        
+        ;; Queue next wave
+        (for-each completed-dot current-wave
+          (let ((dot-id ((completed-dot.dot completed-dot).quantum-id)))
+            (match (qhash-get (graph.edges graph) dot-id)
+              ((Some dependents)
+                (for-each dep-id (qlist->list dependents)
+                  (match (qhash-get (graph.nodes graph) dep-id)
+                    ((Some dep-node)
+                      (when (async-dot-ready? dep-node ctx)
+                        (queue-enqueue! wave-queue dep-node)))
+                    (Nothing (void)))))
+              (Nothing (void)))))))))
+
+;; ============================================================
+;; ENTANGLEMENT SYNCHRONIZATION
+;; ============================================================
+(def-type EntanglementLock
+  (struct (
+    (lock-id symbol)
+    (entangled-dots (new-qset))
+    (held-by symbol)  ; context-id or Nothing
+    (wait-queue (new-queue))
+  )))
+
+(def-fn entangle-lock-new (dots)
+  "Create lock for entangled dots"
+  (let ((lock (EntanglementLock
+                (gensym 'elock)
+                (new-qset)
+                Nothing
+                (new-queue))))
+    (for-each dot dots
+      (qset-add! (lock.entangled-dots lock) (dot.quantum-id dot)))
+    lock))
+
+(def-fn entangle-lock-acquire! (lock ctx-id)
+  "Acquire lock on entangled dots"
+  (if (eq? (lock.held-by lock) Nothing)
+    (begin
+      (set! (lock.held-by lock) ctx-id)
+      true)
+    (begin
+      ;; Add to wait queue
+      (queue-enqueue! (lock.wait-queue lock) ctx-id)
+      false)))
+
+(def-fn entangle-lock-release! (lock ctx-id)
+  "Release lock on entangled dots"
+  (when (eq? (lock.held-by lock) ctx-id)
+    (if (not (queue-empty? (lock.wait-queue lock)))
+      ;; Transfer to next waiter
+      (set! (lock.held-by lock) (queue-dequeue! (lock.wait-queue lock)))
+      ;; Free the lock
+      (set! (lock.held-by lock) Nothing))))
+
+(def-fn entangle-sync-operation (lock ctx-id operation)
+  "Perform operation under entanglement lock"
+  (when (entangle-lock-acquire! lock ctx-id)
+    (try
+      (let ((result (operation)))
+        (entangle-lock-release! lock ctx-id)
+        result)
+      (catch error
+        (entangle-lock-release! lock ctx-id)
+        (error error)))))
+
+;; ============================================================
+;; CONFLICT RESOLUTION
+;; ============================================================
+(def-type DotConflict
+  (struct (
+    (dot-id symbol)
+    (version-1 any)
+    (version-2 any)
+    (timestamp-1 int)
+    (timestamp-2 int)
+    (resolution-strategy symbol)  ; 'latest | 'merge | 'manual
+  )))
+
+(def-fn conflict-detect (dot original-version new-version)
+  "Detect conflict in dot state"
+  (if (not (equal? original-version new-version))
+    (DotConflict
+      (dot.quantum-id dot)
+      original-version
+      new-version
+      (time-now)
+      (time-now)
+      'merge)
+    Nothing))
+
+(def-fn conflict-resolve (conflict)
+  "Resolve dot conflict based on strategy"
+  (match (conflict.resolution-strategy conflict)
+    ('latest
+      ;; Use latest version based on timestamp
+      (if (> (conflict.timestamp-2 conflict) (conflict.timestamp-1 conflict))
+        (conflict.version-2 conflict)
+        (conflict.version-1 conflict)))
+    ('merge
+      ;; Intelligent merge of versions
+      (merge-dot-versions (conflict.version-1 conflict)
+                         (conflict.version-2 conflict)))
+    ('manual
+      ;; Requires manual intervention
+      (error "Manual conflict resolution required"))
+    (else (conflict.version-1 conflict))))
+
+(def-fn merge-dot-versions (v1 v2)
+  "Merge two dot versions intelligently"
+  ;; Simplified merge - in practice would use CRDT or OT
+  (if (> (hash-value v2) (hash-value v1))
+    v2
+    v1))
+
+;; ============================================================
+;; DISTRIBUTED EXECUTION
+;; ============================================================
+(def-type DistributedContext
+  (struct (
+    (local-ctx ExecutionContext)
+    (remote-workers (new-qhash-map))  ; worker-id -> connection
+    (dot-placement (new-qhash-map))   ; dot-id -> worker-id
+    (migration-policy symbol)         ; 'static | 'dynamic | 'adaptive
+  )))
+
+(def-fn distributed-new (local-workers remote-workers)
+  "Create distributed execution context"
+  (DistributedContext
+    (new-execution-context local-workers)
+    remote-workers
+    (new-qhash-map)
+    'adaptive))
+
+(def-fn distributed-place-dot (dist-ctx dot)
+  "Determine optimal placement for dot execution"
+  (match (dist-ctx.migration-policy dist-ctx)
+    ('static
+      ;; Place on local worker
+      'local)
+    ('dynamic
+      ;; Place on least loaded worker
+      (find-least-loaded-worker dist-ctx))
+    ('adaptive
+      ;; Place based on entanglement proximity
+      (find-entanglement-optimal-worker dist-ctx dot))
+    (else 'local)))
+
+(def-fn distributed-migrate-dot! (dist-ctx dot from-worker to-worker)
+  "Migrate dot execution to different worker"
+  ;; Serialize dot state
+  (let ((serialized-dot (serialize-dot dot)))
+    ;; Send to target worker
+    (worker-send to-worker serialized-dot)
+    ;; Update placement
+    (qhash-set! (dist-ctx.dot-placement dist-ctx)
+               (dot.quantum-id dot)
+               to-worker)))
+
+;; ============================================================
+;; UTILITY FUNCTIONS
+;; ============================================================
+(def-fn parallel-for-each (fn items)
+  "Execute function on items in parallel"
+  ;; Simplified - actual implementation would use thread pool
+  (map fn items))
+
+(def-fn qset->list (qset)
+  "Convert quantum set to list"
+  (qhash-keys (qset.items qset)))
+
+(def-fn time-now ()
+  "Get current time"
+  (system-time))
+
+(def-fn hash-value (v)
+  "Get hash value"
+  0)
+
+(def-fn find-least-loaded-worker (dist-ctx)
+  "Find worker with least load"
+  'local)
+
+(def-fn find-entanglement-optimal-worker (dist-ctx dot)
+  "Find worker optimal for entanglement locality"
+  'local)
+
+(def-fn serialize-dot (dot)
+  "Serialize dot for transmission"
+  dot)
+
+(def-fn worker-send (worker data)
+  "Send data to worker"
+  (void))
+
+;; Export public API
+(export
+  ;; Execution Context
+  new-execution-context
+  ;; Async Dots
+  async-dot-new async-dot-add-dependency! async-dot-execute!
+  ;; Dataflow
+  dataflow-new dataflow-add-node! dataflow-add-edge!
+  dataflow-execute-parallel!
+  ;; Entanglement Locks
+  entangle-lock-new entangle-lock-acquire! entangle-lock-release!
+  entangle-sync-operation
+  ;; Conflict Resolution
+  conflict-detect conflict-resolve
+  ;; Distributed Execution
+  distributed-new distributed-place-dot distributed-migrate-dot!)

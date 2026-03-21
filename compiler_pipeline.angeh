@@ -1,0 +1,92 @@
+(def-module compiler-pipeline)
+
+(import type-system)
+(import vm-architecture)
+
+(def-type Token
+  (struct (
+    (type Symbol)
+    (value String)
+  )))
+
+(def-fn tokenize (input-string)
+  (let ((tokens (new-list)) (current 0))
+    (begin
+      (while (< current (len input-string))
+        (let ((char (get input-string current)))
+          (cond
+            ((= char "(") 
+              (add-token! tokens (new-token 'lparen "(")) 
+              (inc! current))
+            ((= char ")") 
+              (add-token! tokens (new-token 'rparen ")")) 
+              (inc! current))
+            ((is-whitespace? char) 
+              (inc! current))
+            ((is-digit? char)
+              (let ((start current))
+                (begin
+                  (while (and (< current (len input-string)) (is-digit? (get input-string current)))
+                    (inc! current))
+                  (add-token! tokens (new-token 'number (substring input-string start current))))))
+            ((is-letter? char)
+              (let ((start current))
+                (begin
+                  (while (and (< current (len input-string)) (is-alphanumeric? (get input-string current)))
+                    (inc! current))
+                  (add-token! tokens (new-token 'symbol (substring input-string start current))))))
+            (else 
+              (error (concat "Unexpected character: " char))))))
+      tokens)))
+
+(def-fn parse (tokens)
+  (let* ((position 0)
+         (parse-list 
+           (lambda () 
+             (let ((list (new-list)))
+               (begin
+                 (while (not (= 'rparen (get (get tokens position) 'type)))
+                   (add! list (parse-expression)))
+                 (inc! position) ;; consume the 'rparen
+                 list))))
+         (parse-expression 
+           (lambda () 
+             (let ((token (get tokens position)))
+               (begin
+                 (inc! position)
+                 (cond
+                   ((= (get token 'type) 'number) 
+                     (string-to-number (get token 'value)))
+                   ((= (get token 'type) 'symbol) 
+                     (get token 'value))
+                   ((= (get token 'type) 'lparen) 
+                     (parse-list))
+                   (else 
+                     (error (concat "Unexpected token: " (get token 'type))))))))))
+    (let ((ast (new-list)))
+      (begin
+        (while (< position (len tokens))
+          (add! ast (parse-expression)))
+        ast))))
+
+(def-fn compile (ast)
+  (let* ((bytecode (new-array))
+         (compile-expression 
+           (lambda (expr)
+             (if (is-list? expr)
+               (let ((op (first expr))
+                     (args (rest expr)))
+                 (begin
+                   (dolist (arg args) (compile-expression arg))
+                   (cond
+                     ((= op '+) (add! bytecode OP_ADD))
+                     ((= op '-) (add! bytecode OP_SUB))
+                     (else (error (concat "Unknown operator: " op))))))
+               (if (is-number? expr)
+                 (add-all! bytecode (list OP_PUSH expr))
+                 (error (concat "Unknown expression type: " expr)))))))
+    (begin
+      (dolist (expr ast)
+        (compile-expression expr))
+      (add! bytecode OP_HALT)
+      bytecode)))

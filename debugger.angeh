@@ -1,0 +1,468 @@
+(def-module debugger
+  "Quantum Debugging Tools for Angeh Reality Fabric
+   Superposition inspection, entanglement mapping, temporal tracing, and reality monitoring")
+
+(import type-system)
+(import collections)
+(import quantum-ai)
+(import concurrency)
+
+;; ============================================================
+;; QUANTUM STATE INSPECTOR
+;; ============================================================
+(def-type QuantumInspector
+  (struct (
+    (target-dot QuantumDot)
+    (state-history (new-qlist))
+    (measurement-basis symbol)  ; 'computational | 'hadamard | 'custom
+    (observation-effect bool)   ; Track if observation affects state
+  )))
+
+(def-fn inspector-new (dot)
+  "Create quantum state inspector for dot"
+  (QuantumInspector
+    dot
+    (new-qlist)
+    'computational
+    true))
+
+(def-fn inspector-observe-state (inspector)
+  "Observe current quantum state (may collapse superposition)"
+  (let ((state-snapshot (struct
+                          ((timestamp (time-now))
+                           (state (inspector.target-dot inspector).state)
+                           (content (inspector.target-dot inspector).content)
+                           (entanglements (qhash-keys ((inspector.target-dot inspector).entanglements)))
+                           (basis (inspector.measurement-basis inspector))))))
+    (qlist-add! (inspector.state-history inspector) state-snapshot)
+    state-snapshot))
+
+(def-fn inspector-observe-without-collapse (inspector)
+  "Non-invasive observation (doesn't collapse superposition)"
+  (let ((saved-effect (inspector.observation-effect inspector)))
+    (set! (inspector.observation-effect inspector) false)
+    (let ((snapshot (inspector-observe-state inspector)))
+      (set! (inspector.observation-effect inspector) saved-effect)
+      snapshot)))
+
+(def-fn inspector-get-superposition-components (inspector)
+  "Get all components if dot is in superposition"
+  (if (= ((inspector.target-dot inspector).state inspector.target-dot) 'superposition)
+    ;; Extract superposition components
+    (extract-superposition-states (inspector.target-dot inspector))
+    (list ((inspector.target-dot inspector).content inspector.target-dot))))
+
+(def-fn inspector-visualize-state (inspector)
+  "Visualize quantum state (Bloch sphere representation)"
+  (let ((state ((inspector.target-dot inspector).state inspector.target-dot))
+        (visualization (struct
+                         ((state-type state)
+                          (bloch-vector (calculate-bloch-vector (inspector.target-dot inspector)))
+                          (phase (calculate-phase (inspector.target-dot inspector)))
+                          (purity (calculate-purity (inspector.target-dot inspector)))))))
+    visualization))
+
+;; ============================================================
+;; ENTANGLEMENT RELATIONSHIP MAPPER
+;; ============================================================
+(def-type EntanglementMapper
+  (struct (
+    (root-dot QuantumDot)
+    (entanglement-graph (new-qhash-map))  ; dot-id -> list of (entangled-id, strength)
+    (max-depth int)
+    (discovered-dots (new-qset))
+  )))
+
+(def-fn mapper-new (root-dot depth)
+  "Create entanglement mapper"
+  (EntanglementMapper
+    root-dot
+    (new-qhash-map)
+    depth
+    (new-qset)))
+
+(def-fn mapper-build-graph! (mapper dot-repository)
+  "Build complete entanglement graph from root"
+  (mapper-explore-entanglements! mapper (mapper.root-dot mapper) 0 dot-repository))
+
+(def-fn mapper-explore-entanglements! (mapper dot current-depth repo)
+  "Recursively explore entanglements"
+  (when (<= current-depth (mapper.max-depth mapper))
+    (let ((dot-id (dot.quantum-id dot)))
+      ;; Mark as discovered
+      (qset-add! (mapper.discovered-dots mapper) dot-id)
+      
+      ;; Record entanglements
+      (let ((connections (new-qlist)))
+        (for-each entangled-id (qhash-keys (dot.entanglements dot))
+          (match (qhash-get (dot.entanglements dot) entangled-id)
+            ((Some strength)
+              (qlist-add! connections (list entangled-id strength))
+              ;; Recursively explore if not visited
+              (when (not (qset-has? (mapper.discovered-dots mapper) entangled-id))
+                (match (repo-get-dot repo entangled-id)
+                  ((Some entangled-dot)
+                    (mapper-explore-entanglements! mapper entangled-dot (+ current-depth 1) repo))
+                  (Nothing (void)))))
+            (Nothing (void))))
+        (qhash-set! (mapper.entanglement-graph mapper) dot-id connections)))))
+
+(def-fn mapper-find-entanglement-path (mapper from-id to-id)
+  "Find path between two entangled dots"
+  (let ((visited (new-qset))
+        (queue (new-queue))
+        (parent (new-qhash-map)))
+    ;; BFS to find path
+    (queue-enqueue! queue from-id)
+    (qset-add! visited from-id)
+    
+    (while (not (queue-empty? queue))
+      (let ((current (queue-dequeue! queue)))
+        (when (equal? current to-id)
+          ;; Found path - reconstruct it
+          (return (reconstruct-path parent from-id to-id)))
+        
+        ;; Explore neighbors
+        (match (qhash-get (mapper.entanglement-graph mapper) current)
+          ((Some connections)
+            (for-each conn (qlist->list connections)
+              (let ((neighbor-id (car conn)))
+                (when (not (qset-has? visited neighbor-id))
+                  (qset-add! visited neighbor-id)
+                  (qhash-set! parent neighbor-id current)
+                  (queue-enqueue! queue neighbor-id)))))
+          (Nothing (void)))))
+    
+    ;; No path found
+    Nothing))
+
+(def-fn mapper-get-entanglement-strength (mapper dot1-id dot2-id)
+  "Get strength of entanglement between two dots"
+  (match (qhash-get (mapper.entanglement-graph mapper) dot1-id)
+    ((Some connections)
+      (let ((result Nothing))
+        (for-each conn (qlist->list connections)
+          (when (equal? (car conn) dot2-id)
+            (set! result (Some (cadr conn)))))
+        result))
+    (Nothing Nothing)))
+
+(def-fn mapper-visualize-graph (mapper)
+  "Generate visual representation of entanglement graph"
+  (let ((nodes (new-qlist))
+        (edges (new-qlist)))
+    ;; Collect nodes
+    (for-each dot-id (qhash-keys (mapper.entanglement-graph mapper))
+      (qlist-add! nodes (struct ((id dot-id) (label (symbol->string dot-id))))))
+    
+    ;; Collect edges
+    (for-each dot-id (qhash-keys (mapper.entanglement-graph mapper))
+      (match (qhash-get (mapper.entanglement-graph mapper) dot-id)
+        ((Some connections)
+          (for-each conn (qlist->list connections)
+            (qlist-add! edges (struct 
+                               ((from dot-id)
+                                (to (car conn))
+                                (weight (cadr conn)))))))
+        (Nothing (void))))
+    
+    (struct ((nodes nodes) (edges edges)))))
+
+;; ============================================================
+;; TEMPORAL EXECUTION TRACER
+;; ============================================================
+(def-type ExecutionTrace
+  (struct (
+    (trace-id symbol)
+    (events (new-qlist))
+    (start-time int)
+    (end-time int)
+    (causality-graph (new-qhash-map))
+  )))
+
+(def-type TraceEvent
+  (struct (
+    (event-id symbol)
+    (timestamp int)
+    (dot-id symbol)
+    (event-type symbol)  ; 'execute | 'entangle | 'measure | 'transform
+    (before-state any)
+    (after-state any)
+    (causedby symbol)    ; Previous event that caused this
+  )))
+
+(def-fn tracer-new ()
+  "Create execution tracer"
+  (ExecutionTrace
+    (gensym 'trace)
+    (new-qlist)
+    (time-now)
+    0
+    (new-qhash-map)))
+
+(def-fn tracer-record-event! (tracer dot event-type before after caused-by)
+  "Record execution event"
+  (let ((event (TraceEvent
+                 (gensym 'event)
+                 (time-now)
+                 (dot.quantum-id dot)
+                 event-type
+                 before
+                 after
+                 caused-by)))
+    (qlist-add! (tracer.events tracer) event)
+    ;; Record causality
+    (when (not (eq? caused-by Nothing))
+      (qhash-set! (tracer.causality-graph tracer) (event.event-id event) caused-by))
+    (event.event-id event)))
+
+(def-fn tracer-finish! (tracer)
+  "Finish trace recording"
+  (set! (tracer.end-time tracer) (time-now)))
+
+(def-fn tracer-get-events-for-dot (tracer dot-id)
+  "Get all events for specific dot"
+  (let ((dot-events (new-qlist)))
+    (for-each event (qlist->list (tracer.events tracer))
+      (when (equal? (event.dot-id event) dot-id)
+        (qlist-add! dot-events event)))
+    dot-events))
+
+(def-fn tracer-get-causality-chain (tracer event-id)
+  "Get complete causality chain for event"
+  (let ((chain (new-qlist)))
+    (let ((current event-id))
+      (while (not (eq? current Nothing))
+        (qlist-add! chain current)
+        (match (qhash-get (tracer.causality-graph tracer) current)
+          ((Some parent) (set! current parent))
+          (Nothing (set! current Nothing)))))
+    (reverse-qlist chain)))
+
+(def-fn tracer-replay-execution (tracer from-time to-time)
+  "Replay execution within time range"
+  (let ((replay-events (new-qlist)))
+    (for-each event (qlist->list (tracer.events tracer))
+      (when (and (>= (event.timestamp event) from-time)
+                (<= (event.timestamp event) to-time))
+        (qlist-add! replay-events event)))
+    replay-events))
+
+;; ============================================================
+;; BREAKPOINT SYSTEM
+;; ============================================================
+(def-type Breakpoint
+  (struct (
+    (bp-id symbol)
+    (dot-id symbol)
+    (condition fn)       ; Function that returns bool
+    (action fn)          ; Function to execute when hit
+    (hit-count int)
+    (enabled bool)
+  )))
+
+(def-type BreakpointManager
+  (struct (
+    (breakpoints (new-qhash-map))
+    (hit-history (new-qlist))
+  )))
+
+(def-fn breakpoint-manager-new ()
+  "Create breakpoint manager"
+  (BreakpointManager
+    (new-qhash-map)
+    (new-qlist)))
+
+(def-fn breakpoint-add! (manager dot-id condition action)
+  "Add breakpoint"
+  (let ((bp (Breakpoint
+              (gensym 'bp)
+              dot-id
+              condition
+              action
+              0
+              true)))
+    (qhash-set! (manager.breakpoints manager) (bp.bp-id bp) bp)
+    (bp.bp-id bp)))
+
+(def-fn breakpoint-check! (manager dot state)
+  "Check if any breakpoint should trigger"
+  (for-each bp-id (qhash-keys (manager.breakpoints manager))
+    (match (qhash-get (manager.breakpoints manager) bp-id)
+      ((Some bp)
+        (when (and (bp.enabled bp)
+                  (equal? (bp.dot-id bp) (dot.quantum-id dot))
+                  ((bp.condition bp) dot state))
+          ;; Breakpoint hit
+          (set! (bp.hit-count bp) (+ (bp.hit-count bp) 1))
+          (qlist-add! (manager.hit-history manager) bp-id)
+          ;; Execute action
+          ((bp.action bp) dot state)))
+      (Nothing (void)))))
+
+(def-fn breakpoint-disable! (manager bp-id)
+  "Disable breakpoint"
+  (match (qhash-get (manager.breakpoints manager) bp-id)
+    ((Some bp) (set! (bp.enabled bp) false))
+    (Nothing (void))))
+
+(def-fn breakpoint-enable! (manager bp-id)
+  "Enable breakpoint"
+  (match (qhash-get (manager.breakpoints manager) bp-id)
+    ((Some bp) (set! (bp.enabled bp) true))
+    (Nothing (void))))
+
+;; ============================================================
+;; REALITY INTEGRATION MONITOR
+;; ============================================================
+(def-type RealityMonitor
+  (struct (
+    (sensor-readings (new-qhash-map))   ; sensor-id -> latest reading
+    (actuator-commands (new-qlist))      ; History of commands
+    (reality-state (new-qhash-map))      ; Current reality state
+    (anomalies (new-qlist))              ; Detected anomalies
+  )))
+
+(def-fn reality-monitor-new ()
+  "Create reality integration monitor"
+  (RealityMonitor
+    (new-qhash-map)
+    (new-qlist)
+    (new-qhash-map)
+    (new-qlist)))
+
+(def-fn reality-monitor-record-sensor! (monitor sensor-id reading)
+  "Record sensor reading"
+  (qhash-set! (monitor.sensor-readings monitor) sensor-id reading)
+  ;; Check for anomalies
+  (when (is-anomalous-reading? reading)
+    (qlist-add! (monitor.anomalies monitor)
+                (struct ((sensor sensor-id) 
+                        (reading reading)
+                        (timestamp (time-now)))))))
+
+(def-fn reality-monitor-record-actuator! (monitor actuator-id command)
+  "Record actuator command"
+  (qlist-add! (monitor.actuator-commands monitor)
+              (struct ((actuator actuator-id)
+                      (command command)
+                      (timestamp (time-now))))))
+
+(def-fn reality-monitor-get-state (monitor key)
+  "Get current reality state for key"
+  (qhash-get (monitor.reality-state monitor) key))
+
+(def-fn reality-monitor-update-state! (monitor key value)
+  "Update reality state"
+  (qhash-set! (monitor.reality-state monitor) key value))
+
+;; ============================================================
+;; WATCH VARIABLES
+;; ============================================================
+(def-type WatchPoint
+  (struct (
+    (watch-id symbol)
+    (expression fn)      ; Expression to watch
+    (last-value any)
+    (value-history (new-qlist))
+    (on-change fn)       ; Callback when value changes
+  )))
+
+(def-type WatchManager
+  (struct (
+    (watches (new-qhash-map))
+  )))
+
+(def-fn watch-manager-new ()
+  "Create watch manager"
+  (WatchManager (new-qhash-map)))
+
+(def-fn watch-add! (manager expression on-change)
+  "Add watch point"
+  (let ((initial-value (expression)))
+    (let ((watch (WatchPoint
+                   (gensym 'watch)
+                   expression
+                   initial-value
+                   (new-qlist)
+                   on-change)))
+      (qlist-add! (watch.value-history watch) initial-value)
+      (qhash-set! (manager.watches manager) (watch.watch-id watch) watch)
+      (watch.watch-id watch))))
+
+(def-fn watch-update-all! (manager)
+  "Update all watch points"
+  (for-each watch-id (qhash-keys (manager.watches manager))
+    (match (qhash-get (manager.watches manager) watch-id)
+      ((Some watch)
+        (let ((new-value ((watch.expression watch))))
+          (when (not (equal? new-value (watch.last-value watch)))
+            ;; Value changed
+            (qlist-add! (watch.value-history watch) new-value)
+            ((watch.on-change watch) (watch.last-value watch) new-value)
+            (set! (watch.last-value watch) new-value))))
+      (Nothing (void)))))
+
+;; ============================================================
+;; UTILITY FUNCTIONS
+;; ============================================================
+(def-fn extract-superposition-states (dot)
+  "Extract all states from superposition"
+  (list (dot.content dot)))
+
+(def-fn calculate-bloch-vector (dot)
+  "Calculate Bloch sphere vector representation"
+  (list 0.0 0.0 1.0))
+
+(def-fn calculate-phase (dot)
+  "Calculate quantum phase"
+  0.0)
+
+(def-fn calculate-purity (dot)
+  "Calculate state purity (1.0 = pure, <1.0 = mixed)"
+  1.0)
+
+(def-fn repo-get-dot (repo dot-id)
+  "Get dot from repository"
+  Nothing)
+
+(def-fn reconstruct-path (parent from to)
+  "Reconstruct path from parent map"
+  (let ((path (new-qlist)))
+    (let ((current to))
+      (while (not (equal? current from))
+        (qlist-add! path current)
+        (match (qhash-get parent current)
+          ((Some p) (set! current p))
+          (Nothing (set! current from))))
+      (qlist-add! path from)
+      (reverse-qlist path))))
+
+(def-fn reverse-qlist (qlist)
+  "Reverse quantum list"
+  qlist)
+
+(def-fn is-anomalous-reading? (reading)
+  "Check if sensor reading is anomalous"
+  false)
+
+;; Export public API
+(export
+  ;; Quantum Inspector
+  inspector-new inspector-observe-state inspector-observe-without-collapse
+  inspector-get-superposition-components inspector-visualize-state
+  ;; Entanglement Mapper
+  mapper-new mapper-build-graph! mapper-find-entanglement-path
+  mapper-get-entanglement-strength mapper-visualize-graph
+  ;; Execution Tracer
+  tracer-new tracer-record-event! tracer-finish!
+  tracer-get-events-for-dot tracer-get-causality-chain tracer-replay-execution
+  ;; Breakpoints
+  breakpoint-manager-new breakpoint-add! breakpoint-check!
+  breakpoint-disable! breakpoint-enable!
+  ;; Reality Monitor
+  reality-monitor-new reality-monitor-record-sensor!
+  reality-monitor-record-actuator! reality-monitor-get-state
+  reality-monitor-update-state!
+  ;; Watch Points
+  watch-manager-new watch-add! watch-update-all!)

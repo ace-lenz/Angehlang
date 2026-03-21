@@ -1,0 +1,78 @@
+"""
+Verification Script for Angeh AI System (Omega)
+Checks imports and instantiation of all core components.
+"""
+
+import sys
+import os
+
+def verify(name, callback):
+    try:
+        print(f"🔍 Verifying {name}...", end=" ")
+        callback()
+        print("✅ OK")
+    except Exception as e:
+        print(f"❌ FAILED: {e}")
+        import traceback
+        traceback.print_exc()
+
+def check_native_executor():
+    try:
+        from angeh_native_executor import AngehNativeExecutor
+        exe = AngehNativeExecutor()
+        assert exe.cognitive_engine is not None
+        assert exe.renderer is not None
+        assert exe.bio_sim is not None
+    except ImportError:
+        # Fallback if imports are tricky in this env, but aim for success
+        raise
+
+def check_emoji_ecosystem():
+    from emoji_v17_engine import V17Engine
+    from emoji_compositor import EmojiCompositor
+    from angeh_emoji_customizer import GenmojiAgent
+    
+    eng = V17Engine()
+    comp = EmojiCompositor()
+    agent = GenmojiAgent()
+    
+    res = eng.validator.is_valid_rgi("👨‍👩‍👧")
+    assert res == True
+
+def check_parallel_execution():
+    from realtime_parallel_execution import LiveCodingSession, QuantizationManager, QuantizationMode
+    session = LiveCodingSession()
+    qm = QuantizationManager()
+    assert qm.resolve_mode_from_dots("🧱 3.14") == QuantizationMode.INT8
+
+def check_render_bio():
+    from angeh_renderer import NeuralRenderer, SelfGuidedRenderer
+    from angeh_biodigital import BioSimulator
+    
+    nr = NeuralRenderer()
+    sg = SelfGuidedRenderer()
+    bio = BioSimulator()
+    
+    dna = bio.dna_drive.encode("0011")
+    assert dna == "AT"
+
+def check_storage_brain():
+    from angeh_storage_brain import SyntheticBrainCore
+    sb = SyntheticBrainCore()
+    sb.allocate_memory("test_region", 100)
+    sb.process_thought("Testing Storage Brain")
+    # Clean up managed by tempfile usually, but good to test flow
+
+if __name__ == "__main__":
+    print("="*40)
+    print("STARTING SYSTEM INTEGRITY CHECK")
+    print("="*40)
+    
+    verify("Parallel Execution Engine", check_parallel_execution)
+    verify("Native Executor (Integration Hub)", check_native_executor)
+    verify("Emoji Ecosystem (V17 + Hyper-Real)", check_emoji_ecosystem)
+    verify("Render/Bio Subsystems", check_render_bio)
+    verify("Storage-Based Synthetic Brain", check_storage_brain)
+
+    print("\n" + "="*40)
+    print("VERIFICATION COMPLETE")

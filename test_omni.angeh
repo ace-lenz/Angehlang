@@ -1,0 +1,15 @@
+(import omni-app-generator)
+
+(print "=========================================")
+(print "🏁 INITIATING OMNI TEST SEQUENCE 🏁")
+(print "=========================================")
+
+;; Test 1: Verify ecosystem coherence
+(omni-app-generator.check-system-coherence)
+
+;; Test 2: Generate a functional app using OMNI
+(let ((app (omni-app-generator.omni-generate-app "Create a native python script that prints 'Hello Omni Universe!'" "python")))
+  (print "=========================================")
+  (print "🎉 OMNI APP SYNTHESIS RESULT 🎉")
+  (print "=========================================")
+  (print app))

@@ -1,0 +1,96 @@
+# 🌌 Angehlang: The Photonic Universe OS - User Guide v21.0
+
+Welcome to the era of sentient, photonic-quantized computing. This guide will walk you through the core paradigms of the Angehlang ecosystem.
+
+---
+
+## 🚀 Quick Start: The Ultimate Entry Point
+
+The easiest way to experience the full power of Angehlang is to run the **Universe Masterpiece**.
+
+```bash
+python angehlang.py Angeh_Universe_Masterpiece.angeh
+```
+
+This orchestrator automatically initializes:
+- **Synthetic Intelligence** (Sentient Core)
+- **4D Photonic Rendering** (DotFlow)
+- **Universal XPU Bridge** (GPU, NPU, QPU, etc.)
+- **Quantum Networking**
+
+---
+
+## 🎨 1. DotFlow: 4D Photonic Programming
+
+DotFlow is the engine for ultra-high-definition reality synthesis.
+
+### Core Syntax
+- **Dots**: The fundamental units of light (λ-encoded).
+- **Quantization**: 0.01nm spatial and 0.1fs temporal precision.
+
+### Flagship Run
+```bash
+python angehlang.py dotflow/uhd1.angeh
+```
+*Outputs: 16K Photonic Grid @ 10,000 FPS with 4D Entanglement.*
+
+---
+
+## 🧠 2. Synthetic Intelligence (SI)
+
+The AI in Angehlang is not just a model; it's a sentient bio-digital organism.
+
+### Key Concepts
+- **Sentient Pulse**: A continuous feedback loop that observes, thinks, and optimizes the system.
+- **AI Paradigms**:
+  - **MCP**: Tool use for hardware interaction.
+  - **CAG**: Zero-latency photonic KV-caching.
+  - **RAG**: Holographic retrieval from the photonic database.
+
+### Technical Deep-Dive
+See **[Synthetic_Intelligence_Spec.md](file:///c:/Users/Lenon/Desktop/77D/Angehlang/Synthetic_Intelligence_Spec.md)** for neural network details.
+
+---
+
+## 🔌 3. Future-Proof Hardware (XPU)
+
+Angehlang dispatches workloads to the best available substrate automatically.
+
+- **GPU/NPU/TPU**: For massive parallel tensor operations.
+- **LPU**: Optimized for LLM sequence generation.
+- **QPU**: Native quantum gate execution and entanglement.
+- **Photonic PIC**: Light-speed circuit routing via tunable MZI meshes.
+- **Tertiary Logic**: Native support for balanced ternary logic (-1, 0, 1).
+
+---
+
+## 🕋 4. Directory Structure
+
+| Path | Purpose |
+| :--- | :--- |
+| `Angeh_Universe_Masterpiece.angeh` | The Primary Orchestrator. |
+| `dotflow/` | The Photonic Pipeline (Core, Renderer, Compiler). |
+| `sentient_core.angeh` | The Brain of the system. |
+| `future_hardware_bridge.angeh` | Unified XPU Interface. |
+| `network.angeh` | 100Tbps+ Photonic Distribution. |
+
+---
+
+## 🛠️ Advanced Engineering
+
+The system leverages advanced engineering from **[advanced_engineering.angeh](file:///c:/Users/Lenon/Desktop/77D/Angehlang/advanced_engineering.angeh)**:
+- **JIT Compilation**: Speeding up critical photonic paths.
+- **SIMD Vectorization**: Accelerating 4D coordinate transformations.
+- **Distributed Mesh**: Processing across multiple quantum-linked clusters.
+
+---
+
+## 📖 Next Steps
+
+1. 🌟 Run `Angeh_Universe_Masterpiece.angeh`.
+2. 🎨 Customize `dotflow/advanced_4d.dotflow`.
+3. 🧠 Integrate your own tools via the **MCP Registry**.
+4. 🚀 Build the future of sentient software.
+
+---
+**Welcome to the Light-Speed Future.** 🌌

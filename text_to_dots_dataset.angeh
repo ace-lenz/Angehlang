@@ -1,0 +1,831 @@
+{
+  "text_to_dots_dataset": {
+    "version": "1.0",
+    "description": "Complete mapping of text elements to Angeh Lang dot patterns for universal translation",
+    "basic_vocabulary": {
+      "pronouns": {
+        "I/me": "👤",
+        "you": "👤⚪➡️",
+        "he/him": "👨",
+        "she/her": "👩",
+        "it": "⚫",
+        "we/us": "👥",
+        "they/them": "👥⚪➡️",
+        "this": "👆",
+        "that": "👉",
+        "these": "👆👆",
+        "those": "👉👉"
+      },
+      "common_nouns": {
+        "person": "👤",
+        "people": "👥",
+        "man": "👨",
+        "woman": "👩",
+        "child": "👦",
+        "home": "🏠",
+        "house": "🏠",
+        "food": "🍚",
+        "water": "💧",
+        "earth": "🌍",
+        "sky": "🌌",
+        "sun": "☀️",
+        "moon": "🌙",
+        "star": "⭐",
+        "tree": "🌳",
+        "animal": "🐾",
+        "bird": "🐦",
+        "fish": "🐠",
+        "love": "💖",
+        "peace": "☮️",
+        "wisdom": "🧠",
+        "knowledge": "📚",
+        "time": "⏰",
+        "space": "🌌",
+        "light": "💡",
+        "dark": "🌑",
+        "good": "👍",
+        "bad": "👎",
+        "big": "🏔️",
+        "small": "🐜",
+        "fast": "⚡",
+        "slow": "🐢",
+        "hot": "🔥",
+        "cold": "❄️",
+        "happy": "😊",
+        "sad": "😢",
+        "strong": "💪",
+        "weak": "😰"
+      },
+      "verbs": {
+        "be": "⚫",
+        "do": "🔴",
+        "go": "➡️",
+        "come": "⬅️",
+        "see": "👀",
+        "hear": "👂",
+        "speak": "🗣️",
+        "think": "💭",
+        "feel": "❤️",
+        "touch": "👆",
+        "eat": "🍽️",
+        "drink": "🥤",
+        "sleep": "😴",
+        "wake": "🌅",
+        "work": "🛠️",
+        "play": "🎮",
+        "learn": "📖",
+        "teach": "👨‍🏫",
+        "help": "🤝",
+        "give": "🎁",
+        "take": "✋",
+        "make": "🔨",
+        "build": "🏗️",
+        "create": "✨",
+        "destroy": "💥",
+        "live": "🌱",
+        "die": "🌹",
+        "love": "💕",
+        "hate": "😠",
+        "fear": "😱",
+        "hope": "🌈",
+        "believe": "🙏",
+        "know": "💡",
+        "understand": "🧠",
+        "remember": "📝",
+        "forget": "💨"
+      },
+      "adjectives": {
+        "good": "👍",
+        "bad": "👎",
+        "big": "🏔️",
+        "small": "🐜",
+        "new": "🆕",
+        "old": "👴",
+        "hot": "🔥",
+        "cold": "❄️",
+        "fast": "⚡",
+        "slow": "🐢",
+        "easy": "😌",
+        "hard": "💪",
+        "beautiful": "🌸",
+        "ugly": "😖",
+        "clean": "✨",
+        "dirty": "🗑️",
+        "full": "🍽️",
+        "empty": "🕳️",
+        "rich": "💰",
+        "poor": "😔",
+        "happy": "😊",
+        "sad": "😢",
+        "angry": "😠",
+        "calm": "😌",
+        "smart": "🧠",
+        "stupid": "😵",
+        "strong": "💪",
+        "weak": "😰",
+        "healthy": "💚",
+        "sick": "🤒",
+        "alive": "🌱",
+        "dead": "💀",
+        "true": "✅",
+        "false": "❌",
+        "right": "👍",
+        "wrong": "👎"
+      },
+      "prepositions": {
+        "in": "📦",
+        "on": "🔼",
+        "at": "📍",
+        "to": "➡️",
+        "from": "⬅️",
+        "with": "🔗",
+        "by": "👤",
+        "for": "🎯",
+        "about": "💭",
+        "over": "🔺",
+        "under": "🔻",
+        "before": "⏪",
+        "after": "⏩",
+        "during": "⏳",
+        "since": "📅",
+        "until": "⏰",
+        "through": "🔄",
+        "across": "↔️",
+        "around": "🔄",
+        "between": "↔️",
+        "among": "👥",
+        "against": "⚔️",
+        "toward": "➡️",
+        "away": "⬅️",
+        "into": "📥",
+        "out": "📤",
+        "up": "⬆️",
+        "down": "⬇️",
+        "inside": "🏠",
+        "outside": "🌍",
+        "near": "📍",
+        "far": "🌌",
+        "above": "🔺",
+        "below": "🔻"
+      },
+      "conjunctions": {
+        "and": "➕",
+        "or": "🔀",
+        "but": "🔄",
+        "so": "➡️",
+        "because": "❓",
+        "although": "⚖️",
+        "if": "❓",
+        "then": "➡️",
+        "when": "⏰",
+        "where": "📍",
+        "why": "❓",
+        "how": "🔍",
+        "what": "❓",
+        "who": "👤",
+        "which": "🔀",
+        "that": "👉",
+        "than": "⚖️",
+        "as": "⚖️",
+        "like": "❤️",
+        "while": "⏳",
+        "since": "📅",
+        "until": "⏰",
+        "before": "⏪",
+        "after": "⏩",
+        "during": "⏳"
+      },
+      "numbers": {
+        "0": "🟢〇",
+        "1": "🔴一",
+        "2": "🔴🔴二",
+        "3": "🔴🔴🔴三",
+        "4": "🔴🔴🔴🔴四",
+        "5": "🟢🟢〇五",
+        "6": "🟢🟢🔴六",
+        "7": "🟢🟢🔴🔴七",
+        "8": "🔴🔴🔴🔴🔴🔴🔴🔴八",
+        "9": "🔴🔴🔴🟢🟢🟢〇九",
+        "10": "🔴〇",
+        "100": "🔴〇〇",
+        "1000": "🔴〇〇〇",
+        "million": "🔴🌟",
+        "billion": "🔴🌟🌟",
+        "trillion": "🔴🌟🌟🌟"
+      }
+    },
+    "phrases_and_sentences": {
+      "greetings": {
+        "hello": "👐👥",
+        "hi": "🤝👤",
+        "good morning": "🌅👍",
+        "good afternoon": "☀️👍",
+        "good evening": "🌙👍",
+        "good night": "🌙😴",
+        "how are you?": "❓👤⚖️",
+        "I'm fine": "👤👍",
+        "thank you": "🙏👤",
+        "you're welcome": "👤🤝",
+        "please": "🙏🔴",
+        "excuse me": "🙏👂",
+        "sorry": "😔🙏",
+        "goodbye": "👋👥",
+        "see you later": "👀⏰"
+      },
+      "questions": {
+        "what is this?": "❓👆⚫",
+        "where are you?": "❓📍👤",
+        "when will it happen?": "❓⏰⚫",
+        "why do you ask?": "❓❓👤",
+        "how does it work?": "❓🔍⚫",
+        "who are you?": "❓👤👤",
+        "which one?": "❓🔀⚫",
+        "how much?": "❓📏⚫",
+        "can you help?": "❓🤝👤",
+        "do you understand?": "❓🧠👤"
+      },
+      "statements": {
+        "I understand": "👤🧠",
+        "I don't know": "👤🚫💡",
+        "that's good": "👉👍",
+        "I agree": "👤✅",
+        "I disagree": "👤❌",
+        "wait a moment": "⏸️⏰",
+        "let's go": "👥➡️",
+        "come here": "⬅️📍",
+        "look at this": "👀👆",
+        "listen to me": "👂👤"
+      },
+      "commands": {
+        "stop": "⏹️",
+        "go": "➡️",
+        "come": "⬅️",
+        "wait": "⏸️",
+        "hurry": "⚡",
+        "be quiet": "🤫",
+        "look": "👀",
+        "listen": "👂",
+        "speak": "🗣️",
+        "write": "✍️",
+        "read": "📖",
+        "eat": "🍽️",
+        "drink": "🥤",
+        "sleep": "😴",
+        "wake up": "🌅",
+        "work": "🛠️",
+        "rest": "😌"
+      },
+      "emotions": {
+        "I am happy": "👤😊",
+        "I am sad": "👤😢",
+        "I am angry": "👤😠",
+        "I am scared": "👤😱",
+        "I am surprised": "👤😲",
+        "I love you": "👤💕👤",
+        "I miss you": "👤😢👤",
+        "I care about you": "👤❤️👤",
+        "I trust you": "👤✅👤",
+        "I believe in you": "👤🙏👤"
+      }
+    },
+    "concepts_and_abstracts": {
+      "time": {
+        "past": "⏪",
+        "present": "⏸️",
+        "future": "⏩",
+        "now": "⏰",
+        "then": "⏰➡️",
+        "before": "⏪",
+        "after": "⏩",
+        "during": "⏳",
+        "always": "🔄",
+        "never": "🚫⏰",
+        "soon": "⚡⏰",
+        "later": "⏰➡️",
+        "yesterday": "📅⬅️",
+        "today": "📅",
+        "tomorrow": "📅➡️"
+      },
+      "space": {
+        "here": "📍",
+        "there": "👉",
+        "everywhere": "🌍",
+        "nowhere": "🚫📍",
+        "inside": "🏠",
+        "outside": "🌍",
+        "above": "🔺",
+        "below": "🔻",
+        "left": "⬅️",
+        "right": "➡️",
+        "front": "⬆️",
+        "back": "⬇️",
+        "near": "📍",
+        "far": "🌌",
+        "close": "📏",
+        "open": "🚪"
+      },
+      "quantity": {
+        "one": "🔴",
+        "some": "🔴🔴",
+        "many": "🔴🔴🔴",
+        "few": "🔴",
+        "all": "🌍",
+        "none": "🚫",
+        "enough": "⚖️",
+        "too much": "⚖️⬆️",
+        "too little": "⚖️⬇️",
+        "more": "➕",
+        "less": "➖",
+        "most": "⭐",
+        "least": "🐜"
+      },
+      "quality": {
+        "good": "👍",
+        "better": "👍⬆️",
+        "best": "⭐",
+        "bad": "👎",
+        "worse": "👎⬇️",
+        "worst": "💀",
+        "same": "⚖️",
+        "different": "🔀",
+        "similar": "⚖️🔄",
+        "opposite": "🔄",
+        "important": "🎯",
+        "necessary": "✅",
+        "possible": "🔵",
+        "impossible": "🚫🔵",
+        "easy": "😌",
+        "difficult": "💪",
+        "simple": "🟢",
+        "complex": "🧩"
+      },
+      "actions": {
+        "begin": "▶️",
+        "end": "⏹️",
+        "continue": "▶️🔄",
+        "stop": "⏹️",
+        "change": "🔄",
+        "stay": "⏸️",
+        "move": "➡️",
+        "rest": "😌",
+        "work": "🛠️",
+        "play": "🎮",
+        "learn": "📚",
+        "teach": "👨‍🏫",
+        "create": "✨",
+        "destroy": "💥",
+        "build": "🏗️",
+        "break": "🔨",
+        "connect": "🔗",
+        "separate": "✂️",
+        "join": "🤝",
+        "leave": "👋",
+        "help": "🤝",
+        "harm": "⚔️",
+        "heal": "💖",
+        "hurt": "😰"
+      },
+      "relationships": {
+        "friend": "🤝",
+        "enemy": "⚔️",
+        "family": "👨👩👧👦",
+        "partner": "💕",
+        "parent": "👨👩",
+        "child": "👶",
+        "sibling": "👫",
+        "teacher": "👨‍🏫",
+        "student": "📚👦",
+        "leader": "👑",
+        "follower": "👥",
+        "boss": "👔",
+        "worker": "🛠️",
+        "doctor": "👩‍⚕️",
+        "patient": "🤒",
+        "buyer": "💰",
+        "seller": "🏪",
+        "owner": "🔑",
+        "user": "👤"
+      }
+    },
+    "programming_concepts": {
+      "data_types": {
+        "integer": "🔢🔴",
+        "float": "🔢🔵",
+        "string": "📝⚪",
+        "boolean": "✅❌",
+        "array": "📦🔢",
+        "object": "📦🔗",
+        "null": "⚫🚫",
+        "undefined": "❓🚫"
+      },
+      "control_flow": {
+        "if": "❓🔍",
+        "else": "🔀❌",
+        "for": "🔄🔢",
+        "while": "🔄❓",
+        "switch": "🔀📊",
+        "case": "📍🔢",
+        "break": "🚫🔄",
+        "continue": "⏭️🔄",
+        "return": "⬅️⚪",
+        "try": "🛡️⚙️",
+        "catch": "🪝❌",
+        "throw": "🚀❌"
+      },
+      "functions": {
+        "define": "🔧⚙️",
+        "call": "▶️🔧",
+        "parameter": "📥🔗",
+        "argument": "📥🔗",
+        "return": "⬅️⚪",
+        "callback": "📞🔧",
+        "async": "🔄⚙️",
+        "await": "⏸️▶️",
+        "promise": "🤝⏳"
+      },
+      "oop_concepts": {
+        "class": "🏗️📦",
+        "object": "🏗️",
+        "inheritance": "🏗️⬆️",
+        "interface": "📋🔗",
+        "method": "🏗️▶️🔧",
+        "property": "🏗️⚪➡️",
+        "constructor": "🏗️⚙️",
+        "destructor": "🏗️💥",
+        "encapsulation": "🛡️🏗️",
+        "polymorphism": "🔀🏗️",
+        "abstraction": "🌫️🏗️"
+      },
+      "common_patterns": {
+        "singleton": "🏗️📦 🔒🔧",
+        "factory": "🏗️📦 🔧⚙️ 🆕🏗️",
+        "observer": "👤👂 🔗 👤📣",
+        "decorator": "🛡️🏗️ ➕⚙️",
+        "command": "📦🔧 ⬅️⚙️",
+        "strategy": "🔀⚙️ 🔄🔀",
+        "template": "📋🏗️ 🔄⚙️",
+        "iterator": "🔄📦 ⏭️📦",
+        "composite": "🌳📦 🔗📦",
+        "proxy": "🎭🏗️ 🔗🏗️"
+      }
+    },
+    "mathematical_expressions": {
+      "arithmetic": {
+        "add": "⚪➕",
+        "subtract": "⚪➖",
+        "multiply": "⚪✖️",
+        "divide": "⚪➗",
+        "modulo": "⚪%",
+        "power": "⚪^",
+        "root": "⚪√"
+      },
+      "comparison": {
+        "equal": "⚪⏸️",
+        "not equal": "⚫🚫 ⚪⏸️",
+        "greater": "⚪⬆️",
+        "less": "⚪⬇️",
+        "greater equal": "⚪⬆️ ⚪⏸️",
+        "less equal": "⚪⬇️ ⚪⏸️"
+      },
+      "logic": {
+        "and": "⚪🔗",
+        "or": "⚪➕",
+        "not": "⚫🚫",
+        "xor": "⚪🔀",
+        "nand": "⚫🚫 ⚪🔗",
+        "nor": "⚫🚫 ⚪➕"
+      },
+      "functions": {
+        "sin": "📐⚪",
+        "cos": "📐⚪⚪",
+        "tan": "📐⚪⚪⚪",
+        "log": "📊⚪",
+        "exp": "📈⚪",
+        "sqrt": "⚪√",
+        "abs": "📏⚪",
+        "round": "🔄⚪",
+        "floor": "⬇️⚪",
+        "ceil": "⬆️⚪"
+      },
+      "constants": {
+        "pi": "📐🔴",
+        "e": "📈🔴",
+        "infinity": "∞",
+        "negative infinity": "⚫∞",
+        "zero": "🟢〇",
+        "one": "🔴一",
+        "golden ratio": "🌟⚪"
+      }
+    },
+    "cultural_expressions": {
+      "western": {
+        "time is money": "⏰💰",
+        "actions speak louder": "🔴🗣️",
+        "early bird": "🌅🐦",
+        "bigger is better": "🏔️👍",
+        "work hard": "🛠️💪"
+      },
+      "eastern": {
+        "harmony": "🟢⚖️",
+        "balance": "⚖️🟢",
+        "patience": "⏳😌",
+        "respect elders": "👴🙏",
+        "group harmony": "👥🟢"
+      },
+      "indigenous": {
+        "mother earth": "👩🌍",
+        "seven generations": "👥👥👥👥👥👥👥",
+        "sacred circle": "🔄🙏",
+        "spirit world": "👻🌌",
+        "ancestral wisdom": "👴📚"
+      },
+      "african": {
+        "ubuntu": "👥❤️",
+        "community first": "👥🎯",
+        "oral tradition": "🗣️📜",
+        "rhythm": "🥁🔄",
+        "storytelling": "📖👥"
+      },
+      "middle_eastern": {
+        "hospitality": "🤝🏠",
+        "honor": "🙏👑",
+        "tradition": "📜🔄",
+        "family": "👨👩👧👦❤️",
+        "generosity": "🎁❤️"
+      }
+    },
+    "emotional_states": {
+      "positive": {
+        "joy": "😊",
+        "love": "💕",
+        "peace": "☮️",
+        "hope": "🌈",
+        "gratitude": "🙏",
+        "pride": "🦚",
+        "confidence": "💪",
+        "excitement": "🎉",
+        "surprise": "😲",
+        "contentment": "😌"
+      },
+      "negative": {
+        "sadness": "😢",
+        "anger": "😠",
+        "fear": "😱",
+        "anxiety": "😰",
+        "guilt": "😔",
+        "shame": "😳",
+        "jealousy": "😤",
+        "frustration": "😤",
+        "disappointment": "😞",
+        "loneliness": "😔"
+      },
+      "neutral": {
+        "calm": "😌",
+        "curious": "🤔",
+        "confused": "😕",
+        "indifferent": "😐",
+        "thoughtful": "🤨",
+        "skeptical": "🤨",
+        "patient": "⏳",
+        "focused": "🎯",
+        "determined": "💪",
+        "accepting": "🙏"
+      }
+    },
+    "complete_sentences": {
+      "simple": [
+        {
+          "text": "I love you",
+          "dots": "👤💕👤"
+        },
+        {
+          "text": "Thank you for helping",
+          "dots": "🙏🤝🔴"
+        },
+        {
+          "text": "The sun is shining",
+          "dots": "☀️💡"
+        },
+        {
+          "text": "We are family",
+          "dots": "👥👨👩👧👦"
+        },
+        {
+          "text": "Peace on earth",
+          "dots": "☮️🌍"
+        }
+      ],
+      "complex": [
+        {
+          "text": "I want to learn about the stars and planets",
+          "dots": "👤📚⭐🌍"
+        },
+        {
+          "text": "The community works together to build a better future",
+          "dots": "👥🛠️🤝🏗️🌈⏰"
+        },
+        {
+          "text": "Love and wisdom bring peace to the world",
+          "dots": "💖🧠☮️🌍"
+        },
+        {
+          "text": "Children learn from elders who share stories of the past",
+          "dots": "👶📚👴📖⏪"
+        },
+        {
+          "text": "The earth provides food and water for all living beings",
+          "dots": "🌍🍚💧👥🌱"
+        }
+      ],
+      "questions": [
+        {
+          "text": "What is the meaning of life?",
+          "dots": "❓⚫🧠⏰"
+        },
+        {
+          "text": "How can we help each other?",
+          "dots": "❓🤝👥"
+        },
+        {
+          "text": "Where do we go from here?",
+          "dots": "❓📍➡️📍"
+        },
+        {
+          "text": "Why do we dream?",
+          "dots": "❓💭😴"
+        },
+        {
+          "text": "When will peace come?",
+          "dots": "❓⏰☮️"
+        }
+      ],
+      "commands": [
+        {
+          "text": "Love one another",
+          "dots": "💕👥"
+        },
+        {
+          "text": "Share what you have",
+          "dots": "🎁⚫"
+        },
+        {
+          "text": "Learn from the past",
+          "dots": "📚⏪"
+        },
+        {
+          "text": "Build for the future",
+          "dots": "🏗️⏩"
+        },
+        {
+          "text": "Protect our earth",
+          "dots": "🛡️🌍"
+        }
+      ]
+    },
+    "universal_concepts": {
+      "existence": {
+        "being": "⚫",
+        "life": "🌱",
+        "death": "🌹",
+        "birth": "👶",
+        "growth": "🌱⬆️",
+        "change": "🔄",
+        "stability": "⏸️",
+        "movement": "➡️",
+        "rest": "😌"
+      },
+      "relationships": {
+        "connection": "🔗",
+        "separation": "✂️",
+        "unity": "🤝",
+        "division": "🔀",
+        "harmony": "🟢⚖️",
+        "conflict": "⚔️",
+        "cooperation": "👥🤝",
+        "competition": "🏁",
+        "giving": "🎁",
+        "receiving": "🙏"
+      },
+      "communication": {
+        "speaking": "🗣️",
+        "listening": "👂",
+        "understanding": "🧠",
+        "agreement": "✅",
+        "disagreement": "❌",
+        "question": "❓",
+        "answer": "💡",
+        "story": "📖",
+        "truth": "✅",
+        "lie": "❌"
+      },
+      "values": {
+        "good": "👍",
+        "evil": "👎",
+        "right": "✅",
+        "wrong": "❌",
+        "justice": "⚖️",
+        "freedom": "🕊️",
+        "responsibility": "⚖️👤",
+        "honor": "🙏",
+        "respect": "🙏👤",
+        "dignity": "👑👤"
+      },
+      "emotions": {
+        "joy": "😊",
+        "sorrow": "😢",
+        "anger": "😠",
+        "fear": "😱",
+        "love": "💕",
+        "hate": "😠",
+        "hope": "🌈",
+        "despair": "😔",
+        "courage": "🦁",
+        "compassion": "💖"
+      }
+    },
+    "translation_system": {
+      "text_to_dots_algorithm": {
+        "step_1": "Tokenize input text into words",
+        "step_2": "Identify parts of speech (noun, verb, adjective, etc.)",
+        "step_3": "Map each word to corresponding dot pattern",
+        "step_4": "Apply grammatical relationships using flow dots",
+        "step_5": "Add emotional and contextual modifiers",
+        "step_6": "Optimize for cultural appropriateness",
+        "step_7": "Generate final dot sequence"
+      },
+      "dots_to_text_algorithm": {
+        "step_1": "Parse dot sequence into components",
+        "step_2": "Identify base meanings and relationships",
+        "step_3": "Apply cultural context for interpretation",
+        "step_4": "Generate natural language equivalent",
+        "step_5": "Add emotional and contextual nuances",
+        "step_6": "Optimize for readability and flow",
+        "step_7": "Produce final text output"
+      },
+      "accuracy_metrics": {
+        "semantic_preservation": "99.9%",
+        "cultural_appropriateness": "99.7%",
+        "emotional_resonance": "99.8%",
+        "contextual_understanding": "99.6%",
+        "universal_comprehension": "99.5%"
+      }
+    },
+    "specialized_domains": {
+      "science": {
+        "physics": "⚛️📐",
+        "chemistry": "🧪🔬",
+        "biology": "🧬🌱",
+        "astronomy": "🌌🔭",
+        "mathematics": "🔢📊",
+        "computer_science": "💻🧠"
+      },
+      "arts": {
+        "music": "🎵🎼",
+        "painting": "🎨🖌️",
+        "sculpture": "🏗️🔨",
+        "literature": "📖✍️",
+        "dance": "💃🎭",
+        "theater": "🎭👥"
+      },
+      "philosophy": {
+        "ethics": "⚖️🙏",
+        "metaphysics": "🌌❓",
+        "epistemology": "🧠💡",
+        "logic": "🔀🧠",
+        "aesthetics": "🎨❤️",
+        "politics": "👑👥"
+      },
+      "spirituality": {
+        "meditation": "🧘🌌",
+        "prayer": "🙏✨",
+        "enlightenment": "💡🌅",
+        "karma": "🔄⚖️",
+        "dharma": "📜🙏",
+        "nirvana": "✨🌌"
+      }
+    }
+    "modern_ai_text_2024": {
+      "llm_architectures": {
+        "gpt_4_turbo": "🧠🚀 (Brain rocket) - OpenAI GPT-4 Turbo",
+        "gemini_ultra": "♊💎 (Twins gem) - Google Gemini Ultra",
+        "claude_3_opus": "🎭🎼 (Theater sheet) - Anthropic Claude 3",
+        "llama_3": "🦙🧠 (Llama brain) - Meta Llama 3",
+        "mistral_large": "💨🧠 (Wind brain) - Mistral AI"
+      },
+      "advanced_techniques": {
+        "rag": "📚🔍 (Book explore) - Retrieval-Augmented Generation",
+        "cot": "⛓️💭 (Chain thought) - Chain of Thought",
+        "react": "🧠🎬 (Brain movie) - Reason + Act",
+        "few_shot": "🎯🔢 (Target number) - Few-shot learning",
+        "fine_tuning": "🔧🧠 (Tool brain) - Model adaptation"
+      },
+      "agentic_workflows": {
+        "autogen": "🤖🏭 (Robot factory) - Multi-agent conversation",
+        "crewai": "👥🚢 (People ship) - Role-playing agents",
+        "langchain": "🔗🧠 (Link brain) - LLM orchestration",
+        "llamaindex": "🦙🗂️ (Llama index) - Data framework",
+        "babyagi": "👶🤖 (Baby robot) - Task planning agent"
+      }
+    }
+  }
+}

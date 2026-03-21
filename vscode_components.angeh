@@ -1,0 +1,73 @@
+(def-module vscode-components
+  "VS Code Components: Modular UI elements for Angehlang Studio")
+
+(import vscode-theme)
+(import angeh-web-framework)
+(import multimodal-unification)
+
+;; ============================================================
+;; 1. ACTIVITY BAR (Side Icons)
+;; ============================================================
+(def-component ActivityBar (active-tab on-change)
+  (Container
+    (className "activity-bar")
+    (style (VS_THEME 'bg_activity))
+    (children
+      (list
+        (IconButton (VS_ICONS 'explorer)   (= active-tab 'explorer)   (lambda () (on-change 'explorer)))
+        (IconButton (VS_ICONS 'search)     (= active-tab 'search)     (lambda () (on-change 'search)))
+        (IconButton (VS_ICONS 'git)        (= active-tab 'git)        (lambda () (on-change 'git)))
+        (IconButton (VS_ICONS 'debug)      (= active-tab 'debug)      (lambda () (on-change 'debug)))
+        (IconButton (VS_ICONS 'extensions) (= active-tab 'extensions) (lambda () (on-change 'extensions)))
+        (VerticalSpacer)
+        (IconButton (VS_ICONS 'account)    false (lambda () (print "Profile")))
+        (IconButton (VS_ICONS 'settings)   false (lambda () (print "Settings")))))))
+
+;; ============================================================
+;; 2. SIDEBAR (File Explorer)
+;; ============================================================
+(def-component SideBar (title content)
+  (Container
+    (className "sidebar")
+    (style (VS_THEME 'bg_sidebar))
+    (children
+      (list
+        (Header (Text title (style VS_THEME 'text_dim)))
+        (ScrollArea content)))))
+
+;; ============================================================
+;; 3. EDITOR VIEW (Code Area)
+;; ============================================================
+(def-component EditorView (filename code)
+  (Container
+    (className "editor-area")
+    (style (VS_THEME 'editor_bg))
+    (children
+      (list
+        (TabStrip (list (Tab filename true)))
+        (CodeMirror
+          (value code)
+          (theme "monokai-photonic")
+          (language "angehlang")
+          (style (VS_THEME 'font_code)))))))
+
+;; ============================================================
+;; 4. STATUS BAR (Bottom)
+;; ============================================================
+(def-component StatusBar (info)
+  (Container
+    (className "status-bar")
+    (style (VS_THEME 'status_bg))
+    (children
+      (list
+        (Text "🌿 main*" (style VS_THEME 'status_text))
+        (HorizontalSpacer)
+        (Text info (style VS_THEME 'status_text))
+        (Text "UTF-8" (style VS_THEME 'status_text))
+        (Text "Angehlang" (style VS_THEME 'status_text))))))
+
+(export
+  ActivityBar
+  SideBar
+  EditorView
+  StatusBar)

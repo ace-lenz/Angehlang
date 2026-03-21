@@ -1,32 +1,41 @@
+"""
+📚 UNIVERSAL EMOJI LIBRARY (v1.0)
+Standard Reference for AngehLang Symbolic Operators.
+"""
 
-export const highlightCode = (input: string) => {
-  return input
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    // Highlight Keywords
-    .replace(
-      /\b(import|export|from|const|let|var|function|return|if|else|for|while|interface|type|class|switch|case|default|try|catch|finally|async|await)\b/g,
-      '<span class="text-emerald-400 font-bold">$1</span>'
-    )
-    // Highlight React/Globals
-    .replace(
-      /\b(React|useState|useEffect|useRef|useMemo|useCallback|console|log|document|window|localStorage)\b/g,
-      '<span class="text-angehlang-gold">$1</span>'
-    )
-    // Highlight Strings
-    .replace(
-      /(['"`])(.*?)\1/g,
-      '<span class="text-orange-300">$&</span>'
-    )
-    // Highlight Comments
-    .replace(
-      /(\/\/.*)/g,
-      '<span class="text-gray-500 italic">$1</span>'
-    )
-    // Highlight Fold Tokens (The Magic) - Enhanced visuals
-    .replace(
-      /__FOLD_[a-z0-9]+__/g,
-      '<span class="inline-flex items-center gap-1.5 bg-[#27272a] border border-white/10 px-2 py-0.5 rounded text-[10px] text-gray-400 select-none align-middle mx-1 shadow-sm group cursor-pointer hover:border-emerald-500/50 hover:text-emerald-400 transition-colors"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="opacity-70 group-hover:opacity-100"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/></svg><span class="italic font-mono">folded region</span></span>'
-    );
-};
+# STARTUP
+# 🚀 : Launch Any project
+
+# CORE ENGINES
+# 🔌 : MCP Connect
+# 🌟 : AGI Wisdom
+# 📚 : RAG Lookup
+# 🧊 : 3D Render
+# 💓 : Bio Heartbeat
+# 🐝 : Swarm Dispatch
+# ✨ : Optimize
+# 💰 : Financial Army (77D Exclusive)
+
+# MATH & LOGIC
+# ➕ : Add
+# ➖ : Subtract
+# ✖️ : Multiply
+# ➗ : Divide
+# ❓ : Query
+# ❗ : Assert
+
+# FILES & NET
+# 📂 : Open Root
+# ☁️ : Cloud Sync
+# 🔒 : Encrypt
+
+# WORKFLOW
+# 📑 : Shift Page
+# 🌐 : Add Web
+# ƒ  : Function
+# 🏋️ : Train System
+
+# EXECUTION
+# ⚡ : Run
+# ⚛️ : Quantum Mode
+# 👻 : Shadow Mode (Hidden)

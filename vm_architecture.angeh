@@ -1,0 +1,51 @@
+(def-module vm-architecture)
+
+(import type-system)
+(import collections)
+
+(def-type VM
+  (struct (
+    (stack (new-stack))
+    (ip 0) ; instruction pointer
+    (bytecode (new-array))
+    (globals (new-hash-map))
+  )))
+
+(def-const OP_HALT 0)
+(def-const OP_PUSH 1)
+(def-const OP_POP  2)
+(def-const OP_ADD  3)
+(def-const OP_SUB  4)
+
+(def-fn vm-new ()
+  (new-vm))
+
+(def-fn vm-load-bytecode (vm bytecode)
+  (set! (vm.bytecode vm) bytecode))
+
+(def-fn vm-run (vm)
+  (while (< (vm.ip vm) (len (vm.bytecode vm))))
+    (let ((opcode (get (vm.bytecode vm) (vm.ip vm))))
+      (execute-instruction vm opcode)))
+
+(def-fn execute-instruction (vm opcode)
+  (inc! (vm.ip vm)) ; Move past the opcode
+  (cond
+    ((= opcode OP_HALT)
+      (set! (vm.ip vm) (len (vm.bytecode vm)))) ; Stop the loop
+    ((= opcode OP_PUSH)
+      (let ((value (get (vm.bytecode vm) (vm.ip vm))))
+        (stack-push! (vm.stack vm) value)
+        (inc! (vm.ip vm))))
+    ((= opcode OP_POP)
+      (stack-pop! (vm.stack vm)))
+    ((= opcode OP_ADD)
+      (let ((b (stack-pop! (vm.stack vm)))
+            (a (stack-pop! (vm.stack vm))))
+        (stack-push! (vm.stack vm) (+ a b))))
+    ((= opcode OP_SUB)
+      (let ((b (stack-pop! (vm.stack vm)))
+            (a (stack-pop! (vm.stack vm))))
+        (stack-push! (vm.stack vm) (- a b))))
+    (else
+      (error (concat "Unknown opcode: " opcode)))))

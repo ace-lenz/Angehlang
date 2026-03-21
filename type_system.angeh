@@ -1,0 +1,12 @@
+
+(def-type Number)
+(def-type Symbol)
+(def-type String)
+(def-type List)
+(def-type Bool)
+
+(def-type (Maybe T)
+  (one-of (Some T) Nothing))
+
+(def-type (Result T E)
+  (one-of (Ok T) (Err E)))

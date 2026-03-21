@@ -1,0 +1,32 @@
+
+(def-module run-standalone-studio
+  "Native Studio Runner: Orchestrating the Photonic GUI")
+
+(import angeh-log)
+(import vscode-logic)
+(import run-studio)
+(import universal-interpreter-bridge)
+
+(def-fn run-native-studio-flow ()
+  (log-info "\n==================================================")
+  (log-info "🌌 [NATIVE BOOT] STARTING ANGEHLANG STUDIO 🌌")
+  (log-info "==================================================")
+
+  ;; Stage 1: Logic Initialization
+  (log-info "📦 Initializing VS Code Logic...")
+  (log-info (str "📂 VFS Count: " (len (vfs-list-files))))
+  
+  ;; Stage 2: Universal Engine Warmup
+  (log-info "🌐 Warming up Universal Interpreter Bridge...")
+  (universal-explain 'python "def hello(): print('Synced')")
+  (sleep 0.2)
+  
+  ;; Stage 3: GUI Boot
+  (log-info "🎨 Reifying Studio GUI Strands...")
+  (boot-studio-standalone)
+  
+  (log-info "\n✅ NATIVE BOOT COMPLETE. WELCOME TO THE PHOTONIC UNIVERSE.")
+  (log-info "=================================================="))
+
+;; Execute the native runner
+(run-native-studio-flow)

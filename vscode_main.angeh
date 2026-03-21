@@ -1,0 +1,74 @@
+(def-module vscode-main
+  "VS Code Main: The standalone IDE entry point")
+
+(import vscode-components)
+(import vscode-theme)
+(import angeh-web-framework)
+(import angeh-memory)
+(import multimodal-unification)
+
+;; ============================================================
+;; IDE STATE
+;; ============================================================
+(def-state IDE_STATE
+  (qhash-map
+    'active_tab    'explorer
+    'current_file  "Angeh_Universe_Masterpiece.angeh"
+    'file_content  "(def-module angeh-universe-masterpiece ...)"
+    'is_sidebar_open true
+    'terminal_output ""
+    'status_msg    "Ready"
+  ))
+
+;; ============================================================
+;; MAIN LAYOUT ORCHESTRATOR
+;; ============================================================
+(def-component vscode-app ()
+  (Container
+    (className "vsc-root")
+    (style (VS_THEME 'bg_primary))
+    (children
+      (list
+        (Container
+          (className "horizontal-flex")
+          (children
+            (list
+              ;; 1. Activity Bar
+              (ActivityBar
+                (IDE_STATE 'active_tab)
+                (lambda (tab) (set! (IDE_STATE 'active_tab) tab)))
+              
+              ;; 2. Side Panel (Explorer etc.)
+              (if (IDE_STATE 'is_sidebar_open)
+                  (SideBar
+                    "EXPLORER"
+                    (FileTree (list "src/" "lib/" "Angeh_Universe.angeh")))
+                  nil)
+
+              ;; 3. Main Editor Group
+              (Container
+                (className "flex-column grow")
+                (children
+                  (list
+                    (EditorView
+                      (IDE_STATE 'current_file)
+                      (IDE_STATE 'file_content))
+                    
+                    ;; 4. Terminal Panel
+                    (Panel "TERMINAL" (IDE_STATE 'terminal_output))))))))
+        
+        ;; 5. Status Bar
+        (StatusBar (IDE_STATE 'status_msg))))))
+
+;; ============================================================
+;; STANDALONE INITIALIZATION
+;; ============================================================
+(def-fn start-vsc-clone ()
+  (print "💠 BOOTING ANGEHLANG STUDIO (VS CODE CLONE)...")
+  (let ((app (vscode-app)))
+    (web-render app "#studio-root")
+    (print "✅ Angehlang Studio is operational.")))
+
+(start-vsc-clone)
+
+(export start-vsc-clone)

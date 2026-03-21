@@ -1,0 +1,311 @@
+"""
+Angeh Reality Fabric - Python Test Runner
+Runs comprehensive tests and benchmarks
+"""
+
+import sys
+import time
+from angeh_bridge import (
+    AngehRealityFabricRuntime,
+    QuantumDot,
+    QuantumState,
+    example_quantum_execution,
+    example_natural_language_execution,
+    example_code_translation,
+    example_reality_integration
+)
+
+# ============================================================
+# TEST UTILITIES
+# ============================================================
+
+class TestResult:
+    def __init__(self, name, passed, message="", duration=0.0):
+        self.name = name
+        self.passed = passed
+        self.message = message
+        self.duration = duration
+    
+    def __str__(self):
+        status = "✓ PASS" if self.passed else "✗ FAIL"
+        return f"{status} | {self.name} | {self.message} ({self.duration:.3f}ms)"
+
+class TestSuite:
+    def __init__(self, name):
+        self.name = name
+        self.results = []
+        self.passed_count = 0
+        self.failed_count = 0
+    
+    def add_result(self, result):
+        self.results.append(result)
+        if result.passed:
+            self.passed_count += 1
+        else:
+            self.failed_count += 1
+    
+    def print_summary(self):
+        print(f"\n{'='*60}")
+        print(f"Test Suite: {self.name}")
+        print(f"{'='*60}")
+        for result in self.results:
+            print(f"  {result}")
+        print(f"\nSummary: {self.passed_count} passed, {self.failed_count} failed")
+        percentage = (self.passed_count / len(self.results) * 100) if self.results else 0
+        print(f"Success Rate: {percentage:.1f}%")
+
+def run_test(test_fn, test_name):
+    """Run a single test function"""
+    start = time.time()
+    try:
+        result = test_fn()
+        duration = (time.time() - start) * 1000
+        if isinstance(result, bool):
+            return TestResult(test_name, result, "", duration)
+        else:
+            return TestResult(test_name, True, str(result), duration)
+    except Exception as e:
+        duration = (time.time() - start) * 1000
+        return TestResult(test_name, False, f"Error: {str(e)}", duration)
+
+# ============================================================
+# QUANTUM DOT TESTS
+# ============================================================
+
+def test_quantum_dot_creation():
+    """Test creating quantum dots"""
+    runtime = AngehRealityFabricRuntime()
+    dot = runtime.create_dot("test content")
+    assert dot.quantum_id is not None
+    assert dot.state == QuantumState.COLLAPSED
+    return True
+
+def test_quantum_entanglement():
+    """Test entangling two dots"""
+    runtime = AngehRealityFabricRuntime()
+    dot1 = runtime.create_dot("A")
+    dot2 = runtime.create_dot("B")
+    runtime.runtime.entangle_dots(dot1, dot2, 0.95)
+    assert dot2.quantum_id in dot1.entanglements
+    assert dot1.quantum_id in dot2.entanglements
+    return True
+
+def test_quantum_superposition():
+    """Test superposition states"""
+    runtime = AngehRealityFabricRuntime()
+    dot = runtime.create_dot("initial")
+    runtime.runtime.superpose_dot(dot, ["A", "B", "C"], [0.33, 0.33, 0.34])
+    assert dot.state == QuantumState.SUPERPOSITION
+    return True
+
+def test_quantum_collapse():
+    """Test collapsing superposition"""
+    runtime = AngehRealityFabricRuntime()
+    dot = runtime.create_dot("initial")
+    runtime.runtime.superpose_dot(dot, ["A", "B", "C"], [0.33, 0.33, 0.34])
+    result = runtime.runtime.collapse_dot(dot)
+    assert result in ["A", "B", "C"]
+    assert dot.state == QuantumState.COLLAPSED
+    return True
+
+# ============================================================
+# MULTI-MODAL TRANSLATION TESTS
+# ============================================================
+
+def test_natural_language_translation():
+    """Test natural language processing"""
+    runtime = AngehRealityFabricRuntime()
+    result = runtime.translate("Hello world", 'natural_language', 'dots')
+    assert result is not None
+    return True
+
+def test_code_generation():
+    """Test code generation"""
+    runtime = AngehRealityFabricRuntime()
+    python_code = "def hello():\n    print('Hello')"
+    js_code = runtime.runtime.translate_code(python_code, 'python', 'javascript')
+    assert 'function' in js_code
+    return True
+
+# ============================================================
+# REALITY INTEGRATION TESTS
+# ============================================================
+
+def test_sensor_registration():
+    """Test sensor registration"""
+    runtime = AngehRealityFabricRuntime()
+    runtime.reality.register_sensor('temp1', 'temperature', lambda: 22.5)
+    reading = runtime.reality.read_sensor('temp1')
+    assert reading == 22.5
+    return True
+
+def test_actuator_control():
+    """Test actuator control"""
+    runtime = AngehRealityFabricRuntime()
+    state = {'value': 0}
+    def actuator_fn(command):
+        state['value'] = command.get('value', 0)
+    runtime.reality.register_actuator('act1', 'motor', actuator_fn)
+    runtime.reality.command_actuator('act1', {'value': 100})
+    assert state['value'] == 100
+    return True
+
+# ============================================================
+# INTEGRATION TESTS
+# ============================================================
+
+def test_end_to_end_workflow():
+    """Test complete workflow"""
+    runtime = AngehRealityFabricRuntime()
+    
+    # Create dots
+    dot1 = runtime.create_dot("Start")
+    dot2 = runtime.create_dot("End")
+    
+    # Entangle
+    runtime.runtime.entangle_dots(dot1, dot2, 0.9)
+    
+    # Execute
+    result = runtime.execute("Process data", 'natural_language')
+    
+    assert result is not None
+    return True
+
+# ============================================================
+# PERFORMANCE BENCHMARKS
+# ============================================================
+
+def benchmark_dot_creation(count=10000):
+    """Benchmark dot creation speed"""
+    runtime = AngehRealityFabricRuntime()
+    start = time.time()
+    
+    for i in range(count):
+        runtime.create_dot(f"dot_{i}")
+    
+    duration = (time.time() - start) * 1000
+    rate = count / duration * 1000 if duration > 0 else 0
+    
+    print(f"\nDot Creation Benchmark:")
+    print(f"  Created: {count} dots")
+    print(f"  Time: {duration:.2f}ms")
+    print(f"  Rate: {rate:.0f} dots/sec")
+    
+    return duration < 1000  # Should create 10k dots in < 1 second
+
+def benchmark_entanglement(count=1000):
+    """Benchmark entanglement operations"""
+    runtime = AngehRealityFabricRuntime()
+    dots = [runtime.create_dot(f"dot_{i}") for i in range(count)]
+    
+    start = time.time()
+    for i in range(count - 1):
+        runtime.runtime.entangle_dots(dots[i], dots[i+1], 0.9)
+    
+    duration = (time.time() - start) * 1000
+    rate = count / duration * 1000 if duration > 0 else 0
+    
+    print(f"\nEntanglement Benchmark:")
+    print(f"  Operations: {count}")
+    print(f"  Time: {duration:.2f}ms")
+    print(f"  Rate: {rate:.0f} ops/sec")
+    
+    return duration < 500  # Should do 1k entanglements in < 500ms
+
+# ============================================================
+# MAIN TEST RUNNER
+# ============================================================
+
+def run_all_tests():
+    """Run all test suites"""
+    print("="*60)
+    print("Angeh Reality Fabric - Comprehensive Test Suite")
+    print("="*60)
+    
+    # Quantum Dot Tests
+    quantum_suite = TestSuite("Quantum Dot Operations")
+    quantum_suite.add_result(run_test(test_quantum_dot_creation, "Dot Creation"))
+    quantum_suite.add_result(run_test(test_quantum_entanglement, "Entanglement"))
+    quantum_suite.add_result(run_test(test_quantum_superposition, "Superposition"))
+    quantum_suite.add_result(run_test(test_quantum_collapse, "Collapse"))
+    quantum_suite.print_summary()
+    
+    # Multi-Modal Translation Tests
+    translation_suite = TestSuite("Multi-Modal Translation")
+    translation_suite.add_result(run_test(test_natural_language_translation, "NL Translation"))
+    translation_suite.add_result(run_test(test_code_generation, "Code Generation"))
+    translation_suite.print_summary()
+    
+    # Reality Integration Tests
+    reality_suite = TestSuite("Reality Integration")
+    reality_suite.add_result(run_test(test_sensor_registration, "Sensor Registration"))
+    reality_suite.add_result(run_test(test_actuator_control, "Actuator Control"))
+    reality_suite.print_summary()
+    
+    # Integration Tests
+    integration_suite = TestSuite("End-to-End Integration")
+    integration_suite.add_result(run_test(test_end_to_end_workflow, "Complete Workflow"))
+    integration_suite.print_summary()
+    
+    # Calculate total statistics
+    total_tests = (quantum_suite.passed_count + quantum_suite.failed_count +
+                  translation_suite.passed_count + translation_suite.failed_count +
+                  reality_suite.passed_count + reality_suite.failed_count +
+                  integration_suite.passed_count + integration_suite.failed_count)
+    
+    total_passed = (quantum_suite.passed_count + translation_suite.passed_count +
+                   reality_suite.passed_count + integration_suite.passed_count)
+    
+    print("\n" + "="*60)
+    print("OVERALL TEST RESULTS")
+    print("="*60)
+    print(f"Total Tests: {total_tests}")
+    print(f"Passed: {total_passed}")
+    print(f"Failed: {total_tests - total_passed}")
+    print(f"Success Rate: {(total_passed/total_tests*100):.1f}%")
+    
+    return total_passed == total_tests
+
+def run_benchmarks():
+    """Run performance benchmarks"""
+    print("\n" + "="*60)
+    print("PERFORMANCE BENCHMARKS")
+    print("="*60)
+    
+    benchmark_dot_creation(10000)
+    benchmark_entanglement(1000)
+    
+    print("\n" + "="*60)
+
+def run_examples():
+    """Run example demonstrations"""
+    print("\n" + "="*60)
+    print("EXAMPLE DEMONSTRATIONS")
+    print("="*60)
+    
+    print("\n1. Quantum Execution:")
+    example_quantum_execution()
+    
+    print("\n2. Natural Language Execution:")
+    example_natural_language_execution()
+    
+    print("\n3. Code Translation:")
+    example_code_translation()
+    
+    print("\n4. Reality Integration:")
+    example_reality_integration()
+    
+    print("\n" + "="*60)
+
+if __name__ == "__main__":
+    # Run all tests
+    success = run_all_tests()
+    
+    # Run benchmarks
+    run_benchmarks()
+    
+    # Run examples
+    run_examples()
+    
+    # Exit with appropriate code
+    sys.exit(0 if success else 1)

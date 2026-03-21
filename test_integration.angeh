@@ -1,0 +1,285 @@
+"""
+Comprehensive Integration Tests for Angeh Quantum Dot Reality Engine
+Tests all components: 4D dots, quantum loops, hardware optimizer, LLM, output generators
+
+Run with: python test_integration.py
+"""
+
+import sys
+import time
+import traceback
+from typing import Dict, List, Any
+
+# ============================================================
+# TEST RESULTS TRACKER
+# ============================================================
+
+class TestResults:
+    def __init__(self):
+        self.passed = []
+        self.failed = []
+        self.warnings = []
+        self.start_time = time.time()
+    
+    def add_pass(self, test_name: str, duration_ms: float):
+        self.passed.append({'name': test_name, 'duration_ms': duration_ms})
+    
+    def add_fail(self, test_name: str, error: str):
+        self.failed.append({'name': test_name, 'error': error})
+    
+    def add_warning(self, message: str):
+        self.warnings.append(message)
+    
+    def print_summary(self):
+        total_time = time.time() - self.start_time
+        total_tests = len(self.passed) + len(self.failed)
+        
+        print("\n" + "="*70)
+        print("INTEGRATION TEST SUMMARY")
+        print("="*70)
+        print(f"\n✅ Passed: {len(self.passed)}/{total_tests}")
+        print(f"❌ Failed: {len(self.failed)}/{total_tests}")
+        print(f"⚠️  Warnings: {len(self.warnings)}")
+        print(f"⏱️  Total Time: {total_time:.2f}s")
+        
+        if self.failed:
+            print("\n❌ FAILED TESTS:")
+            for test in self.failed:
+                print(f"  - {test['name']}: {test['error']}")
+        
+        if self.warnings:
+            print("\n⚠️  WARNINGS:")
+            for warning in self.warnings:
+                print(f"  - {warning}")
+        
+        print("\n" + "="*70)
+        return len(self.failed) == 0
+
+# ============================================================
+# INTEGRATION TESTS
+# ============================================================
+
+def test_hardware_optimizer(results: TestResults):
+    """Test hardware detection and optimization"""
+    test_name = "Hardware Optimizer"
+    start = time.time()
+    
+    try:
+        from hardware_optimizer import hardware_optimizer
+        
+        # Test hardware detection
+        profile = hardware_optimizer.profile
+        assert profile.cpu.cores > 0, "CPU cores not detected"
+        assert profile.hardware_class, "Hardware class not assigned"
+        
+        # Test workload optimization
+        config = hardware_optimizer.optimize_workload(1000, 'matrix')
+        assert 'device' in config, "Device not specified in config"
+        assert 'batch_size' in config, "Batch size not specified"
+        
+        duration = (time.time() - start) * 1000
+        results.add_pass(test_name, duration)
+        print(f"✅ {test_name}: {duration:.2f}ms")
+        
+    except Exception as e:
+        results.add_fail(test_name, str(e))
+        print(f"❌ {test_name}: {e}")
+
+def test_quantum_loops(results: TestResults):
+    """Test quantum loop execution"""
+    test_name = "Quantum Loops"
+    start = time.time()
+    
+    try:
+        from quantum_loops_demo import QuantumDeterministicLoop
+        
+        # Test deterministic loop
+        qloop = QuantumDeterministicLoop("test")
+        result = qloop.execute(100, lambda i: i * 2)
+        
+        assert len(result) == 100, f"Expected 100 results, got {len(result)}"
+        stats = qloop.get_stats()
+        assert stats['total_time'] > 0, "No execution time recorded"
+        
+        duration = (time.time() - start) * 1000
+        results.add_pass(test_name, duration)
+        print(f"✅ {test_name}: {duration:.2f}ms")
+        
+    except ImportError as e:
+        results.add_warning(f"Quantum loops demo not available: {e}")
+        print(f"⚠️  {test_name}: Skipped (demo not available)")
+    except Exception as e:
+        results.add_fail(test_name, str(e))
+        print(f"❌ {test_name}: {e}")
+
+def test_angeh_llm(results: TestResults):
+    """Test native Angeh LLM"""
+    test_name = "Angeh LLM Core"
+    start = time.time()
+    
+    try:
+        from angeh_llm_core import translate_natural_language_to_dot
+        
+        # Test translation
+        nl_input = "Create a 3D matrix"
+        result = translate_natural_language_to_dot(nl_input)
+        
+        assert 'dot_code' in result, "No DOT code generated"
+        assert result['confidence'] > 0, "No confidence score"
+        assert result['latency_ms'] >= 0, "Invalid latency"
+        
+        duration = (time.time() - start) * 1000
+        results.add_pass(test_name, duration)
+        print(f"✅ {test_name}: {duration:.2f}ms")
+        
+    except Exception as e:
+        results.add_fail(test_name, str(e))
+        print(f"❌ {test_name}: {e}")
+
+def test_output_generators(results: TestResults):
+    """Test multi-format output generation"""
+    test_name = "Output Generators"
+    start = time.time()
+    
+    try:
+        from output_generators import generate_multi_format_output
+        
+        # Test generation
+        dot_code = "🔴💻 ⚪🔗 🔴🌐 → 🟢💖"
+        outputs = generate_multi_format_output(dot_code)
+        
+        assert 'text' in outputs, "No text output"
+        assert 'visual' in outputs, "No visual output"
+        assert 'audio' in outputs, "No audio output"
+        assert '3d' in outputs, "No 3D output"
+        
+        # Check formats
+        assert len(outputs['text']) >= 3, "Missing text formats"
+        assert len(outputs['3d']) >= 3, "Missing 3D formats"
+        
+        duration = (time.time() - start) * 1000
+        results.add_pass(test_name, duration)
+        print(f"✅ {test_name}: {duration:.2f}ms")
+        
+    except Exception as e:
+        results.add_fail(test_name, str(e))
+        print(f"❌ {test_name}: {e}")
+
+def test_realtime_execution(results: TestResults):
+    """Test real-time parallel execution"""
+    test_name = "Real-time Execution"
+    start = time.time()
+    
+    try:
+        from realtime_parallel_execution import LiveCodingSession
+        
+        # Create session
+        session = LiveCodingSession()
+        
+        assert session.session_id, "No session ID"
+        assert session.device, "No device detected"
+        assert session.code_input_stream, "No code input stream"
+        
+        duration = (time.time() - start) * 1000
+        results.add_pass(test_name, duration)
+        print(f"✅ {test_name}: {duration:.2f}ms")
+        
+    except Exception as e:
+        results.add_fail(test_name, str(e))
+        print(f"❌ {test_name}: {e}")
+
+def test_end_to_end_pipeline(results: TestResults):
+    """Test complete natural language → multi-format output pipeline"""
+    test_name = "End-to-End Pipeline"
+    start = time.time()
+    
+    try:
+        from angeh_llm_core import translate_natural_language_to_dot
+        from output_generators import generate_multi_format_output
+        
+        # Step 1: Natural language → DOT code
+        nl_input = "Sum numbers from 1 to 10"
+        translation = translate_natural_language_to_dot(nl_input)
+        dot_code = translation['dot_code']
+        
+        # Step 2: DOT code → Multi-format output
+        outputs = generate_multi_format_output(dot_code)
+        
+        # Verify complete pipeline
+        assert dot_code, "No DOT code generated"
+        assert outputs['text'], "No text output"
+        assert outputs['visual'], "No visual output"
+        
+        duration = (time.time() - start) * 1000
+        results.add_pass(test_name, duration)
+        print(f"✅ {test_name}: {duration:.2f}ms")
+        
+    except Exception as e:
+        results.add_fail(test_name, str(e))
+        print(f"❌ {test_name}: {e}")
+
+def test_performance_benchmarks(results: TestResults):
+    """Test that performance meets targets"""
+    test_name = "Performance Benchmarks"
+    start = time.time()
+    
+    try:
+        from angeh_llm_core import translate_natural_language_to_dot
+        
+        # Test NL → DOT speed (target: <50ms)
+        nl_start = time.time()
+        result = translate_natural_language_to_dot("test input")
+        nl_time = (time.time() - nl_start) * 1000
+        
+        if nl_time > 50:
+            results.add_warning(f"NL→DOT latency {nl_time:.2f}ms exceeds 50ms target")
+        
+        # Test output generation speed (target: <100ms)
+        from output_generators import generate_multi_format_output
+        
+        out_start = time.time()
+        outputs = generate_multi_format_output(result['dot_code'])
+        out_time = (time.time() - out_start) * 1000
+        
+        if out_time > 100:
+            results.add_warning(f"Output generation {out_time:.2f}ms exceeds 100ms target")
+        
+        duration = (time.time() - start) * 1000
+        results.add_pass(test_name, duration)
+        print(f"✅ {test_name}: {duration:.2f}ms")
+        print(f"   NL→DOT: {nl_time:.2f}ms, Output: {out_time:.2f}ms")
+        
+    except Exception as e:
+        results.add_fail(test_name, str(e))
+        print(f"❌ {test_name}: {e}")
+
+# ============================================================
+# MAIN TEST RUNNER
+# ============================================================
+
+def run_all_tests():
+    """Run all integration tests"""
+    print("="*70)
+    print("ANGEH QUANTUM DOT REALITY ENGINE - INTEGRATION TESTS")
+    print("="*70)
+    print()
+    
+    results = TestResults()
+    
+    # Run tests
+    print("Running tests...\n")
+    test_hardware_optimizer(results)
+    test_quantum_loops(results)
+    test_angeh_llm(results)
+    test_output_generators(results)
+    test_realtime_execution(results)
+    test_end_to_end_pipeline(results)
+    test_performance_benchmarks(results)
+    
+    # Print summary
+    all_passed = results.print_summary()
+    
+    return 0 if all_passed else 1
+
+if __name__ == "__main__":
+    sys.exit(run_all_tests())

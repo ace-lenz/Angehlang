@@ -1,0 +1,51 @@
+"""
+🏋️ TRAIN NATIVE CORE
+This script reads the existing .angeh datasets and "teaches" the Neuronal Storage.
+It converts raw text/code into Synaptic Knowledge.
+"""
+
+import os
+from angeh_neuron_storage import brain
+
+DATASET_DIR = "." # Current dir
+
+def train():
+    print("🏋️ STARTING NATIVE CORE TRAINING...")
+    
+    files = [f for f in os.listdir(DATASET_DIR) if f.endswith('.angeh')]
+    
+    for filename in files:
+        if "dataset" not in filename: continue
+        
+        print(f"   📖 Reading: {filename}...")
+        try:
+            with open(filename, 'r', encoding='utf-8') as f:
+                content = f.read()
+                
+            # Naive Knowledge Extraction
+            # We treat the Filename as the Subject, and lines as "Content"
+            subject = filename.replace(".angeh", "").replace("_", " ").title()
+            
+            brain.learn(subject, "is_type", "Dataset", weight_boost=1.0)
+            brain.learn(subject, "file_path", filename, weight_boost=10.0)
+            
+            # Learn specific concepts if found
+            if "quantum" in content.lower():
+                brain.learn(subject, "related_to", "Quantum Physics", weight_boost=2.0)
+                brain.learn("Quantum Physics", "found_in", subject, weight_boost=1.0)
+                
+            if "emoji" in content.lower():
+                brain.learn(subject, "contains", "Emoji", weight_boost=2.0)
+                
+            brain.learn(subject, "size_bytes", len(content), weight_boost=0.1)
+            
+        except Exception as e:
+            print(f"   ❌ Failed to read {filename}: {e}")
+
+    print("   💾 Consolidating Synaptic Weights...")
+    brain.save()
+    print("✅ TRAINING COMPLETE.")
+    print(f"   Total Synapses: {brain._count_synapses()}")
+
+if __name__ == "__main__":
+    train()

@@ -1,0 +1,358 @@
+{
+  "traditional_to_dot_equivalents": {
+    "description": "Complete mapping of traditional programming constructs to Angeh Lang dot patterns",
+    "data_types": {
+      "integers": {
+        "traditional": "int x = 5;",
+        "dot_equivalent": "🔢🔴 📝 ⚪➡️ 🔢🔴",
+        "meaning": "Number action write flow to number action"
+      },
+      "floats": {
+        "traditional": "float pi = 3.14;",
+        "dot_equivalent": "🔢🔵 📝 ⚪➡️ 🔢🔵",
+        "meaning": "Number potential write flow to number potential"
+      },
+      "strings": {
+        "traditional": "string name = \"Alice\";",
+        "dot_equivalent": "📝⚪ 📝 ⚪➡️ 📝⚪",
+        "meaning": "Text flow write flow to text flow"
+      },
+      "booleans": {
+        "traditional": "bool isValid = true;",
+        "dot_equivalent": "✅❌ 📝 ⚪➡️ ✅",
+        "meaning": "True false write flow to true"
+      },
+      "arrays": {
+        "traditional": "int[] numbers = {1, 2, 3};",
+        "dot_equivalent": "📦🔢 📝 ⚪➡️ 📦🔢",
+        "meaning": "Container numbers write flow to container numbers"
+      },
+      "objects": {
+        "traditional": "Person p = new Person();",
+        "dot_equivalent": "🏗️📦 📝 ⬅️📦 🆕🏗️",
+        "meaning": "Building container write back container new building"
+      }
+    },
+    "control_structures": {
+      "if_statement": {
+        "traditional": "if (x > 5) { doSomething(); }",
+        "dot_equivalent": "❓🔍 📝 ⚪➡️ 🔢🔴 ⚪➡️ 🔧⚙️",
+        "meaning": "Question explore write flow to number action flow to tool configuration"
+      },
+      "if_else": {
+        "traditional": "if (condition) { action1(); } else { action2(); }",
+        "dot_equivalent": "❓🔍 ⚪➡️ 🔧⚙️ 🔀❌ ⚪➡️ 🔧⚙️",
+        "meaning": "Question explore flow to tool configuration switch false flow to tool configuration"
+      },
+      "switch_case": {
+        "traditional": "switch(value) { case 1: action1(); break; default: action2(); }",
+        "dot_equivalent": "🔀📊 📝 ⚪➡️ 📍🔢 ⚪➡️ 🔧⚙️ 📍⚫ ⚪➡️ 🔧⚙️",
+        "meaning": "Switch chart write flow to location number flow to tool configuration location stillness flow to tool configuration"
+      },
+      "for_loop": {
+        "traditional": "for(int i = 0; i < 10; i++) { action(); }",
+        "dot_equivalent": "🔄🔢 📝 ⚪➡️ 🔢🔴 ⚪➡️ 🔢🔴 ⚪➡️ 🔧⚙️",
+        "meaning": "Cycle numbers write flow to number action flow to number action flow to tool configuration"
+      },
+      "while_loop": {
+        "traditional": "while(condition) { action(); }",
+        "dot_equivalent": "🔄❓ 📝 ⚪➡️ 🔧⚙️",
+        "meaning": "Cycle question write flow to tool configuration"
+      },
+      "foreach_loop": {
+        "traditional": "for(item in collection) { action(item); }",
+        "dot_equivalent": "🔄📦 📝 ⚪🔗 📦 ⚪➡️ 🔧⚙️",
+        "meaning": "Cycle container write flow link container flow to tool configuration"
+      }
+    },
+    "functions_methods": {
+      "function_definition": {
+        "traditional": "function add(a, b) { return a + b; }",
+        "dot_equivalent": "🔧⚙️ 📝 📥🔗 📝 📥🔗 ⬅️⚪ 📝 ➕ 📝",
+        "meaning": "Tool configuration write input links write input links back flow write plus write"
+      },
+      "function_call": {
+        "traditional": "result = add(3, 4);",
+        "dot_equivalent": "📝 ⬅️📦 ▶️🔧 📝 📥🔗 🔢🔴 📥🔗 🔢🔴",
+        "meaning": "Write back container play tool write input links number action input links number action"
+      },
+      "method_call": {
+        "traditional": "object.method(param);",
+        "dot_equivalent": "🏗️ ▶️🔧 📝 📥🔗 📝",
+        "meaning": "Building play tool write input links write"
+      }
+    },
+    "object_oriented": {
+      "class_definition": {
+        "traditional": "class Person { constructor(name) { this.name = name; } }",
+        "dot_equivalent": "🏗️📦 📝 🏗️⚙️ 📝 📥🔗 👤⚪➡️ 📝",
+        "meaning": "Building container write building configuration write input links person flow to write"
+      },
+      "inheritance": {
+        "traditional": "class Student extends Person { ... }",
+        "dot_equivalent": "🏗️📦 📝 🏗️⬆️ 🏗️📦",
+        "meaning": "Building container write building up building container"
+      },
+      "object_creation": {
+        "traditional": "const obj = new Class();",
+        "dot_equivalent": "📝 ⬅️📦 🆕🏗️",
+        "meaning": "Write back container new building"
+      },
+      "property_access": {
+        "traditional": "obj.property",
+        "dot_equivalent": "🏗️ ⚪➡️ 📝",
+        "meaning": "Building flow to write"
+      },
+      "method_call": {
+        "traditional": "obj.method()",
+        "dot_equivalent": "🏗️ ▶️🔧",
+        "meaning": "Building play tool"
+      }
+    },
+    "error_handling": {
+      "try_catch": {
+        "traditional": "try { riskyCode(); } catch(e) { handleError(); }",
+        "dot_equivalent": "🛡️⚙️ 📦 🪝❌ 📝 🛡️⚙️",
+        "meaning": "Shield configuration container hook false write shield configuration"
+      },
+      "throw_exception": {
+        "traditional": "throw new Error('message');",
+        "dot_equivalent": "🚀❌ 📝",
+        "meaning": "Launch false write"
+      }
+    },
+    "common_patterns": {
+      "singleton": {
+        "traditional": "class Singleton { static getInstance() { ... } }",
+        "dot_equivalent": "🏗️📦 📝 🔒🔧 ⚪➡️ 🏗️",
+        "meaning": "Building container write lock tool flow to building"
+      },
+      "factory": {
+        "traditional": "class Factory { static create(type) { ... } }",
+        "dot_equivalent": "🏗️📦 📝 🔧⚙️ 📝 ⚪➡️ 🆕🏗️",
+        "meaning": "Building container write tool configuration write flow to new building"
+      },
+      "observer": {
+        "traditional": "subject.subscribe(observer);",
+        "dot_equivalent": "👤👂 ⚪🔗 👤📣",
+        "meaning": "Person ear flow link person megaphone"
+      }
+    },
+    "web_development": {
+      "dom_manipulation": {
+        "traditional": "document.getElementById('myDiv').innerHTML = 'Hello';",
+        "dot_equivalent": "🔍📄 📝 ⚪➡️ 📝📄 📝",
+        "meaning": "Explore page write flow to write page write"
+      },
+      "event_handling": {
+        "traditional": "button.addEventListener('click', handler);",
+        "dot_equivalent": "🔘👆 ⚪🔗 👂📞 📞🔧",
+        "meaning": "Button touch flow link ear phone phone tool"
+      },
+      "http_request": {
+        "traditional": "fetch('/api/data').then(response => response.json());",
+        "dot_equivalent": "📥🌐 📝 ⚪➡️ 📦📊",
+        "meaning": "Input web write flow to container chart"
+      }
+    },
+    "data_structures": {
+      "array_operations": {
+        "traditional": "array.push(item); array.pop();",
+        "dot_equivalent": "➕📦 📝 ➖📦",
+        "meaning": "Plus container write minus container"
+      },
+      "dictionary_map": {
+        "traditional": "map.set(key, value); map.get(key);",
+        "dot_equivalent": "📤📦 🔗📝 📥📦 🔗📝",
+        "meaning": "Output container link write input container link write"
+      },
+      "linked_list": {
+        "traditional": "node.next = new Node(data);",
+        "dot_equivalent": "🔗📦 ⚪➡️ 🆕🔗📦 📝",
+        "meaning": "Link container flow to new link container write"
+      }
+    },
+    "concurrency_async": {
+      "async_function": {
+        "traditional": "async function fetchData() { return await apiCall(); }",
+        "dot_equivalent": "🔄⚙️ 📥🌐 ⏸️▶️ 📥🌐",
+        "meaning": "Cycle configuration input web pause play input web"
+      },
+      "promise": {
+        "traditional": "promise.then(result => {}).catch(error => {});",
+        "dot_equivalent": "🤝⏳ ✅🤝 ⬅️📦 ❌🤝 ⬅️📦",
+        "meaning": "Handshake timer true handshake back container false handshake back container"
+      },
+      "threading": {
+        "traditional": "new Thread(() => { work(); }).start();",
+        "dot_equivalent": "🧵🔄 🆕🧵 🔧⚙️ ▶️🧵",
+        "meaning": "Thread cycle new thread tool configuration play thread"
+      }
+    },
+    "file_operations": {
+      "read_file": {
+        "traditional": "const data = fs.readFileSync('file.txt');",
+        "dot_equivalent": "📂📖 📖📥 📝",
+        "meaning": "Folder book book input write"
+      },
+      "write_file": {
+        "traditional": "fs.writeFileSync('file.txt', data);",
+        "dot_equivalent": "📂📖 📖📤 📝",
+        "meaning": "Folder book book output write"
+      },
+      "database_query": {
+        "traditional": "db.query('SELECT * FROM users');",
+        "dot_equivalent": "💾🔍 📝 ⚪➡️ 📦📊",
+        "meaning": "Storage explore write flow to container chart"
+      }
+    },
+    "mathematical_operations": {
+      "arithmetic": {
+        "addition": "⚪➕",
+        "subtraction": "⚪➖",
+        "multiplication": "⚪✖️",
+        "division": "⚪➗",
+        "modulo": "⚪%",
+        "power": "⚪^"
+      },
+      "comparison": {
+        "equal": "⚪⏸️",
+        "not_equal": "⚫🚫 ⚪⏸️",
+        "greater_than": "⚪⬆️",
+        "less_than": "⚪⬇️",
+        "greater_equal": "⚪⬆️ ⚪⏸️",
+        "less_equal": "⚪⬇️ ⚪⏸️"
+      },
+      "logical": {
+        "and": "⚪🔗",
+        "or": "⚪➕",
+        "not": "⚫🚫"
+      }
+    },
+    "language_specific_patterns": {
+      "python_list_comprehension": {
+        "traditional": "[x*2 for x in range(10) if x % 2 == 0]",
+        "dot_equivalent": "📦🔢 🔄🔢 📝 ⚪➡️ 🔢🔴 ⚪✖️ 🔢🔴 ❓🔍 📝 ⚪% 🔢🔴 ⚪⏸️ 🔢🔴",
+        "meaning": "Container numbers cycle numbers write flow to number action times number action question explore write flow modulo number action pause number action"
+      },
+      "javascript_arrow_function": {
+        "traditional": "const add = (a, b) => a + b;",
+        "dot_equivalent": "🔒📝 ⬅️📦 🔧⚙️ 📥🔗 📝 📥🔗 📝 ➕ 📝",
+        "meaning": "Lock write back container tool configuration input links write input links write plus write"
+      },
+      "java_generics": {
+        "traditional": "List<String> list = new ArrayList<>();",
+        "dot_equivalent": "📦📝 📝 ⬅️📦 🆕📦📝",
+        "meaning": "Container writes write back container new container writes"
+      },
+      "cpp_smart_pointers": {
+        "traditional": "std::unique_ptr<Object> ptr = std::make_unique<Object>();",
+        "dot_equivalent": "🔗📦 📝 ⬅️📦 🆕🔗📦",
+        "meaning": "Link container write back container new link container"
+      },
+      "csharp_linq": {
+        "traditional": "var result = list.Where(x => x > 5).Select(x => x * 2);",
+        "dot_equivalent": "📝 ⬅️📦 📦📊 ❓🔍 📝 ⚪⬆️ 🔢🔴 ⚪➡️ 🔧⚙️ 📝 ⚪✖️ 🔢🔴",
+        "meaning": "Write back container container chart question explore write flow up number action flow to tool configuration write times number action"
+      },
+      "go_goroutines": {
+        "traditional": "go func() { work() }()",
+        "dot_equivalent": "🧵🔄 🆕🧵 🔧⚙️ ▶️🧵",
+        "meaning": "Thread cycle new thread tool configuration play thread"
+      },
+      "rust_ownership": {
+        "traditional": "let s1 = String::from(\"hello\"); let s2 = s1;",
+        "dot_equivalent": "📝 ⬅️📦 📝⚪ ⚪➡️ 📝 ⬅️📦 📝",
+        "meaning": "Write back container text flow flow to write back container write"
+      },
+      "swift_optionals": {
+        "traditional": "if let name = optionalName { print(name) }",
+        "dot_equivalent": "❓🔍 📝 ⬅️📦 📝⚪ ▶️🔧 📝",
+        "meaning": "Question explore write back container text flow play tool write"
+      },
+      "php_associative_arrays": {
+        "traditional": "$array = ['key' => 'value'];",
+        "dot_equivalent": "📦📝 📝 🔗📝 📝",
+        "meaning": "Container writes write link write write"
+      },
+      "ruby_blocks": {
+        "traditional": "array.each { |item| puts item }",
+        "dot_equivalent": "📦📊 🔄📦 📝 ▶️🔧 📝",
+        "meaning": "Container chart cycle container write play tool write"
+      },
+      "kotlin_null_safety": {
+        "traditional": "val name: String? = null; name?.length",
+        "dot_equivalent": "📝 ⬅️📦 📝⚪ ❓🔍 📝 📏📝",
+        "meaning": "Write back container text flow question explore write measure write"
+      }
+    },
+    "performance_patterns": {
+      "optimization": {
+        "traditional": "Use appropriate data structures and algorithms",
+        "dot_equivalent": "📊🔍 ⚪➡️ 🎯📈",
+        "meaning": "Chart explore flow to target growth"
+      },
+      "caching": {
+        "traditional": "Implement caching for expensive operations",
+        "dot_equivalent": "💾📦 ⚪➡️ ⚡🔄",
+        "meaning": "Storage container flow to lightning cycle"
+      },
+      "async_processing": {
+        "traditional": "Use async/await for I/O operations",
+        "dot_equivalent": "🔄⚙️ ⏸️▶️ 📥🌐",
+        "meaning": "Cycle configuration pause play input web"
+      }
+    },
+    "security_patterns": {
+      "input_validation": {
+        "traditional": "Validate and sanitize all user inputs",
+        "dot_equivalent": "🛡️📥 ⚪➡️ 🔍✅",
+        "meaning": "Shield input flow to explore true"
+      },
+      "authentication": {
+        "traditional": "Implement secure authentication",
+        "dot_equivalent": "🔐👤 ⚪➡️ ✅🔍",
+        "meaning": "Lock person flow to true explore"
+      },
+      "encryption": {
+        "traditional": "Encrypt sensitive data",
+        "dot_equivalent": "🔒📝 ⚪➡️ ⚡🔄",
+        "meaning": "Lock write flow to lightning cycle"
+      }
+    },
+    "testing_patterns": {
+      "unit_test": {
+        "traditional": "function testAddition() { assert(add(2,3) === 5); }",
+        "dot_equivalent": "🔧⚙️ 📝 ⚖️✅ ▶️🔧 📥🔗 🔢🔴 📥🔗 🔢🔴 ⚪⏸️ 🔢🔴",
+        "meaning": "Tool configuration write balance true play tool input links number action input links number action pause number action"
+      },
+      "mock_object": {
+        "traditional": "const mockApi = { getData: jest.fn() };",
+        "dot_equivalent": "🎭📦 📥🌐 ▶️🔧",
+        "meaning": "Mask container input web play tool"
+      }
+    },
+    "design_patterns_dot_equivalents": {
+      "strategy": {
+        "traditional": "Interface with multiple implementations",
+        "dot_equivalent": "🔗⚙️ 🔄🔀 ⚙️🔧",
+        "meaning": "Link configuration cycle switch configuration tool"
+      },
+      "decorator": {
+        "traditional": "Wrapper that adds functionality",
+        "dot_equivalent": "🛡️🏗️ ➕⚙️",
+        "meaning": "Shield building plus configuration"
+      },
+      "command": {
+        "traditional": "Encapsulate requests as objects",
+        "dot_equivalent": "📦🔧 ⬅️⚙️",
+        "meaning": "Container tool back configuration"
+      },
+      "state": {
+        "traditional": "Object behavior changes with state",
+        "dot_equivalent": "🏗️ 🔄📊",
+        "meaning": "Building cycle chart"
+      }
+    }
+  }
+}

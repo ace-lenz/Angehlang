@@ -1,0 +1,38 @@
+(print "🧪 [TEST] Starting Angehlang Enhancement Verification...")
+
+;; 1. Macro Test
+(def-macro unless (condition body)
+  (list 'if (list 'not condition) body))
+
+(print "  🔹 Testing Macro System (unless)...")
+(def x 10)
+(unless (= x 20)
+  (print "    ✅ SUCCESS: unless macro works."))
+
+;; 2. Module Namespacing Test
+(print "  🔹 Testing Module Namespacing (import math)...")
+(import math)
+(print (str "    ✅ Math PI: " math.pi))
+(def s (math.sin 0.0))
+(if (= s 0.0)
+  (print "    ✅ SUCCESS: math.sin works.")
+  (print (str "    ❌ FAILURE: math.sin returned " s)))
+
+;; 3. String Library Test
+(print "  🔹 Testing String Library (import string)...")
+(import string)
+(def parts (string.split "hello-angeh-world" "-"))
+(if (= (len parts) 3)
+  (print "    ✅ SUCCESS: string.split works.")
+  (print (str "    ❌ FAILURE: string.split returned " parts)))
+
+;; 4. Error Reporting Test (Catching RuntimeError with file/line info)
+(print "  🔹 Testing Enhanced Error Reporting...")
+;; We intentionally trigger a division by zero to see if evaluate reports it
+;; Note: Since evaluate raises a RuntimeError, we'd need a try/catch in Angehlang.
+;; But substrate.pvm has a 'CLI Error' catch in main.
+
+(print "    ℹ️ Attempting division by zero to trigger improved error reporting...")
+;; (/ 1 0) ;; This will stop execution and print the error message
+
+(print "✅ [COMPLETE] Verification finished.")

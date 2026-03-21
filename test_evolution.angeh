@@ -1,0 +1,68 @@
+"""
+Comprehensive Test Suite for Angeh AI Evolution (Omega)
+Verifies: Reasoning, Quantum Bridge, NLP, Multimodal, Rendering, Bio, and Evolution.
+"""
+
+import unittest
+from angeh_reasoning import ReasoningCore
+from quantum_bridge import QuantumLearningSystem
+from angeh_nlp_engine import SemanticProcessor
+from angeh_multimodal import ModalFusion, MultiModalInput, Modality
+from angeh_renderer import NeuralRenderer
+from angeh_biodigital import BioSimulator
+from angeh_evolution import SelfImprovementLoop
+
+class TestAngehEvolution(unittest.TestCase):
+    
+    def test_reasoning_core(self):
+        print("\nTesting Reasoning Core...")
+        core = ReasoningCore()
+        res = core.apply_reasoning("Solve world hunger")
+        self.assertIn("strategy", res)
+        print("✅ Reasoning Core Passed")
+
+    def test_quantum_bridge(self):
+        print("\nTesting Quantum Bridge...")
+        sys = QuantumLearningSystem()
+        res = sys.process_input("Quantum Data")
+        self.assertIsNotNone(res)
+        print("✅ Quantum Bridge Passed")
+
+    def test_nlp_engine(self):
+        print("\nTesting NLP Engine...")
+        nlp = SemanticProcessor()
+        res = nlp.parse("Create a star")
+        self.assertEqual(res['intent']['primary_action'], "create/generate")
+        print("✅ NLP Engine Passed")
+
+    def test_multimodal_fusion(self):
+        print("\nTesting Multimodal Fusion...")
+        fusion = ModalFusion()
+        inputs = [MultiModalInput("test", Modality.TEXT)]
+        res = fusion.fuse(inputs)
+        self.assertIn("fusion_method", res)
+        print("✅ Multimodal Fusion Passed")
+
+    def test_neural_renderer(self):
+        print("\nTesting Neural Renderer...")
+        renderer = NeuralRenderer()
+        conf = renderer.configure_nerf("scene")
+        self.assertIn("pipeline", conf)
+        print("✅ Neural Renderer Passed")
+
+    def test_biodigital(self):
+        print("\nTesting Bio-Digital Simulator...")
+        bio = BioSimulator()
+        dna = bio.dna_drive.encode("0011")
+        self.assertEqual(dna, "AT")
+        print("✅ Bio-Digital Simulator Passed")
+
+    def test_evolution_loop(self):
+        print("\nTesting Evolution Loop...")
+        evo = SelfImprovementLoop()
+        evo.run_evolution_cycle(1)
+        self.assertGreater(evo.metrics.generation, 0)
+        print("✅ Evolution Loop Passed")
+
+if __name__ == '__main__':
+    unittest.main()

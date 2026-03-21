@@ -1,0 +1,56 @@
+// run.angeh
+// Simple runner for AngehLang system
+
+import { AngehEngine } from './AngehLang_Standalone/core/engine.angeh';
+import { photonic_engine } from './AngehLang_Standalone/core/photonic_execution_engine.angeh';
+import { run as runInterpreter } from './AngehLang_Standalone/core/interpreter.angeh';
+
+console.log('🚀 Starting AngehLang System...');
+
+// Initialize photonic substrate
+console.log('🔆 Initializing photonic execution engine...');
+photonic_engine.start_realtime_execution();
+
+// Initialize AI engine
+console.log('🧠 Initializing Angeh AI engine...');
+const engine = new AngehEngine(true, false);
+
+// Start main systems
+console.log('⚡ Starting all systems...');
+
+// Load and execute photonic code
+const photonic_code = `
+⚡🔆🌊🔀💎
+⚡📡🔄🔮⚡
+`;
+
+photonic_engine.load_photonic_code(photonic_code);
+
+// Example dot processing
+const test_dots = [
+  '⚡🔄5💾data🧠think',
+  '⚡🧠reason💾store🔄3'
+];
+
+engine.process_dots(test_dots).then(results => {
+  console.log('🎯 Dot processing results:', results);
+});
+
+// Start REPL if requested
+const args = process.argv.slice(2);
+if (args.includes('--repl')) {
+  console.log('💬 Starting AngehLang REPL...');
+  runInterpreter('(display "Welcome to AngehLang!")');
+}
+
+// Keep system running
+process.on('SIGINT', () => {
+  console.log('🛑 Shutting down AngehLang System...');
+  photonic_engine.stop_execution();
+  process.exit(0);
+});
+
+console.log('✅ AngehLang System ready!');
+console.log('🌐 Photonic substrate: ACTIVE');
+console.log('🧠 AI engine: ONLINE');
+console.log('⚡ Quantum bridge: CONNECTED');

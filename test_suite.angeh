@@ -1,0 +1,451 @@
+(def-module test-suite
+  "Comprehensive Test Suite for Angeh Reality Fabric")
+
+(import type-system)
+(import collections)
+(import quantum-ai)
+(import quantum-circuit)
+(import cryptography)
+(import concurrency)
+(import optimizer)
+(import debugger)
+(import universe-os-kernel)
+
+;; ============================================================
+;; TEST FRAMEWORK
+;; ============================================================
+(def-type TestResult
+  (struct (
+    (test-name String)
+    (passed bool)
+    (message String)
+    (execution-time float)
+  )))
+
+(def-type TestSuite
+  (struct (
+    (suite-name String)
+    (tests (new-qlist))
+    (results (new-qlist))
+    (passed-count int)
+    (failed-count int)
+  )))
+
+(def-fn test-suite-new (name)
+  "Create new test suite"
+  (TestSuite name (new-qlist) (new-qlist) 0 0))
+
+(def-fn test-assert (condition message)
+  "Assert condition is true"
+  (if condition
+    (TestResult "assert" true message 0.0)
+    (TestResult "assert" false message 0.0)))
+
+(def-fn test-equal (actual expected message)
+  "Assert actual equals expected"
+  (test-assert (equal? actual expected)
+               (concat message " | Expected: " (show expected) " Got: " (show actual))))
+
+(def-fn run-test (suite test-fn test-name)
+  "Run single test"
+  (let ((start-time (time-now)))
+    (let ((result (test-fn)))
+      (let ((end-time (time-now)))
+        (let ((test-result (TestResult
+                            test-name
+                            (result.passed result)
+                            (result.message result)
+                            (- end-time start-time))))
+          (qlist-add! (suite.results suite) test-result)
+          (if (test-result.passed test-result)
+            (set! (suite.passed-count suite) (+ (suite.passed-count suite) 1))
+            (set! (suite.failed-count suite) (+ (suite.failed-count suite) 1)))
+          test-result)))))
+
+;; ============================================================
+;; QUANTUM DOT TESTS
+;; ============================================================
+(def-fn test-quantum-dot-creation ()
+  "Test: Quantum dot creation"
+  (let ((dot (create-quantum-dot "test-content")))
+    (test-assert (not (eq? (dot.quantum-id dot) Nothing))
+                 "Quantum dot should have valid ID")))
+
+(def-fn test-quantum-dot-entanglement ()
+  "Test: Quantum dot entanglement"
+  (let ((dot1 (create-quantum-dot "A"))
+        (dot2 (create-quantum-dot "B")))
+    (entangle-dots! dot1 dot2 0.95)
+    (test-assert (qhash-has? (dot1.entanglements dot1) (dot2.quantum-id dot2))
+                 "Dots should be entangled")))
+
+(def-fn test-quantum-dot-superposition ()
+  "Test: Quantum superposition"
+  (let ((dot (create-quantum-dot "initial")))
+    (set! (dot.state dot) 'superposition)
+    (set! (dot.content dot) (list "A" "B" "C"))
+    (test-equal (dot.state dot) 'superposition
+                "Dot should be in superposition state")))
+
+(def-fn test-quantum-dot-collapse ()
+  "Test: Superposition collapse"
+  (let ((dot (create-quantum-dot (list "A" "B" "C"))))
+    (set! (dot.state dot) 'superposition)
+    (collapse-dot! dot)
+    (test-equal (dot.state dot) 'collapsed
+                "Dot should collapse to single state")))
+
+;; ============================================================
+;; COLLECTIONS TESTS
+;; ============================================================
+(def-fn test-quantum-stack ()
+  "Test: Quantum stack operations"
+  (let ((stack (new-stack)))
+    (stack-push! stack 1)
+    (stack-push! stack 2)
+    (stack-push! stack 3)
+    (let ((top (stack-pop! stack)))
+      (test-equal top 3 "Stack should be LIFO"))))
+
+(def-fn test-quantum-queue ()
+  "Test: Quantum queue operations"
+  (let ((queue (new-queue)))
+    (queue-enqueue! queue 1)
+    (queue-enqueue! queue 2)
+    (queue-enqueue! queue 3)
+    (let ((front (queue-dequeue! queue)))
+      (test-equal front 1 "Queue should be FIFO"))))
+
+(def-fn test-quantum-hashmap ()
+  "Test: Quantum hash map"
+  (let ((map (new-qhash-map)))
+    (qhash-set! map 'key1 "value1")
+    (qhash-set! map 'key2 "value2")
+    (match (qhash-get map 'key1)
+      ((Some val) (test-equal val "value1" "HashMap should retrieve values"))
+      (Nothing (test-assert false "HashMap key not found")))))
+
+(def-fn test-quantum-list-superposition ()
+  "Test: QList with superposition"
+  (let ((qlist (new-qlist)))
+    (qlist-add! qlist 1)
+    (qlist-add! qlist 2)
+    (qlist-add-superposition! qlist (list 3 4 5) (list 0.33 0.33 0.34))
+    (test-assert (> (qlist-size qlist) 0)
+                 "QList should support superposition")))
+
+;; ============================================================
+;; QUANTUM CIRCUIT TESTS
+;; ============================================================
+(def-fn test-qubit-initialization ()
+  "Test: Qubit state initialization"
+  (let ((qubit (qubit-zero)))
+    (test-assert (and (= (qubit.alpha qubit).real 1.0)
+                     (= (qubit.beta qubit).real 0.0))
+                 "Qubit should initialize to |0⟩")))
+
+(def-fn test-hadamard-gate ()
+  "Test: Hadamard gate"
+  (let ((qubit (qubit-zero)))
+    (let ((result (gate-h qubit)))
+      (test-assert (> (abs (result.alpha result).real) 0.0)
+                   "Hadamard should create superposition"))))
+
+(def-fn test-cnot-gate ()
+  "Test: CNOT gate"
+  (let ((control (qubit-zero))
+        (target (qubit-zero)))
+    (let ((result (gate-cnot control target)))
+      (test-assert (not (eq? result Nothing))
+                   "CNOT should operate on two qubits"))))
+
+(def-fn test-bell-state-algorithm ()
+  "Test: Bell state creation"
+  (let ((circuit (algorithm-bell-state)))
+    (test-assert (not (eq? circuit Nothing))
+                 "Should create Bell state circuit")))
+
+(def-fn test-quantum-measurement ()
+  "Test: Quantum measurement"
+  (let ((qubit (qubit-zero)))
+    (let ((result (measure-qubit! qubit)))
+      (test-assert (or (= result 0) (= result 1))
+                   "Measurement should yield 0 or 1"))))
+
+;; ============================================================
+;; CRYPTOGRAPHY TESTS
+;; ============================================================
+(def-fn test-qkd-session ()
+  "Test: Quantum key distribution"
+  (let ((session (qkd-new-session 256)))
+    (test-assert (= (session.key-length session) 256)
+                 "QKD session should have correct key length")))
+
+(def-fn test-lattice-encryption ()
+  "Test: Lattice-based encryption"
+  (let ((keypair (lattice-generate-keypair)))
+    (let ((message "Secret message"))
+      (let ((encrypted (lattice-encrypt message (keypair.public-key keypair))))
+        (let ((decrypted (lattice-decrypt encrypted (keypair.private-key keypair))))
+          (test-equal decrypted message
+                     "Lattice encryption should be reversible"))))))
+
+(def-fn test-dot-permission-system ()
+  "Test: Dot-level access control"
+  (let ((perm (new-dot-permission 'owner123)))
+    (dot-grant-read! perm 'user456)
+    (test-assert (dot-check-permission perm 'user456 'read)
+                 "Permission system should grant access")))
+
+;; ============================================================
+;; CONCURRENCY TESTS
+;; ============================================================
+(def-fn test-async-dot-execution ()
+  "Test: Asynchronous dot execution"
+  (let ((dot (create-quantum-dot "async-test"))
+        (async (async-dot-new dot (fn (d) (d.content d)))))
+    (test-assert (= (async.state async) 'pending)
+                 "Async dot should start in pending state")))
+
+(def-fn test-dataflow-graph ()
+  "Test: Dataflow execution graph"
+  (let ((graph (dataflow-new))
+        (dot1 (create-quantum-dot "A"))
+        (dot2 (create-quantum-dot "B")))
+    (dataflow-add-node! graph dot1 (fn (d) d))
+    (dataflow-add-node! graph dot2 (fn (d) d))
+    (dataflow-add-edge! graph (dot1.quantum-id dot1) (dot2.quantum-id dot2))
+    (test-assert (> (qhash-size (graph.nodes graph)) 0)
+                 "Dataflow graph should have nodes")))
+
+(def-fn test-entanglement-lock ()
+  "Test: Entanglement synchronization"
+  (let ((dot1 (create-quantum-dot "A"))
+        (dot2 (create-quantum-dot "B")))
+    (entangle-dots! dot1 dot2 0.9)
+    (let ((lock (entangle-lock-new (list dot1 dot2))))
+      (test-assert (not (eq? lock Nothing))
+                   "Should create entanglement lock"))))
+
+;; ============================================================
+;; OPTIMIZER TESTS
+;; ============================================================
+(def-fn test-dot-profiling ()
+  "Test: Performance profiling"
+  (let ((dot (create-quantum-dot "profile-test"))
+        (profile (profile-new dot)))
+    (profile-record-execution! profile 10.5 1024)
+    (test-assert (> (profile.execution-count profile) 0)
+                 "Profile should record executions")))
+
+(def-fn test-entanglement-optimization ()
+  "Test: Entanglement layout optimization"
+  (let ((dots (list (create-quantum-dot "A")
+                   (create-quantum-dot "B")
+                   (create-quantum-dot "C"))))
+    (let ((clusters (optimize-entanglement-layout dots)))
+      (test-assert (> (qlist-size clusters) 0)
+                   "Should create entanglement clusters"))))
+
+(def-fn test-device-quantization ()
+  "Test: Adaptive quantization"
+  (let ((strategy (quantize-for-device 'mobile))
+        (dot (create-quantum-dot "large-content")))
+    (let ((quantized (quantize-dot dot strategy)))
+      (test-assert (not (eq? quantized Nothing))
+                   "Should quantize for device"))))
+
+;; ============================================================
+;; DEBUGGER TESTS
+;; ============================================================
+(def-fn test-quantum-inspector ()
+  "Test: Quantum state inspector"
+  (let ((dot (create-quantum-dot "inspect-me"))
+        (inspector (inspector-new dot)))
+    (let ((snapshot (inspector-observe-state inspector)))
+      (test-assert (not (eq? snapshot Nothing))
+                   "Inspector should capture state"))))
+
+(def-fn test-entanglement-mapper ()
+  "Test: Entanglement relationship mapper"
+  (let ((dot (create-quantum-dot "root"))
+        (mapper (mapper-new dot 2)))
+    (test-assert (= (mapper.max-depth mapper) 2)
+                 "Mapper should have correct depth")))
+
+(def-fn test-execution-tracer ()
+  "Test: Temporal execution tracer"
+  (let ((tracer (tracer-new))
+        (dot (create-quantum-dot "trace-test")))
+    (tracer-record-event! tracer dot 'execute Nothing Nothing Nothing)
+    (test-assert (> (qlist-size (tracer.events tracer)) 0)
+                 "Tracer should record events")))
+
+;; ============================================================
+;; REALITY INTEGRATION TESTS
+;; ============================================================
+(def-fn test-sensor-creation ()
+  "Test: Sensor initialization"
+  (let ((sensor (sensor-temperature-new 'temp1 (vector3 0 0 0))))
+    (test-assert (= (sensor.sensor-type sensor) 'physical)
+                 "Sensor should have correct type")))
+
+(def-fn test-actuator-control ()
+  "Test: Actuator command"
+  (let ((actuator (actuator-motor-new 'motor1 (vector3 0 0 0))))
+    (actuator-command actuator (struct ((speed 100))))
+    (test-assert (not (eq? (actuator.current-state actuator) Nothing))
+                 "Actuator should update state")))
+
+(def-fn test-physics-simulation ()
+  "Test: Physics simulation"
+  (let ((sim (physics-sim-new)))
+    (test-assert (= (sim.gravity sim).y -9.81)
+                 "Should have Earth gravity")))
+
+(def-fn test-ar-overlay ()
+  "Test: AR/VR overlay"
+  (let ((overlay (ar-overlay-new 'ar)))
+    (test-assert (= (overlay.rendering-mode overlay) 'ar)
+                 "Overlay should have correct mode")))
+
+;; ============================================================
+;; INTEGRATION TESTS
+;; ============================================================
+(def-fn test-end-to-end-execution ()
+  "Test: Complete workflow"
+  (let ((dot1 (create-quantum-dot "start"))
+        (dot2 (create-quantum-dot "end")))
+    (entangle-dots! dot1 dot2 0.9)
+    (let ((ai (new-angeh-ai)))
+      (ai-learn! ai dot1 dot2 0.8)
+      (let ((prediction (ai-predict ai dot1)))
+        (test-assert (not (eq? prediction Nothing))
+                     "End-to-end workflow should complete")))))
+
+;; ============================================================
+;; PERFORMANCE BENCHMARKS
+;; ============================================================
+(def-fn benchmark-dot-creation (count)
+  "Benchmark: Dot creation speed"
+  (let ((start (time-now)))
+    (for-each i (range 0 count)
+      (create-quantum-dot i))
+    (let ((duration (- (time-now) start)))
+      (struct ((test "Dot Creation")
+              (count count)
+              (duration duration)
+              (rate (/ count duration)))))))
+
+(def-fn benchmark-entanglement (count)
+  "Benchmark: Entanglement operations"
+  (let ((dots (map create-quantum-dot (range 0 count)))
+        (start (time-now)))
+    (for-each i (range 0 (- count 1))
+      (entangle-dots! (nth dots i) (nth dots (+ i 1)) 0.9))
+    (let ((duration (- (time-now) start)))
+      (struct ((test "Entanglement")
+              (count count)
+              (duration duration)
+              (rate (/ count duration)))))))
+
+;; ============================================================
+;; MAIN TEST RUNNER
+;; ============================================================
+(def-fn run-all-tests ()
+  "Run all test suites"
+  (let ((suites (new-qlist)))
+    ;; Quantum Dot Tests
+    (let ((dot-suite (test-suite-new "Quantum Dots")))
+      (run-test dot-suite test-quantum-dot-creation "Dot Creation")
+      (run-test dot-suite test-quantum-dot-entanglement "Entanglement")
+      (run-test dot-suite test-quantum-dot-superposition "Superposition")
+      (run-test dot-suite test-quantum-dot-collapse "Collapse")
+      (qlist-add! suites dot-suite))
+    
+    ;; Collections Tests
+    (let ((coll-suite (test-suite-new "Collections")))
+      (run-test coll-suite test-quantum-stack "Stack")
+      (run-test coll-suite test-quantum-queue "Queue")
+      (run-test coll-suite test-quantum-hashmap "HashMap")
+      (run-test coll-suite test-quantum-list-superposition "List Superposition")
+      (qlist-add! suites coll-suite))
+    
+    ;; Quantum Circuit Tests
+    (let ((circuit-suite (test-suite-new "Quantum Circuits")))
+      (run-test circuit-suite test-qubit-initialization "Qubit Init")
+      (run-test circuit-suite test-hadamard-gate "Hadamard Gate")
+      (run-test circuit-suite test-cnot-gate "CNOT Gate")
+      (run-test circuit-suite test-bell-state-algorithm "Bell State")
+      (run-test circuit-suite test-quantum-measurement "Measurement")
+      (qlist-add! suites circuit-suite))
+    
+    ;; Cryptography Tests
+    (let ((crypto-suite (test-suite-new "Cryptography")))
+      (run-test crypto-suite test-qkd-session "QKD")
+      (run-test crypto-suite test-lattice-encryption "Lattice Encryption")
+      (run-test crypto-suite test-dot-permission-system "Permissions")
+      (qlist-add! suites crypto-suite))
+    
+    ;; Concurrency Tests
+    (let ((conc-suite (test-suite-new "Concurrency")))
+      (run-test conc-suite test-async-dot-execution "Async Execution")
+      (run-test conc-suite test-dataflow-graph "Dataflow Graph")
+      (run-test conc-suite test-entanglement-lock "Entanglement Lock")
+      (qlist-add! suites conc-suite))
+    
+    ;; Optimizer Tests
+    (let ((opt-suite (test-suite-new "Optimizer")))
+      (run-test opt-suite test-dot-profiling "Profiling")
+      (run-test opt-suite test-entanglement-optimization "Entanglement Opt")
+      (run-test opt-suite test-device-quantization "Quantization")
+      (qlist-add! suites opt-suite))
+    
+    ;; Debugger Tests
+    (let ((debug-suite (test-suite-new "Debugger")))
+      (run-test debug-suite test-quantum-inspector "Inspector")
+      (run-test debug-suite test-entanglement-mapper "Mapper")
+      (run-test debug-suite test-execution-tracer "Tracer")
+      (qlist-add! suites debug-suite))
+    
+    ;; Reality Integration Tests
+    (let ((reality-suite (test-suite-new "Reality Integration")))
+      (run-test reality-suite test-sensor-creation "Sensors")
+      (run-test reality-suite test-actuator-control "Actuators")
+      (run-test reality-suite test-physics-simulation "Physics")
+      (run-test reality-suite test-ar-overlay "AR/VR")
+      (qlist-add! suites reality-suite))
+    
+    ;; Integration Tests
+    (let ((integration-suite (test-suite-new "Integration")))
+      (run-test integration-suite test-end-to-end-execution "End-to-End")
+      (qlist-add! suites integration-suite))
+    
+    ;; Return all suites
+    suites))
+
+(def-fn print-test-results (suites)
+  "Print test results"
+  (for-each suite (qlist->list suites)
+    (println (concat "\n=== " (suite.suite-name suite) " ==="))
+    (println (concat "Passed: " (show (suite.passed-count suite))))
+    (println (concat "Failed: " (show (suite.failed-count suite))))
+    (for-each result (qlist->list (suite.results suite))
+      (let ((status (if (result.passed result) "✓" "✗")))
+        (println (concat "  " status " " (result.test-name result) ": " (result.message result)))))))
+
+(def-fn run-benchmarks ()
+  "Run performance benchmarks"
+  (println "\n=== Performance Benchmarks ===")
+  (let ((bench1 (benchmark-dot-creation 10000)))
+    (println (concat "Dot Creation: " (show (bench1.count bench1)) " dots in " 
+                    (show (bench1.duration bench1)) "ms")))
+  (let ((bench2 (benchmark-entanglement 1000)))
+    (println (concat "Entanglement: " (show (bench2.count bench2)) " operations in " 
+                    (show (bench2.duration bench2)) "ms"))))
+
+;; Export test functions
+(export
+  run-all-tests
+  print-test-results
+  run-benchmarks)

@@ -1,0 +1,149 @@
+{
+  "dataset": "universal_devices.angel",
+  "type": "device_compatibility_dataset",
+  "description": "Comprehensive device compatibility matrix for .angel runtime",
+  "version": "4.0",
+  "created": "2025-01-01",
+  "device_categories": {
+    "servers": {
+      "description": "Enterprise and cloud servers",
+      "platforms": ["Linux", "Windows_Server", "FreeBSD", "Solaris"],
+      "architectures": ["x86_64", "ARM64", "POWER", "SPARC"],
+      "compatibility_score": 1.0,
+      "performance_factor": 1.0,
+      "devices": [
+        {"name": "AWS_EC2", "cpu": "Intel_Xeon", "ram": "256GB+", "storage": "EBS"},
+        {"name": "Google_Cloud", "cpu": "AMD_EPYC", "ram": "128GB+", "storage": "Persistent_Disk"},
+        {"name": "Azure_VM", "cpu": "AMD_EPYC", "ram": "512GB+", "storage": "Managed_Disk"}
+      ]
+    },
+    "desktops": {
+      "description": "Personal computers and workstations",
+      "platforms": ["Windows", "macOS", "Linux"],
+      "architectures": ["x86_64", "ARM64"],
+      "compatibility_score": 0.95,
+      "performance_factor": 0.9,
+      "devices": [
+        {"name": "Windows_PC", "cpu": "Intel_i7/i9", "ram": "16GB+", "storage": "SSD"},
+        {"name": "Mac_Studio", "cpu": "Apple_M2", "ram": "32GB+", "storage": "SSD"},
+        {"name": "Linux_Workstation", "cpu": "AMD_Ryzen", "ram": "64GB+", "storage": "NVMe"}
+      ]
+    },
+    "mobiles": {
+      "description": "Smartphones and tablets",
+      "platforms": ["Android", "iOS"],
+      "architectures": ["ARM64", "ARMv8"],
+      "compatibility_score": 0.85,
+      "performance_factor": 0.6,
+      "devices": [
+        {"name": "Android_Phone", "cpu": "Snapdragon_8_Gen3", "ram": "8GB+", "storage": "UFS"},
+        {"name": "iPhone", "cpu": "Apple_A17", "ram": "8GB+", "storage": "NVMe"},
+        {"name": "Android_Tablet", "cpu": "MediaTek_Dimensity", "ram": "6GB+", "storage": "eMMC"}
+      ]
+    },
+    "microcontrollers": {
+      "description": "Embedded systems and IoT devices",
+      "platforms": ["MicroPython", "CircuitPython", "FreeRTOS"],
+      "architectures": ["ARM_Cortex_M", "ESP32", "RP2040"],
+      "compatibility_score": 0.7,
+      "performance_factor": 0.3,
+      "devices": [
+        {"name": "Raspberry_Pi_Pico", "cpu": "RP2040", "ram": "264KB", "storage": "2MB_Flash"},
+        {"name": "ESP32", "cpu": "Xtensa_LX6", "ram": "520KB", "storage": "4MB_Flash"},
+        {"name": "Arduino_Nano", "cpu": "ATmega328", "ram": "2KB", "storage": "32KB_Flash"}
+      ]
+    },
+    "workstations": {
+      "description": "High-performance computing workstations",
+      "platforms": ["Linux", "Windows"],
+      "architectures": ["x86_64", "ARM64"],
+      "compatibility_score": 0.98,
+      "performance_factor": 0.95,
+      "devices": [
+        {"name": "HPC_Workstation", "cpu": "Intel_Xeon_W", "ram": "128GB+", "storage": "NVMe_RAID"},
+        {"name": "CAD_Workstation", "cpu": "AMD_Threadripper", "ram": "256GB+", "storage": "PCIe_SSD"},
+        {"name": "AI_Workstation", "cpu": "NVIDIA_Grace", "ram": "512GB+", "storage": "NVMe"}
+      ]
+    },
+    "edge_devices": {
+      "description": "Edge computing and network devices",
+      "platforms": ["Linux", "FreeRTOS", "VxWorks"],
+      "architectures": ["ARM64", "x86_64"],
+      "compatibility_score": 0.8,
+      "performance_factor": 0.7,
+      "devices": [
+        {"name": "Edge_Server", "cpu": "ARM_Neoverse", "ram": "32GB+", "storage": "SSD"},
+        {"name": "Network_Switch", "cpu": "Broadcom_XGS", "ram": "4GB+", "storage": "Flash"},
+        {"name": "IoT_Gateway", "cpu": "Qualcomm_Snapdragon", "ram": "2GB+", "storage": "eMMC"}
+      ]
+    },
+    "supercomputers": {
+      "description": "High-performance computing clusters",
+      "platforms": ["Linux"],
+      "architectures": ["x86_64", "ARM64", "POWER"],
+      "compatibility_score": 0.9,
+      "performance_factor": 1.2,
+      "devices": [
+        {"name": "Cray_XC", "cpu": "AMD_EPYC", "ram": "1TB+", "storage": "Lustre"},
+        {"name": "IBM_Summit", "cpu": "IBM_POWER9", "ram": "512GB/node", "storage": "GPFS"},
+        {"name": "Fugaku", "cpu": "ARM_A64FX", "ram": "32GB/node", "storage": "FEFS"}
+      ]
+    },
+    "quantum_devices": {
+      "description": "Quantum computers and simulators",
+      "platforms": ["Qiskit", "Cirq", "QuTiP"],
+      "architectures": ["Superconducting", "Trapped_Ion", "Photonic"],
+      "compatibility_score": 0.6,
+      "performance_factor": 1000.0,
+      "devices": [
+        {"name": "IBM_Quantum", "qubits": 127, "type": "Superconducting", "fidelity": 0.99},
+        {"name": "IonQ", "qubits": 32, "type": "Trapped_Ion", "fidelity": 0.995},
+        {"name": "Rigetti", "qubits": 32, "type": "Superconducting", "fidelity": 0.98}
+      ]
+    }
+  },
+  "runtime_optimization": {
+    "memory_management": {
+      "servers": {"heap_size": "unlimited", "gc_strategy": "generational"},
+      "mobiles": {"heap_size": "512MB", "gc_strategy": "incremental"},
+      "microcontrollers": {"heap_size": "64KB", "gc_strategy": "reference_counting"}
+    },
+    "cpu_optimization": {
+      "servers": {"parallelism": "multi_threaded", "vectorization": "AVX512"},
+      "mobiles": {"parallelism": "single_threaded", "vectorization": "NEON"},
+      "microcontrollers": {"parallelism": "cooperative", "vectorization": "none"}
+    },
+    "storage_optimization": {
+      "servers": {"caching": "multi_level", "compression": "LZ4"},
+      "mobiles": {"caching": "LRU", "compression": "gzip"},
+      "microcontrollers": {"caching": "direct_mapped", "compression": "none"}
+    }
+  },
+  "compatibility_matrix": {
+    "python_versions": ["3.8+", "3.9+", "3.10+", "3.11+", "3.12+"],
+    "micro_python_versions": ["1.17+", "1.18+", "1.19+", "1.20+"],
+    "supported_libraries": ["sys", "os", "math", "json", "subprocess"],
+    "optional_libraries": ["platform", "pathlib", "typing", "dataclasses"],
+    "excluded_libraries": ["torch", "numpy", "pandas", "matplotlib"]
+  },
+  "performance_benchmarks": {
+    "startup_time": {
+      "servers": 0.1,
+      "desktops": 0.2,
+      "mobiles": 0.5,
+      "microcontrollers": 2.0
+    },
+    "memory_usage": {
+      "servers": "10MB",
+      "desktops": "8MB",
+      "mobiles": "5MB",
+      "microcontrollers": "1MB"
+    },
+    "cpu_usage": {
+      "servers": "5%",
+      "desktops": "8%",
+      "mobiles": "15%",
+      "microcontrollers": "50%"
+    }
+  }
+}

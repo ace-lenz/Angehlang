@@ -1,0 +1,322 @@
+(def-module unified-runtime
+  "Unified Angeh Runtime Engine - Integrates all subsystems")
+
+(import type-system)
+(import collections)
+(import vm-architecture)
+(import quantum-ai)
+(import quantum-circuit)
+(import cryptography)
+(import concurrency)
+(import optimizer)
+(import debugger)
+(import universe-os-kernel)
+(import compiler-pipeline)
+(import multi-modal-translator)
+
+;; ============================================================
+;; UNIFIED RUNTIME ENGINE
+;; ============================================================
+(def-type AngehRuntime
+  (struct (
+    (vm VM)                                  ; Virtual machine
+    (ai AngehAI)                            ; AI system
+    (mmt MultiModalTranslator)              ; Multi-modal translator
+    (reality-bridge RealityBridge)          ; Reality integration
+    (optimizer-cache DotCache)              ; Performance cache
+    (debugger-active bool)                  ; Debug mode
+    (debugger-tools (new-qhash-map))       ; Active debuggers
+    (security-manager (new-qhash-map))     ; Security contexts
+    (execution-mode symbol)                 ; 'dev | 'prod | 'debug
+  )))
+
+(def-fn runtime-new (mode)
+  "Create new unified runtime"
+  (AngehRuntime
+    (vm-new)
+    (new-angeh-ai)
+    (mmt-new)
+    (reality-bridge-new 60.0)  ; 60 Hz sync
+    (cache-new 'adaptive)
+    (eq? mode 'debug)
+    (new-qhash-map)
+    (new-qhash-map)
+    mode))
+
+;; ============================================================
+;; CROSS-MODULE COMMUNICATION
+;; ============================================================
+(def-type RuntimeMessage
+  (struct (
+    (message-id symbol)
+    (from-module symbol)
+    (to-module symbol)
+    (message-type symbol)
+    (payload any)
+    (timestamp int)
+  )))
+
+(def-fn runtime-send-message (runtime from to type payload)
+  "Send message between modules"
+  (let ((msg (RuntimeMessage
+               (gensym 'msg)
+               from
+               to
+               type
+               payload
+               (time-now))))
+    (runtime-route-message runtime msg)))
+
+(def-fn runtime-route-message (runtime msg)
+  "Route message to appropriate module"
+  (match (msg.to-module msg)
+    ('vm (runtime-handle-vm-message runtime msg))
+    ('ai (runtime-handle-ai-message runtime msg))
+    ('translator (runtime-handle-translator-message runtime msg))
+    ('reality (runtime-handle-reality-message runtime msg))
+    ('optimizer (runtime-handle-optimizer-message runtime msg))
+    ('debugger (runtime-handle-debugger-message runtime msg))
+    (else (error "Unknown module"))))
+
+;; ============================================================
+;; END-TO-END WORKFLOWS
+;; ============================================================
+
+;; Workflow 1: Natural Language to Execution
+(def-fn runtime-execute-natural-language (runtime text language)
+  "Execute natural language command"
+  ;; 1. Translate to quantum dots
+  (let ((dots (mmt-translate (runtime.mmt runtime) text 'natural-language 'dots)))
+    ;; 2. AI inference for intent
+    (let ((intent (ai-predict (runtime.ai runtime) dots)))
+      ;; 3. Compile to bytecode
+      (let ((bytecode (compile (dot.content intent) 'angeh-bytecode 2)))
+        ;; 4. Load and execute
+        (vm-load-bytecode (runtime.vm runtime) bytecode)
+        (vm-run (runtime.vm runtime))
+        ;; 5. Return result
+        (stack-peek (runtime.vm runtime).stack)))))
+
+;; Workflow 2: Code Translation
+(def-fn runtime-translate-code (runtime source-code from-lang to-lang)
+  "Translate code between languages"
+  ;; Use multi-modal translator
+  (mmt-translate-code (runtime.mmt runtime) source-code from-lang to-lang))
+
+;; Workflow 3: Reality-Integrated Execution
+(def-fn runtime-execute-with-reality (runtime program sensor-ids actuator-ids)
+  "Execute program with reality integration"
+  ;; 1. Setup reality bridge
+  (let ((bridge (runtime.reality-bridge runtime)))
+    ;; 2. Create quantum dots for program
+    (let ((prog-dots (compile program 'dots 2)))
+      ;; 3. Connect sensors
+      (for-each sensor-id sensor-ids
+        (match (qhash-get (bridge.sensor-network bridge) sensor-id)
+          ((Some sensor)
+            (sync-dot-to-reality! prog-dots sensor Nothing))
+          (Nothing (void))))
+      ;; 4. Execute with AI enhancement
+      (let ((result (ai-process-input (runtime.ai runtime) prog-dots)))
+        ;; 5. Control actuators
+        (for-each actuator-id actuator-ids
+          (match (qhash-get (bridge.actuator-network bridge) actuator-id)
+            ((Some actuator)
+              (actuator-command actuator (dot.content result)))
+            (Nothing (void))))
+        result))))
+
+;; Workflow 4: Quantum-Enhanced Computation
+(def-fn runtime-quantum-compute (runtime algorithm input-data)
+  "Execute quantum algorithm with optimization"
+  ;; 1. Create quantum dots
+  (let ((dots (map create-quantum-dot input-data)))
+    ;; 2. Optimize entanglement layout
+    (let ((optimized (optimize-entanglement-layout dots)))
+      ;; 3. Execute quantum algorithm
+      (match algorithm
+        ('grover (algorithm-grover-iteration (car optimized)))
+        ('teleportation (algorithm-teleportation (car optimized)))
+        ('bell-state (algorithm-bell-state))
+        (else (error "Unknown quantum algorithm")))
+      ;; 4. Learn from execution
+      (ai-learn! (runtime.ai runtime) (car optimized) (car optimized) 0.8)
+      optimized)))
+
+;; Workflow 5: Multi-Modal Content Generation
+(def-fn runtime-generate-multimodal (runtime content-spec)
+  "Generate content in multiple modalities"
+  (let ((base-dots (create-quantum-dot content-spec))
+        (results (new-qhash-map)))
+    ;; Generate text
+    (qhash-set! results 'text
+                (dots-to-modality (runtime.mmt runtime) base-dots 'natural-language))
+    ;; Generate code
+    (qhash-set! results 'code
+                (dots-to-modality (runtime.mmt runtime) base-dots 'programming-language))
+    ;; Generate visual
+    (qhash-set! results 'visual
+                (dots-to-modality (runtime.mmt runtime) base-dots 'visual))
+    ;; Generate audio
+    (qhash-set! results 'audio
+                (dots-to-modality (runtime.mmt runtime) base-dots 'audio))
+    results))
+
+;; Workflow 6: Distributed Quantum Execution
+(def-fn runtime-distributed-execute (runtime program worker-nodes)
+  "Execute program across distributed workers"
+  ;; 1. Compile to quantum dots
+  (let ((dots (compile program 'dots 3)))  ; Aggressive optimization
+    ;; 2. Create distributed context
+    (let ((dist-ctx (distributed-context-new worker-nodes)))
+      ;; 3. Place dots based on locality
+      (let ((placement (optimizer-place-dots dots worker-nodes)))
+        ;; 4. Execute with entanglement synchronization
+        (distributed-execute-entangled! dist-ctx placement)
+        ;; 5. Collect and merge results
+        (distributed-collect-results dist-ctx)))))
+
+;; ============================================================
+;; INTEGRATED DEBUGGING
+;; ============================================================
+(def-fn runtime-debug-session (runtime target-dot)
+  "Start comprehensive debug session"
+  (when (runtime.debugger-active runtime)
+    ;; Create all debugging tools
+    (let ((inspector (inspector-new target-dot))
+          (mapper (mapper-new target-dot 3))
+          (tracer (tracer-new)))
+      ;; Store in runtime
+      (qhash-set! (runtime.debugger-tools runtime) 'inspector inspector)
+      (qhash-set! (runtime.debugger-tools runtime) 'mapper mapper)
+      (qhash-set! (runtime.debugger-tools runtime) 'tracer tracer)
+      ;; Return debug interface
+      (struct (
+        (inspect (fn () (inspector-observe-state inspector)))
+        (map-entanglement (fn (repo) (mapper-build-graph! mapper repo)))
+        (trace (fn (event) (tracer-record-event! tracer target-dot event Nothing Nothing Nothing)))
+        (visualize (fn () (inspector-visualize-state inspector)))
+      )))))
+
+;; ============================================================
+;; PERFORMANCE OPTIMIZATION
+;; ============================================================
+(def-fn runtime-optimize-execution (runtime dots)
+  "Apply all optimizations to dots"
+  ;; 1. Profile execution
+  (let ((profiles (map profile-new dots)))
+    ;; 2. Optimize entanglement
+    (let ((clusters (optimize-entanglement-layout dots)))
+      ;; 3. Adaptive quantization for current device
+      (let ((strategy (quantize-for-device (runtime.vm runtime).device-class)))
+        (let ((quantized (map (fn (d) (quantize-dot d strategy)) dots)))
+          ;; 4. Cache hot paths
+          (for-each dot quantized
+            (cache-put! (runtime.optimizer-cache runtime) 
+                       (dot.quantum-id dot) dot))
+          quantized)))))
+
+;; ============================================================
+;; SECURITY INTEGRATION
+;; ============================================================
+(def-fn runtime-secure-execute (runtime program user-context)
+  "Execute program with security checks"
+  ;; 1. Authenticate user
+  (let ((auth-result (entangle-auth-verify user-context)))
+    (if auth-result
+      ;; 2. Create secure execution context
+      (let ((secure-ctx (qkd-new-session 256)))
+        ;; 3. Encrypt program
+        (let ((encrypted (lattice-encrypt program (qkd-get-key secure-ctx))))
+          ;; 4. Execute in isolated environment
+          (let ((result (runtime-execute-natural-language runtime encrypted 'angeh)))
+            ;; 5. Sign result
+            (let ((signature (qds-sign result (user-context.private-key user-context))))
+              (struct ((result result) (signature signature)))))))
+      (error "Authentication failed"))))
+
+;; ============================================================
+;; MODULE MESSAGE HANDLERS
+;; ============================================================
+(def-fn runtime-handle-vm-message (runtime msg)
+  "Handle VM message"
+  (match (msg.message-type msg)
+    ('execute (vm-run (runtime.vm runtime)))
+    ('load-bytecode (vm-load-bytecode (runtime.vm runtime) (msg.payload msg)))
+    (else (void))))
+
+(def-fn runtime-handle-ai-message (runtime msg)
+  "Handle AI message"
+  (match (msg.message-type msg)
+    ('learn (ai-learn! (runtime.ai runtime) (car (msg.payload msg)) (cadr (msg.payload msg)) 0.9))
+    ('predict (ai-predict (runtime.ai runtime) (msg.payload msg)))
+    (else (void))))
+
+(def-fn runtime-handle-translator-message (runtime msg)
+  "Handle translator message"
+  (match (msg.message-type msg)
+    ('translate (mmt-translate (runtime.mmt runtime) 
+                              (car (msg.payload msg)) 
+                              (cadr (msg.payload msg))
+                              (caddr (msg.payload msg))))
+    (else (void))))
+
+(def-fn runtime-handle-reality-message (runtime msg)
+  "Handle reality bridge message"
+  (match (msg.message-type msg)
+    ('sensor-update (void))  ; Handle sensor update
+    ('actuator-command (void))  ; Handle actuator command
+    (else (void))))
+
+(def-fn runtime-handle-optimizer-message (runtime msg)
+  "Handle optimizer message"
+  (match (msg.message-type msg)
+    ('optimize (runtime-optimize-execution runtime (msg.payload msg)))
+    (else (void))))
+
+(def-fn runtime-handle-debugger-message (runtime msg)
+  "Handle debugger message"
+  (match (msg.message-type msg)
+    ('start-debug (runtime-debug-session runtime (msg.payload msg)))
+    (else (void))))
+
+;; ============================================================
+;; HELPER FUNCTIONS
+;; ============================================================
+(def-fn stack-peek (stack)
+  "Peek at top of stack without popping"
+  (if (> (stack.size stack) 0)
+    (stack.items stack 0)
+    Nothing))
+
+(def-fn optimizer-place-dots (dots workers)
+  "Place dots on workers for optimal execution"
+  (new-qhash-map))  ; Simplified
+
+(def-fn distributed-execute-entangled! (ctx placement)
+  "Execute with entanglement synchronization"
+  (void))
+
+(def-fn distributed-collect-results (ctx)
+  "Collect results from distributed execution"
+  (list))
+
+;; Export public API
+(export
+  ;; Runtime
+  runtime-new
+  ;; Workflows
+  runtime-execute-natural-language
+  runtime-translate-code
+  runtime-execute-with-reality
+  runtime-quantum-compute
+  runtime-generate-multimodal
+  runtime-distributed-execute
+  ;; Debugging
+  runtime-debug-session
+  ;; Optimization
+  runtime-optimize-execution
+  ;; Security
+  runtime-secure-execute
+  ;; Communication
+  runtime-send-message)

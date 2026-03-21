@@ -1,0 +1,33 @@
+(def-module vscode-theme
+  "VS Code Theme: Photonic Dark+ for Angehlang Studio")
+
+(def-const VS_THEME
+  (qhash-map
+    'bg_primary    "#1e1e1e"
+    'bg_sidebar    "#252526"
+    'bg_activity   "#333333"
+    'border        "#3c3c3c"
+    'text_main     "#cccccc"
+    'text_dim      "#858585"
+    'accent        "#007acc" ; VS Blue
+    'accent_hover  "#1f8ad2"
+    'editor_bg     "#1e1e1e"
+    'terminal_bg   "#1e1e1e"
+    'status_bg     "#007acc"
+    'status_text   "#ffffff"
+    'font_code     "Fira Code, Cascadia Code, monospace"
+    'glass_effect  "blur(15px) opacity(0.9)"
+  ))
+
+(def-const VS_ICONS
+  (qhash-map
+    'explorer   "📄"
+    'search     "🔍"
+    'git        "🌿"
+    'debug      "🐞"
+    'extensions "🧩"
+    'account    "👤"
+    'settings   "⚙️"
+  ))
+
+(export VS_THEME VS_ICONS)

@@ -1,0 +1,68 @@
+import unittest
+import torch
+import os
+import shutil
+from engine import DotParser, SimpleTokenizer, InfiniteMoETransformer, MergedDotDataset
+
+class TestEngine(unittest.TestCase):
+    def setUp(self):
+        self.test_dir = "test_data"
+        os.makedirs(self.test_dir, exist_ok=True)
+        self.file1 = os.path.join(self.test_dir, "test1.angeh")
+        self.file2 = os.path.join(self.test_dir, "test2.angeh")
+        
+        # Write dummy data
+        with open(self.file1, "w") as f:
+            f.write("hello world dot 1\n")
+            f.write('{"vector": [0.1, 0.9]}\n')
+            
+        with open(self.file2, "w") as f:
+            f.write("another test line\n")
+
+    def tearDown(self):
+        if os.path.exists(self.test_dir):
+            shutil.rmtree(self.test_dir)
+
+    def test_dot_parser(self):
+        parser = DotParser()
+        # Test plain text
+        self.assertEqual(parser.parse_line("hello world"), (["hello", "world"], None))
+        # Test JSON vector
+        self.assertEqual(parser.parse_line('{"vector": [1, 2]}'), (["1", "2"], [1.0, 2.0]))
+        # Test CSV-like
+        self.assertEqual(parser.parse_line("1, 2, 3.5"), (["1", "2", "3.5"], [1.0, 2.0, 3.5]))
+
+    def test_dataset_loading(self):
+        tokenizer = SimpleTokenizer()
+        dataset = MergedDotDataset([self.file1, self.file2], tokenizer, seq_len=4)
+        self.assertGreater(len(dataset), 0)
+        self.assertGreater(len(tokenizer.vocab), 5)
+
+    def test_model_forward(self):
+        vocab_size = 10
+        model = InfiniteMoETransformer(vocab_size=vocab_size, d_model=16, nhead=2, num_layers=1, num_experts=4)
+        src = torch.randint(0, vocab_size, (5, 2)) # (seq, batch)
+        out = model(src)
+        self.assertEqual(out.shape, (5, 2, vocab_size))
+
+    def test_dot_navigator(self):
+        # Create a dummy model and tokenizer
+        vocab_size = 20
+        model = InfiniteMoETransformer(vocab_size=vocab_size, d_model=16, nhead=2, num_layers=1, num_experts=4)
+        tokenizer = SimpleTokenizer()
+        tokenizer.build_vocab(["hello world vector test"])
+        
+        from engine import DotNavigator
+        nav = DotNavigator(model, tokenizer)
+        
+        # Index dummy files
+        nav.index_files([self.file1])
+        
+        # Search
+        # Since model is random, we just check it runs and returns something
+        res = nav.search("hello")
+        self.assertIsInstance(res, str)
+        self.assertNotEqual(res, "Index is empty.")
+
+if __name__ == "__main__":
+    unittest.main()

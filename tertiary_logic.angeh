@@ -1,0 +1,51 @@
+(def-module tertiary-logic
+  "Tertiary Logic: Balanced Ternary (-1, 0, 1) for Next-Gen Computation")
+
+(def-type Trit
+  (enum -1 0 1)) ; Balanced Ternary
+
+(def-fn trit-not (a)
+  "Balanced Ternary NOT: returns -a"
+  (* a -1))
+
+(def-fn trit-and (a b)
+  "Balanced Ternary AND (Min): returns minimum of a and b"
+  (if (< a b) a b))
+
+(def-fn trit-or (a b)
+  "Balanced Ternary OR (Max): returns maximum of a and b"
+  (if (> a b) a b))
+
+(def-fn trit-sum (a b)
+  "Balanced Ternary Half-Adder Sum"
+  (let ((val (+ a b)))
+    (cond
+      ((> val 1) -1)
+      ((< val -1) 1)
+      (else val))))
+
+(def-fn trit-carry (a b)
+  "Balanced Ternary Half-Adder Carry"
+  (let ((val (+ a b)))
+    (cond
+      ((> val 1) 1)
+      ((< val -1) -1)
+      (else 0))))
+
+(def-type TritRegister
+  (struct (
+    (data (array 0 0 0 0 0 0 0 0 0)) ; 9-trit register (approx 14 bits)
+  )))
+
+(def-fn print-trit (t)
+  (cond
+    ((= t 1) "+")
+    ((= t 0) "0")
+    ((= t -1) "-")))
+
+(export
+  trit-not
+  trit-and
+  trit-or
+  trit-sum
+  trit-carry)

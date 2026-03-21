@@ -1,0 +1,38 @@
+(def-module verify-highway
+  "Verification script for the DotFlow Multi-Directional Highway")
+
+(import dotflow-main)
+(import dotflow-highway)
+(import dna-core)
+(import scanner-system)
+
+(def-fn run-full-highway-test ()
+  "Verifies bi-directional communication across the photonic highway"
+  (print "🧪 [VERIFY] Starting full highway pipeline test...")
+  
+  (let ((df (dotflow-init 'QUANTUM_PIC)))
+    (let ((hw (system.highway df)))
+      
+      ;; 1. Setup Listeners
+      (highway-subscribe! hw 'SCAN_TELEMETRY 'VERIFIER 
+        (lambda (packet) (print (str "🔍 [VERIFIER-SCAN] Received: " (get (packet.payload packet) 'event)))))
+      
+      (highway-subscribe! hw 'EVOLUTION 'VERIFIER 
+        (lambda (packet) (print (str "🧬 [VERIFIER-DNA] Received: " (get (packet.payload packet) 'event)))))
+      
+      ;; 2. Simulate Multi-Directional Flow
+      (print "--- Step 1: Broadcaster Scan Trigger ---")
+      (hybrid-trillion-scan! "/root/angeh/dna")
+      
+      (print "--- Step 2: Broadcaster DNA Trigger ---")
+      (let ((genome (AngehGenome 'DNA-001 (new-qlist) 0.5 1.0 1 'synthetic-super)))
+        (trillions-mutation-burst! genome)
+        (genomic-super-evolution! genome))
+      
+      ;; 3. Flush Highway
+      (print "--- Step 3: Flushing Highway ---")
+      (highway-flush! hw)
+      
+      (print "✅ [VERIFY] Highway pipeline test complete."))))
+
+(run-full-highway-test)

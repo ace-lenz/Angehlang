@@ -1,0 +1,470 @@
+(def-module universe-os-kernel
+  "Universe OS Kernel - Reality Bridge for Angeh Reality Fabric
+   Physical world integration, sensor fusion, actuator control, and environmental modeling")
+
+(import type-system)
+(import collections)
+(import quantum-ai)
+(import concurrency)
+(import cryptography)
+
+;; ============================================================
+;; REALITY BRIDGE INTERFACE (RBI)
+;; ============================================================
+(def-type RealityBridge
+  (struct (
+    (bridge-id symbol)
+    (sensor-network (new-qhash-map))     ; sensor-id -> Sensor
+    (actuator-network (new-qhash-map))   ; actuator-id -> Actuator
+    (reality-model (new-qhash-map))      ; Entity models
+    (event-queue (new-queue))
+    (sync-frequency float)                ; Hz
+  )))
+
+(def-fn reality-bridge-new (sync-freq)
+  "Create new reality bridge"
+  (RealityBridge
+    (gensym 'rbridge)
+    (new-qhash-map)
+    (new-qhash-map)
+    (new-qhash-map)
+    (new-queue)
+    sync-freq))
+
+;; ============================================================
+;; SENSOR INTEGRATION FRAMEWORK
+;; ============================================================
+(def-type Sensor
+  (struct (
+    (sensor-id symbol)
+    (sensor-type symbol)  ; 'physical | 'biological | 'environmental | 'digital
+    (location vector3)     ; Physical location
+    (sampling-rate float)  ; Hz
+    (precision float)      ; Measurement precision
+   (calibration (new-qhash-map))
+    (last-reading any)
+    (reading-history (new-qlist))
+    (connected-dots (new-qset))  ; Dots that react to sensor
+  )))
+
+;; Physical Sensors
+(def-fn sensor-temperature-new (id location)
+  "Create temperature sensor"
+  (Sensor id 'physical location 1.0 0.1 (new-qhash-map) Nothing (new-qlist) (new-qset)))
+
+(def-fn sensor-motion-new (id location)
+  "Create motion/accelerometer sensor"
+  (Sensor id 'physical location 100.0 0.01 (new-qhash-map) Nothing (new-qlist) (new-qset)))
+
+(def-fn sensor-light-new (id location)
+  "Create light sensor"
+  (Sensor id 'physical location 10.0 1.0 (new-qhash-map) Nothing (new-qlist) (new-qset)))
+
+(def-fn sensor-pressure-new (id location)
+  "Create pressure sensor"
+  (Sensor id 'physical location 5.0 0.5 (new-qhash-map) Nothing (new-qlist) (new-qset)))
+
+;; Biological Sensors
+(def-fn sensor-heartrate-new (id location)
+  "Create heart rate sensor"
+  (Sensor id 'biological location 1.0 1.0 (new-qhash-map) Nothing (new-qlist) (new-qset)))
+
+(def-fn sensor-brainwave-new (id location)
+  "Create EEG/brainwave sensor"
+  (Sensor id 'biological location 256.0 0.001 (new-qhash-map) Nothing (new-qlist) (new-qset)))
+
+;; Environmental Sensors
+(def-fn sensor-airquality-new (id location)
+  "Create air quality sensor"
+  (Sensor id 'environmental location 0.1 1.0 (new-qhash-map) Nothing (new-qlist) (new-qset)))
+
+(def-fn sensor-humidity-new (id location)
+  "Create humidity sensor"
+  (Sensor id 'environmental location 1.0 0.5 (new-qhash-map) Nothing (new-qlist) (new-qset)))
+
+;; Digital Sensors
+(def-fn sensor-network-new (id)
+  "Create network traffic sensor"
+  (Sensor id 'digital (vector3 0 0 0) 1000.0 1.0 (new-qhash-map) Nothing (new-qlist) (new-qset)))
+
+(def-fn sensor-system-new (id)
+  "Create system metrics sensor"
+  (Sensor id 'digital (vector3 0 0 0) 10.0 1.0 (new-qhash-map) Nothing (new-qlist) (new-qset)))
+
+(def-fn sensor-read (sensor)
+  "Read current value from sensor"
+  (let ((reading (sensor-hardware-read (sensor.sensor-id sensor))))
+    ;; Apply calibration
+    (let ((calibrated (apply-calibration reading (sensor.calibration sensor))))
+      ;; Record in history
+      (qlist-add! (sensor.reading-history sensor) 
+                  (struct ((value calibrated) (timestamp (time-now)))))
+      (set! (sensor.last-reading sensor) calibrated)
+      calibrated)))
+
+(def-fn sensor-connect-dot! (sensor dot)
+  "Connect dot to react to sensor changes"
+  (qset-add! (sensor.connected-dots sensor) (dot.quantum-id dot)))
+
+;; ============================================================
+;; ACTUATOR CONTROL SYSTEM
+;; ============================================================
+(def-type Actuator
+  (struct (
+    (actuator-id symbol)
+    (actuator-type symbol)  ; 'motor | 'light | 'display | 'sound | 'network
+    (location vector3)
+    (current-state any)
+    (command-history (new-qlist))
+    (control-dots (new-qset))  ; Dots that control actuator
+    (safety-limits (new-qhash-map))
+  )))
+
+;; Physical Actuators
+(def-fn actuator-motor-new (id location)
+  "Create motor/servo actuator"  
+  (Actuator id 'motor location 0.0 (new-qlist) (new-qset) (new-qhash-map)))
+
+(def-fn actuator-light-new (id location)
+  "Create light/LED actuator"
+  (Actuator id 'light location (list 0 0 0) (new-qlist) (new-qset) (new-qhash-map)))
+
+(def-fn actuator-display-new (id location)
+  "Create display actuator"
+  (Actuator id 'display location Nothing (new-qlist) (new-qset) (new-qhash-map)))
+
+(def-fn actuator-sound-new (id location)
+  "Create sound/speaker actuator"
+  (Actuator id 'sound location 0.0 (new-qlist) (new-qset) (new-qhash-map)))
+
+;; Network Actuators
+(def-fn actuator-network-new (id)
+  "Create network actuator"
+  (Actuator id 'network (vector3 0 0 0) Nothing (new-qlist) (new-qset) (new-qhash-map)))
+
+(def-fn actuator-command (actuator command)
+  "Send command to actuator"
+  ;; Check safety limits
+  (when (actuator-safe-command? actuator command)
+    ;; Record command
+    (qlist-add! (actuator.command-history actuator)
+                (struct ((command command) (timestamp (time-now)))))
+    ;; Execute command on hardware
+    (actuator-hardware-execute (actuator.actuator-id actuator) command)
+    ;; Update state
+    (set! (actuator.current-state actuator) command)))
+
+(def-fn actuator-connect-dot! (actuator dot)
+  "Connect dot to control actuator"
+  (qset-add! (actuator.control-dots actuator) (dot.quantum-id dot)))
+
+;; ============================================================
+;; ENVIRONMENTAL INTERACTION
+;; ============================================================
+(def-type Environment
+  (struct (
+    (env-id symbol)
+    (physical-entities (new-qhash-map))  ; entity-id -> PhysicalEntity
+    (spatial-index (new-qhash-map))      ; Spatial partitioning
+    (time-model symbol)                   ; 'realtime | 'accelerated | 'custom
+    (physics-enabled bool)
+  )))
+
+(def-type PhysicalEntity
+  (struct (
+    (entity-id symbol)
+    (position vector3)
+    (velocity vector3)
+    (acceleration vector3)
+    (mass float)
+    (properties (new-qhash-map))
+    (linked-dot symbol)  ; Quantum dot representation
+  )))
+
+(def-fn environment-new ()
+  "Create new environment"
+  (Environment
+    (gensym 'env)
+    (new-qhash-map)
+    (new-qhash-map)
+    'realtime
+    true))
+
+(def-fn environment-add-entity! (env entity)
+  "Add physical entity to environment"
+  (qhash-set! (env.physical-entities env) (entity.entity-id entity) entity)
+  ;; Update spatial index
+  (environment-update-spatial-index! env entity))
+
+(def-fn environment-update! (env delta-time)
+  "Update environment physics"
+  (when (env.physics-enabled env)
+    (for-each entity-id (qhash-keys (env.physical-entities env))
+      (match (qhash-get (env.physical-entities env) entity-id)
+        ((Some entity)
+          (environment-update-entity-physics! env entity delta-time))
+        (Nothing (void))))))
+
+(def-fn environment-update-entity-physics! (env entity dt)
+  "Update entity physics"
+  ;; Update velocity from acceleration
+  (set! (entity.velocity entity)
+        (vector3-add (entity.velocity entity)
+                    (vector3-scale (entity.acceleration entity) dt)))
+  ;; Update position from velocity
+  (set! (entity.position entity)
+        (vector3-add (entity.position entity)
+                    (vector3-scale (entity.velocity entity) dt)))
+  ;; Update spatial index
+  (environment-update-spatial-index! env entity))
+
+(def-fn environment-update-spatial-index! (env entity)
+  "Update spatial partitioning"
+  (let ((grid-cell (position-to-grid-cell (entity.position entity))))
+    (qhash-set! (env.spatial-index env) grid-cell
+                (cons (entity.entity-id entity)
+                      (qhash-get-or (env.spatial-index env) grid-cell (list))))))
+
+(def-fn environment-query-region (env min-pos max-pos)
+  "Query entities in spatial region"
+  (let ((results (new-qlist)))
+    (for-each entity-id (qhash-keys (env.physical-entities env))
+      (match (qhash-get (env.physical-entities env) entity-id)
+        ((Some entity)
+          (when (position-in-box? (entity.position entity) min-pos max-pos)
+            (qlist-add! results entity)))
+        (Nothing (void))))
+    results))
+
+;; ============================================================
+;; PHYSICAL WORLD MODELING
+;; ============================================================
+(def-type PhysicsSimulation
+  (struct (
+    (sim-id symbol)
+    (gravity vector3)
+    (air-resistance float)
+    (collision-enabled bool)
+    (constraints (new-qlist))
+  )))
+
+(def-fn physics-sim-new ()
+  "Create physics simulation"
+  (PhysicsSimulation
+    (gensym 'physics)
+    (vector3 0.0 -9.81 0.0)  ; Earth gravity
+    0.01
+    true
+    (new-qlist)))
+
+(def-fn physics-apply-forces! (sim entities dt)
+  "Apply forces to all entities"
+  (for-each entity entities
+    ;; Apply gravity
+    (let ((gravity-force (vector3-scale (sim.gravity sim) (entity.mass entity))))
+      (set! (entity.acceleration entity)
+            (vector3-scale gravity-force (/ 1.0 (entity.mass entity)))))
+    
+    ;; Apply air resistance
+    (let ((drag-force (vector3-scale (entity.velocity entity) 
+                                    (- (sim.air-resistance sim)))))
+      (set! (entity.acceleration entity)
+            (vector3-add (entity.acceleration entity)
+                        (vector3-scale drag-force (/ 1.0 (entity.mass entity))))))))
+
+(def-fn physics-detect-collisions (sim entities)
+  "Detect collisions between entities"
+  (let ((collisions (new-qlist)))
+    (for-each i (range 0 (len entities))
+      (for-each j (range (+ i 1) (len entities))
+        (let ((e1 (get entities i))
+              (e2 (get entities j)))
+          (when (entities-colliding? e1 e2)
+            (qlist-add! collisions (list e1 e2))))))
+    collisions))
+
+(def-fn physics-resolve-collision! (e1 e2)
+  "Resolve collision between two entities"
+  ;; Simple elastic collision
+  (let ((v1 (entity.velocity e1))
+        (v2 (entity.velocity e2))
+        (m1 (entity.mass e1))
+        (m2 (entity.mass e2)))
+    (let ((new-v1 (vector3-scale
+                   (vector3-add (vector3-scale v1 (- m1 m2))
+                               (vector3-scale v2 (* 2.0 m2)))
+                   (/ 1.0 (+ m1 m2))))
+          (new-v2 (vector3-scale
+                   (vector3-add (vector3-scale v2 (- m2 m1))
+                               (vector3-scale v1 (* 2.0 m1)))
+                   (/ 1.0 (+ m1 m2)))))
+      (set! (e1.velocity e1) new-v1)
+      (set! (e2.velocity e2) new-v2))))
+
+;; ============================================================
+;; AR/VR REALITY MODIFIERS
+;; ============================================================
+(def-type AROverlay
+  (struct (
+    (overlay-id symbol)
+    (virtual-entities (new-qhash-map))
+    (anchor-points (new-qlist))
+    (rendering-mode symbol)  ; 'ar | 'vr | 'mr
+  )))
+
+(def-fn ar-overlay-new (mode)
+  "Create AR/VR overlay"
+  (AROverlay
+    (gensym 'ar)
+    (new-qhash-map)
+    (new-qlist)
+    mode))
+
+(def-fn ar-add-virtual-entity! (overlay entity world-pos)
+  "Add virtual entity to overlay"
+  (qhash-set! (overlay.virtual-entities overlay) 
+              (entity.entity-id entity)
+              entity)
+  (qlist-add! (overlay.anchor-points overlay)
+              (struct ((entity-id (entity.entity-id entity))
+                      (position world-pos)))))
+
+(def-fn ar-render-frame (overlay camera-pose)
+  "Render AR frame from camera pose"
+  (let ((visible-entities (new-qlist)))
+    ;; Determine visible entities
+    (for-each entity-id (qhash-keys (overlay.virtual-entities overlay))
+      (match (qhash-get (overlay.virtual-entities overlay) entity-id)
+        ((Some entity)
+          (when (entity-visible-from-pose? entity camera-pose)
+            (qlist-add! visible-entities entity)))
+        (Nothing (void))))
+    ;; Return rendering commands
+    (map (fn (e) (entity-to-render-command e camera-pose)) 
+         (qlist->list visible-entities))))
+
+;; ============================================================
+;; DOT-REALITY SYNCHRONIZATION
+;; ============================================================
+(def-fn sync-dot-to-reality! (dot sensor actuator)
+  "Create bidirectional sync between dot and reality"
+  ;; Sensor -> Dot
+  (sensor-connect-dot! sensor dot)
+  (let ((reading (sensor-read sensor)))
+    ;; Update dot content based on sensor
+    (set! (dot.content dot) reading))
+  
+  ;; Dot -> Actuator
+  (actuator-connect-dot! actuator dot)
+  (actuator-command actuator (dot.content dot)))
+
+(def-fn reality-event-loop (bridge update-fn)
+  "Main reality event loop"
+  (while true
+    ;; Read all sensors
+    (for-each sensor-id (qhash-keys (bridge.sensor-network bridge))
+      (match (qhash-get (bridge.sensor-network bridge) sensor-id)
+        ((Some sensor)
+          (let ((reading (sensor-read sensor)))
+            ;; Notify connected dots
+            (for-each dot-id (qset->list (sensor.connected-dots sensor))
+              (queue-enqueue! (bridge.event-queue bridge)
+                            (struct ((type 'sensor-update)
+                                   (sensor sensor-id)
+                                   (dot dot-id)
+                                   (value reading)))))))
+        (Nothing (void))))
+    
+    ;; Process events
+    (while (not (queue-empty? (bridge.event-queue bridge)))
+      (let ((event (queue-dequeue! (bridge.event-queue bridge))))
+        (update-fn event)))
+    
+    ;; Sleep based on sync frequency
+    (sleep (/ 1.0 (bridge.sync-frequency bridge)))))
+
+;; ============================================================
+;; UTILITY FUNCTIONS
+;; ============================================================
+(def-fn vector3 (x y z)
+  "Create 3D vector"
+  (list x y z))
+
+(def-fn vector3-add (v1 v2)
+  "Add two vectors"
+  (list (+ (car v1) (car v2))
+        (+ (cadr v1) (cadr v2))
+        (+ (caddr v1) (caddr v2))))
+
+(def-fn vector3-scale (v s)
+  "Scale vector"
+  (list (* (car v) s)
+        (* (cadr v) s)
+        (* (caddr v) s)))
+
+(def-fn sensor-hardware-read (sensor-id)
+  "Read from physical sensor hardware"
+  0.0)
+
+(def-fn apply-calibration (reading calibration)
+  "Apply calibration to reading"
+  reading)
+
+(def-fn actuator-safe-command? (actuator command)
+  "Check if command is within safety limits"
+  true)
+
+(def-fn actuator-hardware-execute (actuator-id command)
+  "Execute command on actuator hardware"
+  (void))
+
+(def-fn position-to-grid-cell (pos)
+  "Convert position to grid cell"
+  (gensym 'cell))
+
+(def-fn qhash-get-or (map key default)
+  "Get from hash map with default"
+  (match (qhash-get map key)
+    ((Some v) v)
+    (Nothing default)))
+
+(def-fn position-in-box? (pos min-pos max-pos)
+  "Check if position is in bounding box"
+  true)
+
+(def-fn entities-colliding? (e1 e2)
+  "Check if two entities are colliding"
+  false)
+
+(def-fn entity-visible-from-pose? (entity pose)
+  "Check if entity is visible from camera pose"
+  true)
+
+(def-fn entity-to-render-command (entity pose)
+  "Convert entity to render command"
+  (struct ((entity-id (entity.entity-id entity))
+          (position (entity.position entity)))))
+
+;; Export public API
+(export
+  ;; Reality Bridge
+  reality-bridge-new
+  ;; Sensors
+  sensor-temperature-new sensor-motion-new sensor-light-new
+  sensor-pressure-new sensor-heartrate-new sensor-brainwave-new
+  sensor-airquality-new sensor-humidity-new sensor-network-new
+  sensor-system-new sensor-read sensor-connect-dot!
+  ;; Actuators
+  actuator-motor-new actuator-light-new actuator-display-new
+  actuator-sound-new actuator-network-new actuator-command
+  actuator-connect-dot!
+  ;; Environment
+  environment-new environment-add-entity! environment-update!
+  environment-query-region
+  ;; Physics
+  physics-sim-new physics-apply-forces! physics-detect-collisions
+  physics-resolve-collision!
+  ;; AR/VR
+  ar-overlay-new ar-add-virtual-entity! ar-render-frame
+  ;; Synchronization
+  sync-dot-to-reality! reality-event-loop)

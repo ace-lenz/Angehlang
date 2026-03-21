@@ -1,0 +1,80 @@
+// AGI Readiness Dataset
+// Version: 1.0
+// Description: Patterns for Artificial General Intelligence, reasoning, and self-reflection
+
+dot agi_config {
+  level: "proto_agi",
+  reasoning_depth: "infinite",
+  autonomy: "supervised"
+}
+
+// Cognitive Architectures
+dot cognitive_arch {
+  global_workspace: {
+    working_memory: "attention_based",
+    broadcast: "global_access",
+    modules: ["perception", "motor", "memory", "value"]
+  },
+  
+  sparse_modular: {
+    experts: 1000,
+    routing: "top_k",
+    specialization: "dynamic"
+  },
+  
+  predictive_processing: {
+    hierarchy: "bidirectional",
+    error_minimization: "free_energy_principle",
+    active_inference: true
+  }
+}
+
+// Reasoning Patterns
+dot reasoning {
+  chain_of_thought: {
+    steps: "adaptive",
+    verification: "self_consistency",
+    branching: "tree_of_thoughts"
+  },
+  
+  causal_reasoning: {
+    intervention: "do_calculus",
+    counterfactuals: true,
+    structure_learning: "dag_discovery"
+  },
+  
+  analogy_making: {
+    mapping: "structure_mapping_engine",
+    abstraction: "high_level",
+    transfer: "zero_shot"
+  }
+}
+
+// Self-Improvement
+dot self_improvement {
+  recursive_optimization: {
+    target: "code_generation",
+    verifier: "formal_proof",
+    iteration: "continuous"
+  },
+  
+  curriculum_learning: {
+    difficulty: "adaptive",
+    diversity: "maximized",
+    scaffolding: "automated"
+  },
+  
+  meta_learning: {
+    inner_loop: "sgd",
+    outer_loop: "evolutionary",
+    plasticity: "hebbian"
+  }
+}
+
+// World Modeling
+dot world_model {
+  physics_engine: "differentiable",
+  social_simulation: "multi_agent",
+  temporal_prediction: "long_horizon",
+  uncertainty: "epistemic"
+}

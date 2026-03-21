@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Temporary Build Artifacts
+*.o
+*.out
+*.exe
+*.dll
+*.so
+
+# Environment
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Logs and Debug
+*.log
+*.txt
+!README.txt
+!LICENSE.txt

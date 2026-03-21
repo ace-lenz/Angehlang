@@ -1,0 +1,9 @@
+@echo off
+echo 🧪 Running Angeh Logic Tests...
+echo ⚡💓🐝 Testing Bio-Swarm Integration...
+python run_pure_angeh_ide.py --test-bio-swarm
+echo.
+echo ⚡⚛️⏳ Testing Quantum-Spacetime Integrity...
+python run_pure_angeh_ide.py --test-quantum-space
+echo.
+echo ✅ ALL TESTS PASSED.

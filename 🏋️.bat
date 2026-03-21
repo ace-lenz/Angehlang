@@ -1,0 +1,41 @@
+"""
+📚 UNIVERSAL EMOJI LIBRARY (v1.0)
+Standard Reference for AngehLang Symbolic Operators.
+"""
+
+# STARTUP
+# 🚀 : Launch IDE
+
+# CORE ENGINES
+# 🔌 : MCP Connect
+# 🌟 : AGI Wisdom
+# 📚 : RAG Lookup
+# 🧊 : 3D Render
+# 💓 : Bio Heartbeat
+# 🐝 : Swarm Dispatch
+# ✨ : Optimize
+# 💰 : Financial Army (77D Exclusive)
+
+# MATH & LOGIC
+# ➕ : Add
+# ➖ : Subtract
+# ✖️ : Multiply
+# ➗ : Divide
+# ❓ : Query
+# ❗ : Assert
+
+# FILES & NET
+# 📂 : Open Root
+# ☁️ : Cloud Sync
+# 🔒 : Encrypt
+
+# WORKFLOW
+# 📑 : Shift Page
+# 🌐 : Add Web
+# ƒ  : Function
+# 🏋️ : Train System
+
+# EXECUTION
+# ⚡ : Run
+# ⚛️ : Quantum Mode
+# 👻 : Shadow Mode (Hidden)

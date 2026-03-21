@@ -1,0 +1,51 @@
+;; ===========================================================================
+;; Angehlang Core Standard Library
+;; Foundational utilities available in every program.
+;; Import with: (import core)
+;; Created by: Longbian Lennon
+;; ===========================================================================
+
+(def-module core)
+
+;; ── Type Predicates ────────────────────────────────────────────────────────
+(def-fn number?   (x) (is-number? x))
+(def-fn string?   (x) (is-string? x))
+(def-fn list?     (x) (is-list? x))
+(def-fn null?     (x) (is-null? x))
+(def-fn boolean?  (x) (is-boolean? x))
+(def-fn callable? (x) (is-procedure? x))
+
+;; ── Logic Helpers ──────────────────────────────────────────────────────────
+(def-fn identity (x) x)
+(def-fn always   (x) (lambda (_) x))
+(def-fn negate?  (f) (lambda (x) (not (f x))))
+
+;; ── Math Shortcuts ─────────────────────────────────────────────────────────
+(def-fn inc (x) (+ x 1))
+(def-fn dec (x) (- x 1))
+(def-fn square   (x) (* x x))
+(def-fn cube     (x) (* x x x))
+(def-fn abs-val  (x) (if (< x 0) (- 0 x) x))
+(def-fn clamp (v lo hi)
+  (cond
+    ((< v lo) lo)
+    ((> v hi) hi)
+    (else v)))
+
+;; ── List Utilities ─────────────────────────────────────────────────────────
+(def-fn head  (lst)     (first lst))
+(def-fn tail  (lst)     (rest lst))
+(def-fn empty? (lst)    (null? lst))
+(def-fn length (lst)    (len lst))
+(def-fn second (lst)    (first (rest lst)))
+(def-fn third  (lst)    (first (rest (rest lst))))
+(def-fn last   (lst)    (get lst (- (len lst) 1)))
+
+;; ── Composition ────────────────────────────────────────────────────────────
+(def-fn compose (f g)   (lambda (x) (f (g x))))
+(def-fn pipe    (x f)   (f x))
+
+;; ── IO Helpers ─────────────────────────────────────────────────────────────
+(def-fn println (x)        (print x))
+(def-fn print-line (label val)
+  (print (string-append label ": " (string val))))

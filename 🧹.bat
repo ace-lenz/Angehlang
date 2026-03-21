@@ -1,0 +1,3 @@
+@echo off
+echo 🚀 Launching Angeh Quantum IDE...
+python run_pure_angeh_ide.py %*

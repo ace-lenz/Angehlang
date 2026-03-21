@@ -1,0 +1,70 @@
+{
+  "multi_agent_dataset": {
+    "version": "1.0",
+    "description": "Comprehensive dataset for Multi-Agent Systems, AI Orchestration, and Collaborative Intelligence mapped to Angeh Lang dot patterns",
+    "core_concepts": {
+      "agent": "🤖👤 (Robot person) - Autonomous AI entity",
+      "multi_agent_system": "🤖🤖🤖 (Multiple robots) - Collaborative agent network",
+      "orchestration": "🎼🤖 (Sheet robot) - Coordinating agent actions",
+      "delegation": "📤🤖 (Outbox robot) - Task distribution",
+      "consensus": "🤝🤖 (Handshake robot) - Agreement protocol"
+    },
+    "agent_types": {
+      "dataset_curator": "📚🔍 (Book search) - Scan, parse, enrich datasets",
+      "model_selector": "🎯🧠 (Target brain) - Choose optimal AI model",
+      "verification_agent": "✅🔍 (Check search) - Validate outputs",
+      "orchestrator": "🎼📊 (Sheet chart) - Coordinate workflows",
+      "knowledge_synthesizer": "📚🧠 (Book brain) - Aggregate insights",
+      "self_reflection_agent": "🪞🤖 (Mirror robot) - Analyze and optimize",
+      "code_generator": "💻✨ (Computer sparkle) - Generate code",
+      "debugger_agent": "🐛🔧 (Bug tool) - Fix issues",
+      "research_agent": "🔬📖 (Lab book) - Gather information",
+      "planning_agent": "🗺️📝 (Map write) - Create strategies"
+    },
+    "communication_protocols": {
+      "json_rpc": "📦🔗 (Container link) - JSON-RPC messaging",
+      "message_passing": "📬🤖 (Mailbox robot) - Async communication",
+      "shared_memory": "💾🤝 (Storage handshake) - Shared state",
+      "event_driven": "⚡📬 (Lightning mailbox) - Event triggers",
+      "pub_sub": "📡📬 (Dish mailbox) - Publish-subscribe"
+    },
+    "orchestration_patterns": {
+      "hierarchical": "🌳🤖 (Tree robot) - Top-down delegation",
+      "peer_to_peer": "🤖↔️🤖 (Robot bidirectional robot) - Equal collaboration",
+      "swarm": "🐝🤖 (Bee robot) - Emergent behavior",
+      "pipeline": "➡️🤖➡️ (Arrow robot arrow) - Sequential processing",
+      "blackboard": "🖼️🤖 (Board robot) - Shared workspace"
+    },
+    "agent_frameworks": {
+      "autogen": "🤖🏭 (Robot factory) - Microsoft AutoGen",
+      "crewai": "👥🚢 (People ship) - CrewAI role-playing",
+      "langchain_agents": "🔗🤖 (Link robot) - LangChain agents",
+      "openai_assistants": "🤖💬 (Robot chat) - OpenAI Assistants API",
+      "semantic_kernel": "🧠🔗 (Brain link) - Microsoft Semantic Kernel",
+      "agency_swarm": "🐝🏢 (Bee building) - Agency Swarm",
+      "camel": "🐫🤖 (Camel robot) - CAMEL framework"
+    },
+    "capabilities": {
+      "tool_use": "🔧🤖 (Tool robot) - Using external tools",
+      "function_calling": "📞🤖 (Phone robot) - Calling functions",
+      "memory": "💾🤖 (Storage robot) - Long-term context",
+      "planning": "🗺️🤖 (Map robot) - Multi-step planning",
+      "reflection": "🪞🤖 (Mirror robot) - Self-evaluation",
+      "learning": "📚🤖 (Book robot) - Continuous improvement"
+    },
+    "coordination_strategies": {
+      "task_decomposition": "✂️📋 (Scissors list) - Break down complex tasks",
+      "load_balancing": "⚖️🤖 (Balance robot) - Distribute workload",
+      "conflict_resolution": "🤝⚔️ (Handshake sword) - Handle disagreements",
+      "result_aggregation": "📊📦 (Chart container) - Combine outputs",
+      "retry_backoff": "🔄⏱️ (Cycle timer) - Handle failures gracefully"
+    },
+    "use_cases": {
+      "code_review": "👀💻 (Eye computer) - Multi-agent code review",
+      "research_synthesis": "🔬📊 (Lab chart) - Collaborative research",
+      "customer_support": "👥💬 (People chat) - Agent-based support",
+      "data_processing": "📊🔄 (Chart cycle) - Parallel data handling",
+      "creative_generation": "🎨🤖 (Paint robot) - Collaborative creation"
+    }
+  }
+}

@@ -1,0 +1,36 @@
+"""
+🚀 Angeh Quantum Dot IDE - Main Entry Point
+Pure .angeh | Replaces React/TypeScript setup
+"""
+
+IMPORT angeh_web_framework AS web
+IMPORT angeh_styling AS style
+IMPORT ultimate_angeh_ide AS ide
+
+# Main Application Bootstrap
+MAIN {
+    # Initialize Web Framework
+    web.initialize({
+        target: "#root",
+        theme: "quantum-dark",
+        enable_hot_reload: TRUE,
+        quantum_optimization: TRUE
+    })
+    
+    # Create and render the IDE
+    app = ide.LIVE_MULTIMODAL_IDE.UI_LAYOUT()
+    
+    # Mount to DOM
+    web.render(app, target: "#root")
+    
+    # Console output
+    PRINT("🚀 Angeh Quantum Dot IDE Initialized!")
+    PRINT("✅ Running on pure .angeh (No TypeScript needed)")
+    PRINT("⚡ Quantum optimization: ACTIVE")
+    PRINT("🌐 Multi-modal live processing: READY")
+}
+
+# Strict Mode Wrapper
+STRICT_MODE {
+    MAIN()
+}

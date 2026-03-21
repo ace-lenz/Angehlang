@@ -1,33 +1,22 @@
-;; ===========================================================================
-;; Angehlang DotFlow A2A v2
-;; Agent-to-Agent communication primitives.
-;; Created by Longbian Lennon
-;; ===========================================================================
+(def-module math)
 
-(def-module dotflow-a2a)
+(def sin math.sin)
+(def cos math.cos)
+(def tan math.tan)
+(def asin math.asin)
+(def acos math.acos)
+(def atan math.atan)
+(def sqrt math.sqrt)
+(def log math.log)
+(def exp math.exp)
+(def pi math.pi)
+(def e math.e)
+(def pow math.pow)
+(def floor math.floor)
+(def ceil math.ceil)
+(def abs math.abs)
 
-;; Send a targeted message from the current agent to a specific target.
-(def-fn a2a-send (target message)
-  (a2a-broadcast message target "USER"))
-
-;; Broadcast a message to ALL active agents in the swarm.
-(def-fn a2a-yell (message)
-  (a2a-broadcast message "ALL" "SYSTEM"))
-
-;; Broadcast with a custom named sender identity.
-;; Usage: (a2a-announce "OmniBrain" "Initialization complete.")
-(def-fn a2a-announce (sender message)
-  (a2a-broadcast message "ALL" sender))
-
-;; Send a message to a target and immediately query its response.
-;; Creates a synchronous request-reply pattern over the A2A bus.
-(def-fn a2a-ask (target message)
-  (begin
-    (a2a-send target message)
-    (agent-ask target message)))
-
-;; Broadcast then collect responses from all agents.
-(def-fn a2a-roundtable (topic agents)
-  (begin
-    (a2a-yell (concat "Roundtable topic: " topic))
-    (map (lambda (agent) (agent-ask agent topic)) agents)))
+(export
+  sin cos tan asin acos atan
+  sqrt log exp pi e pow
+  floor ceil abs)

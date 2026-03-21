@@ -1,0 +1,48 @@
+{
+  "memory_systems_dataset": {
+    "version": "1.0",
+    "description": "Dataset for AI Memory Systems, Context Management, and Knowledge Retention mapped to Angeh Lang dot patterns",
+    "core_concepts": {
+      "memory": "💾🧠 (Storage brain) - Information retention",
+      "context_window": "📦💬 (Container chat) - Active memory",
+      "long_term_memory": "💾♾️ (Storage infinity) - Persistent storage",
+      "working_memory": "📝🧠 (Write brain) - Active processing",
+      "episodic_memory": "📅🧠 (Calendar brain) - Event memories"
+    },
+    "memory_architectures": {
+      "memgpt": "💾🤖 (Storage robot) - MemGPT system",
+      "rag_memory": "📚💾 (Book storage) - Retrieval memory",
+      "vector_store": "🔢💾 (Number storage) - Embedding database",
+      "graph_memory": "🕸️💾 (Web storage) - Knowledge graph",
+      "hierarchical": "🌳💾 (Tree storage) - Layered memory"
+    },
+    "retrieval_methods": {
+      "semantic_search": "🔍🧠 (Search brain) - Meaning-based retrieval",
+      "keyword_search": "🔍📝 (Search write) - Term matching",
+      "hybrid_search": "🔍🔗 (Search link) - Combined approaches",
+      "reranking": "📊🔄 (Chart cycle) - Score refinement",
+      "mmr": "📊🎯 (Chart target) - Maximal marginal relevance"
+    },
+    "vector_databases": {
+      "pinecone": "🌲💾 (Pine storage) - Pinecone",
+      "weaviate": "🕸️💾 (Web storage) - Weaviate",
+      "chroma": "🎨💾 (Paint storage) - Chroma",
+      "qdrant": "⚡💾 (Lightning storage) - Qdrant",
+      "milvus": "🏛️💾 (Temple storage) - Milvus"
+    },
+    "context_management": {
+      "sliding_window": "📦🔄 (Container cycle) - Moving context",
+      "compression": "📦📉 (Container down) - Reduce size",
+      "summarization": "📝📉 (Write down) - Condense content",
+      "attention_sinks": "👀📍 (Eye location) - Stable attention",
+      "infinite_context": "📦♾️ (Container infinity) - Unlimited context"
+    },
+    "knowledge_management": {
+      "knowledge_graph": "🕸️📚 (Web book) - Structured knowledge",
+      "fact_storage": "✅📚 (Check book) - Verified facts",
+      "belief_update": "🔄💭 (Cycle thought) - Update beliefs",
+      "forgetting": "🗑️💾 (Trash storage) - Remove old info",
+      "consolidation": "📦🔗 (Container link) - Merge memories"
+    }
+  }
+}

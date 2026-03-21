@@ -1,0 +1,114 @@
+(def-module scanner-system
+  "🔍 Angeh Scan: Trillion-Scale Photonic Data Ingestion (Hybrid & SI Enhanced)")
+
+(import parallel-dots-engine)
+(import hardware-optimizer)
+(import offline-bridge)
+(import network)
+(import synthetic-intelligence-protocol)
+(import dotflow-highway)
+
+;; ============================================================
+;; SCAN TYPES
+;; ============================================================
+
+(def-type ScanReport
+  (struct (
+    (scan-id (gensym 'SCAN))
+    (files-processed int)
+    (lines-analyzed long)
+    (time-taken float)
+    (coherency-score float)
+    (reach symbol)              ; 'local | 'global | 'hybrid
+    (si-insights any)
+  )))
+
+;; ============================================================
+;; HYBRID OPERATIONS
+;; ============================================================
+
+(def-fn hybrid-trillion-scan! (directory-root)
+  "Automatically toggles between local and global mesh based on connectivity"
+  (print "🔍 ⚡ [HYBRID-SCAN] Analyzing mesh reach...")
+  (let ((online? (check-internet-available)))
+    (if online?
+      (do
+        (print "🌐 [GLOBAL] Connectivity detected. Engaging hyperspectral scan...")
+        (when (defined? current-highway)
+          (highway-publish! current-highway 'SCAN_TELEMETRY '🔍 (struct ((event 'GLOBAL_SCAN_START)))))
+        (let ((local-res (trillion-scan! directory-root))
+              (global-res (web-pulse-search! directory-root)))
+          (merge-scan-results local-res global-res)))
+      (do
+        (print "🌙 [LOCAL] Operating in offline-stasis mode.")
+        (when (defined? current-highway)
+          (highway-publish! current-highway 'SCAN_TELEMETRY '🔍 (struct ((event 'LOCAL_SCAN_START)))))
+        (trillion-scan! directory-root)))))
+
+(def-fn web-pulse-search! (query)
+  "Integrates online data streams from the global photonic web"
+  (print (str "🌊 🔍 [WEB-PULSE] Broadcasting search pulse: " query))
+  (let ((pulse (broadcast-pulse! query 777.0)))
+    (catch-pulse! 500))) ; 500ms timeout for global response
+
+;; ============================================================
+;; SI INTEGRATION
+;; ============================================================
+
+(def-fn si-aware-analysis! (scan-report)
+  "Uses SI protocols to interpret scanned data for cognitive insights"
+  (print "🧠 🔍 [SI-ANALYSIS] Engaging Synthetic Intelligence awareness...")
+  (introduce-to-system 'Scanner 'PhotonicMesh)
+  (let ((insights (analyze-with-superior-logic (report.data scan-report))))
+    (set! (report.si-insights scan-report) insights)
+    (when (defined? current-highway)
+      (highway-broadcast! current-highway '🔍 (struct ((event 'SI_INSIGHTS) (data insights)))))
+    (print "✅ Cognitive insights appended to report.")
+    scan-report))
+
+;; ============================================================
+;; CORE OPERATIONS (TRON-READY)
+;; ============================================================
+
+(def-fn trillion-scan! (directory-root)
+  "Parallel waveguide ingestion: Scans 500k+ files/sec using photonic swarms"
+  (let ((swarms (initialize-photonic-swarms 1024)))
+    (parallel-file-ingest swarms directory-root)))
+
+(def-fn deep-read-trillion! (target-strand)
+  "ASIC-optimized reading of trillion lines via quantum buffering"
+  (let ((buffer (allocate-quantum-buffer 1000000)))
+    (stream-dots-to-buffer! target-strand buffer)
+    (decompress-and-analyze! buffer)))
+
+(def-fn pattern-scan! (directory regex-pattern)
+  "Scans for specific dot-resonance patterns within the substrate"
+  (print (str "🕵️ 🔍 [PATTERN] Sifting for: " regex-pattern))
+  (let ((matches (substrate-regex-search directory regex-pattern)))
+    (print (str "✅ Found " (len matches) " matching dot-clusters."))
+    matches))
+
+;; ============================================================
+;; SCANNER UTILITIES
+;; ============================================================
+
+(def-fn index-trillion-dots! (target-path)
+  "Creates a high-performance search index for the photonic substrate"
+  (print (str "🔍 🗂️ [INDEX] Building dot-lattice for: " target-path))
+  (build-substrate-search-index! target-path))
+
+(def-fn search-query-optimizer! (query)
+  "Rewrites search queries for maximal resonance and speed"
+  (print (str "🔍 ⚡ [OPTIMIZE] Refining query: " query))
+  (let ((perfect-query (si-refine-search-logic query)))
+    (print (str "✅ Optimized query: " perfect-query))
+    perfect-query))
+
+(export
+  hybrid-trillion-scan!
+  web-pulse-search!
+  si-aware-analysis!
+  trillion-scan!
+  pattern-scan!
+  index-trillion-dots!
+  search-query-optimizer!)

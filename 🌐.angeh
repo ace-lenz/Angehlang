@@ -1,0 +1,50 @@
+(def-module global-web-container
+  "🌐 Angeh Global Web: Native 10000x Container")
+
+(import angeh-web-10000x)
+(import vscode-theme)
+
+(def-fn inject-web-layer! ()
+  (print "🌐 [🌐.angeh] INJECTING NATIVE WEB LAYER...")
+  (let ((root (pdom-create-element "div" (qhash-map "id" "angeh-root") (list))))
+    (apply-quantum-style! root 
+      (QuantumStyle 0.85 (list 0.0 255.0 255.0) 1.2 77))
+    (print "✅ Native Web Container is active in the Photonic Fabric.")))
+
+(def-fn render-ui (component)
+  (print "✨ Rendering UI Component via Photonic DOM Strands...")
+  (entangled-exec (list (lambda () (print "Render slide A..."))
+                        (lambda () (print "Render slide B...")))))
+
+(def-fn update-pdom-state! (element-id new-props)
+  "Updates a DOM element with sub-femtosecond reactivity"
+  (print (str "🔄 🌐 [REACTIVE] Updating element: " element-id))
+  (let ((target (pdom-get-element-by-id element-id)))
+    (pdom-set-attributes! target new-props)
+    (print "✅ Waveguide state synchronized with UI.")))
+
+;; ============================================================
+;; WEB UTILITIES
+;; ============================================================
+
+(def-fn pdom-inspector! ()
+  "Dumps the current Photonic DOM structure for debugging"
+  (print "🌐 🔍 [INSPECT] Capturing PDOM state...")
+  (pdom-get-full-tree))
+
+(def-fn liquid-theme-builder! (base-color)
+  "Generates a full CSS/Angeh resonance profile from a single color"
+  (print (str "🎨 🌐 [THEME] Synthesizing liquid aesthetics from: " base-color))
+  (let ((palette (generate-complementary-waves base-color)))
+    (struct ((bg (palette.dark palette))
+             (accent (palette.glow palette))
+             (blur "20px glassmorphism")))))
+
+(inject-web-layer!)
+
+(export
+  inject-web-layer!
+  update-pdom-state!
+  pdom-inspector!
+  liquid-theme-builder!
+  render-ui)

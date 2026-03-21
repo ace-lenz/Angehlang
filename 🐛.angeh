@@ -1,0 +1,84 @@
+(def-module bugs-system
+  "🐛 Angeh Bugs & Parasites: Photonic Fabric Debugger")
+
+(import type-system)
+(import collections)
+(import error-handler)
+
+;; ============================================================
+;; BUG ENTITY TYPES
+;; ============================================================
+
+(def-type BugState
+  (struct (
+    (bug-id (gensym 'BUG))
+    (species symbol)             ; 'RACE_CONDITION | 'MEMORY_LEAK | 'HEISENBUG
+    (severity float)             ; 0.0 to 1.0 (FATAL)
+    (location-strand symbol)     ; The photonic waveguide ID
+    (detected-at int)            ; Timestamp
+    (is-healed bool)
+  )))
+
+(def-type Insecticide
+  (struct (
+    (potency float)
+    (target-species (list symbol))
+    (composition str)
+  )))
+
+;; ============================================================
+;; SCANNING & DETECTION
+;; ============================================================
+
+(def-fn insect-scan! (waveguide-id)
+  "Scans a specific waveguide for parasitic dots that degrade coherency"
+  (print (str "🔍 🐛 [SCAN] Searching for infestations in strand: " waveguide-id))
+  (let ((coherency (check-strand-coherency waveguide-id)))
+    (if (< coherency 0.95)
+      (do
+        (print "⚠️  Parasitic activity detected! Species: HEISENBUG")
+        (BugState (gensym 'BUG) 'HEISENBUG 0.7 waveguide-id (time-now) false))
+      (do
+        (print "✅ Strand is pest-free.")
+        nil))))
+
+(def-fn cocoon-debug! (bug)
+  "Wraps a bug in a photonic stasis field for safe observation"
+  (when (not (nil? bug))
+    (print (str "🥅 🐛 [COCOON] Encapsulating " (bug.bug-id bug) " in a crystal stasis field..."))
+    (apply-stasis-field! (bug.location-strand bug))
+    (print "✨ Bug is suspended. Inspection ready.")))
+
+;; ============================================================
+;; HEALING & TERMINATION
+;; ============================================================
+
+(def-fn heal-strand! (bug)
+  "Performs a deep-cleaning of the waveguide to remove the bug"
+  (print (str "🩹 🐛 [HEAL] Purifying strand " (bug.location-strand bug) "..."))
+  (let ((repair-kit (Insecticide 1.0 (list 'HEISENBUG 'RACE_CONDITION) "Quantum Bleach")))
+    (inject-insecticide! (bug.location-strand bug) repair-kit)
+    (set! (bug.is-healed bug) true)
+    (print "✅ Strand restored to 99.9% coherency.")))
+
+(def-fn time-travel-debug! (bug steps)
+  "Reverses the photonic stream to see previous dot states"
+  (print (str "⏳ 🐛 [TIME-TRAVEL] Reversing " steps " quantum steps..."))
+  (let ((history (🧬.load-genome! (bug.bug-id bug))))
+    (rewind-execution-state! (bug.location-strand bug) history steps)
+    (print "✅ State rewound. Cause of infestation identified.")))
+
+(def-fn heuristic-auto-fix! (bug)
+  "Engages the SI engine to automatically suggest and apply fixes"
+  (print "🧠 🐛 [AUTO-FIX] Analyzing bug via Synthetic Intelligence...")
+  (let ((fix (analyze-with-superior-logic bug)))
+    (apply-patch! (bug.location-strand bug) fix)
+    (print "✅ SI Fix applied. Infestation cleared.")
+    fix))
+
+(export
+  insect-scan!
+  cocoon-debug!
+  heal-strand!
+  time-travel-debug!
+  heuristic-auto-fix!)

@@ -1,0 +1,27 @@
+(def-module page-context
+  "📑 Angeh Page: Multi-Dimensional View Layer Orchestration")
+
+(import global-web-container)
+(import universal-dot-registry)
+
+(def-fn shift-page-context! (page-id)
+  "Transitions the current web container to a new perspective"
+  (print (str "📑 🌌 [SHIFT] Rotating context to: " page-id))
+  (let ((new-view (pdom-create-element "section" (qhash-map "id" page-id) (list))))
+    (render-ui new-view)
+    (print "✅ Page context shifted and reified.")))
+
+(def-fn identify-missing-strands (project-source)
+  "Scans a source file for imports and checks them against the local registry"
+  (print (str "📑 🔍 [AUDIT] Identifying missing strands for: " project-source))
+  (let ((imports (extract-imports-from-source project-source)))
+    (let ((missing (new-qlist)))
+      (for-each imp imports
+        (if (not (universal-dot-registry.has-strand? imp))
+          (qlist-append! missing imp)))
+      (print (str "✅ Found " (qlist-length missing) " missing strands."))
+      missing)))
+
+(export
+  shift-page-context!
+  identify-missing-strands)

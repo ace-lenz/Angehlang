@@ -1,0 +1,95 @@
+(def-module signal-system
+  "📡 Angeh Signal: Inter-Waveguide Broadcasting & Synchronization")
+
+(import type-system)
+(import network)
+
+;; ============================================================
+;; SIGNAL TYPES
+;; ============================================================
+
+(def-type PhotonicPulse
+  (struct (
+    (pulse-id (gensym 'PLS))
+    (payload any)
+    (frequency float)            ; Terahertz
+    (amplitude float)
+    (origin module)
+    (hop-count int)
+    (ttl int)                     ; Time-To-Live in femtoseconds
+    (signature symbol)            ; For filter validation
+  )))
+
+;; ============================================================
+;; BROADCASTING OPERATIONS
+;; ============================================================
+
+(def-fn broadcast-pulse! (payload freq)
+  "Sends a data packet across all active waveguides in the mesh"
+  (print (str "📡 🔊 [BROADCAST] Pushing pulse to frequency " freq " THz..."))
+  (let ((pulse (PhotonicPulse (gensym 'PLS) payload freq 1.0 (current-module) 0)))
+    (inject-pulse-to-global-mesh! pulse)
+    (print "✅ Broadcast resonance achieved.")))
+
+(def-fn tune-frequency! (target-freq)
+  "Synchronizes the local module's emitters to a specific photonic band"
+  (print (str "📡 📻 [TUNE] Shifting resonance to " target-freq " THz"))
+  (set-local-frequency-receiver! target-freq)
+  (print "✅ Locked onto frequency band."))
+
+(def-fn catch-pulse! (timeout)
+  "Listens for incoming pulses on the active frequency"
+  (print (str "📡 👂 [LISTEN] Awaiting incoming pulse (timeout: " timeout "ms)..."))
+  (let ((pulse (await-mesh-signal! timeout)))
+    (if (not (nil? pulse))
+      (if (validate-pulse-signature? pulse)
+        (do
+          (print (str "📡 📥 [RECEIVE] Pulse caught from " (pulse.origin pulse)))
+          pulse)
+        (do
+          (print "🛡️ 📡 [FILTER] Malformed or unauthorized pulse dropped.")
+          nil))
+      (do
+        (print "📡 🔇 [SILENCE] No pulse detected.")
+        nil))))
+
+(def-fn auto-discover-route! (pulse)
+  "Heuristically finds the lowest-latency waveguide route for a pulse"
+  (print "🛰️ 📡 [DISCOVER] Mapping optimal route through photonic mesh...")
+  (let ((route (calculate-best-path pulse)))
+    (print (str "✅ Route locked via node: " (first route)))
+    route))
+
+;; ============================================================
+;; SIGNAL UTILITIES
+;; ============================================================
+
+(def-fn signal-trace! (pulse-id)
+  "Tracks the path of a specific pulse through the mesh"
+  (print (str "🕵️ 📡 [TRACE] Tracking pulse: " pulse-id))
+  (let ((hops (get-pulse-hop-history pulse-id)))
+    (for-each hop hops
+      (print (str "📍 Node " (hop.id hop) " -> Latency: " (hop.latency hop) "fs")))))
+
+(def-fn map-waveguide-topology! ()
+  "Returns a complete graph of all active signal paths"
+  (print "🗺️ 📡 [TOPOLOGY] Mapping waveguides...")
+  (query-total-mesh-topology))
+
+;; ============================================================
+;; MULTIPLEXING
+;; ============================================================
+
+(def-fn multiplex-channels (channel-list)
+  "Combines multiple data streams into a single high-bandwidth fiber"
+  (print (str "📡 🧬 [MUX] Multiplexing " (len channel-list) " channels..."))
+  (composite-signal-create channel-list))
+
+(export
+  broadcast-pulse!
+  tune-frequency!
+  catch-pulse!
+  auto-discover-route!
+  signal-trace!
+  map-waveguide-topology!
+  multiplex-channels)

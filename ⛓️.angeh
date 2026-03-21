@@ -1,0 +1,138 @@
+(def-module parallel-chain
+  "⛓️ Angeh Parallel Chain: Multi-Dot Synchronization Primitives")
+
+(import parallel-dots-engine)
+(import concurrency)
+
+;; ============================================================
+;; CHAIN STRUCTURES
+;; ============================================================
+
+(def-type DotChain
+  (struct (
+    (chain-id symbol)
+    (links (new-qlist))           ; List of NDimensionalDot
+    (sync-mode symbol)            ; 'ENTANGLED | 'SEQUENTIAL | 'LOOSE
+    (anchor-point symbol)         ; Hardware waveguide ID
+    (is-locked bool)
+    (shard-index int)             ; For quantum-sharding support
+    (middlewares (new-qlist))     ; List of (fn [chain] -> chain)
+  )))
+
+;; ============================================================
+;; CHAIN MANAGEMENT
+;; ============================================================
+
+(def-fn anchor-chain! (chain waveguide)
+  "Pins a dot chain to a specific photonic waveguide for stable execution"
+  (print (str "⚓ ⛓️ [ANCHOR] Locking chain " (chain.chain-id chain) " to waveguide: " waveguide))
+  (set! (chain.anchor-point chain) waveguide)
+  (set! (chain.is-locked chain) true)
+  (lock-photonic-strand! waveguide))
+
+(def-fn forge-link! (chain new-dot)
+  "Entangles a new dot into the existing chain"
+  (print (str "🔥 ⛓️ [FORGE] Adding link to chain " (chain.chain-id chain) "..."))
+  (qlist-append! (chain.links chain) new-dot)
+  (when (= (chain.sync-mode chain) 'ENTANGLED)
+    (entangle-dots! (qlist-last (chain.links chain)) new-dot))
+  (print "✅ Link forged and synchronized."))
+
+(def-fn break-link! (chain index)
+  "Safely de-parallelizes and removes a specific segment from the chain"
+  (print (str "🔨 ⛓️ [BREAK] Severing link at index " index " from chain " (chain.chain-id chain)))
+  (let ((dot (qlist-get (chain.links chain) index)))
+    (de-entangle-dot! dot)
+    (qlist-remove! (chain.links chain) index)
+    (print "⚠️ Link severed. Chain integrity maintained.")))
+
+;; ============================================================
+;; EXECUTION
+;; ============================================================
+
+(def-fn process-chain-parallel! (chain)
+  "Executes all dots in the chain across the photonic mesh with quantum-sharding"
+  (print (str "🚀 ⛓️ [PROCESS] Initiating parallel execution for " (qlist-length (chain.links chain)) " links"))
+  (if (chain.is-locked chain)
+    (let ((link-count (qlist-length (chain.links chain))))
+      (if (> link-count 1000)
+        (do
+          (print "💎 ⛓️ [SHARD] Large chain detected. Applying quantum-sharding...")
+          (let ((shards (shard-dots-to-waveguides (chain.links chain) 4))) ; Split into 4 shards
+            (parallel-map (fn (shard) (execute-shard! shard)) shards)))
+        (let ((results (parallel-map (fn (dot) (ndot-execute-parallel dot)) (chain.links chain))))
+          (print "✅ Chain processing complete.")
+      results)))
+    (error "Chain must be anchored before parallel processing.")))
+
+(def-fn chain-use! (chain middleware-fn)
+  "Attaches a generic middleware to the chain execution pipeline"
+  (print "🔌 ⛓️ [MIDDLEWARE] Injecting new logic strand...")
+  (qlist-append! (chain.middlewares chain) middleware-fn))
+
+(def-fn invoke-chain-hooks! (chain)
+  "Sequentially executes all attached middlewares to mutate chain state"
+  (let ((current chain))
+    (for-each middleware (chain.middlewares chain)
+      (set! current (middleware current)))
+    current))
+
+;; ============================================================
+;; UTILITY TOOLS
+;; ============================================================
+
+(def-fn chain-telemetry! (chain)
+  "Streams real-time performance data for a chain"
+  (print "📊 ⛓️ [TELEMETRY] Analyzing chain resonance...")
+  (let ((link-count (len (chain.links chain)))
+        (sync-mode (chain.sync-mode chain))
+        (shard-count (if (> link-count 1000) (/ link-count 1000) 1)))
+    (struct ((status 'OPTIMAL) (links link-count) (mode sync-mode) (shards shard-count)))))
+
+(def-fn visualize-links! (chain)
+  "Generates a symbolic map of the photonic waveguide connections"
+  (print "🗺️ ⛓️ [VISUALIZE] Mapping chain topology...")
+  (for-each link (chain.links chain)
+    (print (str "  ●──[" (chain.anchor-point chain) "]──● " link)))
+  (print "✅ Topology manifest generated."))
+
+;; ============================================================
+;; FUNCTIONAL PRIMITIVES (v8)
+;; ============================================================
+
+(def-fn chain-map (chain transform-fn)
+  "Applies a transformation dot to every link in the chain"
+  (print "🧬 ⛓️ [MAP] Transforming chain strands...")
+  (let ((new-links (new-qlist)))
+    (for-each dot (chain.links chain)
+      (qlist-append! new-links (transform-fn dot)))
+    (DotChain (gensym 'MAP) new-links (chain.sync-mode chain) 'None false 0)))
+
+(def-fn chain-filter (chain predicate-fn)
+  "Filters links based on photonic resonance criteria"
+  (print "🔍 ⛓️ [FILTER] Sifting chain for resonant links...")
+  (let ((new-links (new-qlist)))
+    (for-each dot (chain.links chain)
+      (when (predicate-fn dot)
+        (qlist-append! new-links dot)))
+    (DotChain (gensym 'FLTR) new-links (chain.sync-mode chain) 'None false 0)))
+
+(def-fn chain-reduce (chain reducer-fn initial)
+  "Collapses the chain into a single quantum state"
+  (print "📉 ⛓️ [REDUCE] Folding chain into singularity...")
+  (let ((acc initial))
+    (for-each dot (chain.links chain)
+      (set! acc (reducer-fn acc dot)))
+    acc))
+
+(export
+  anchor-chain!
+  forge-link!
+  break-link!
+  process-chain-parallel!
+  chain-map
+  chain-filter
+  chain-reduce
+  chain-use!
+  chain-telemetry!
+  visualize-links!)

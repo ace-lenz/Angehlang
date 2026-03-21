@@ -1,0 +1,92 @@
+(def-module identity-system
+  "🪪 Angeh Identity: Photonic Signature & Trust Verification")
+
+(import type-system)
+(import cryptography)
+
+;; ============================================================
+;; IDENTITY TYPES
+;; ============================================================
+
+(def-type DotIdentity
+  (struct (
+    (uid (gensym 'ID))
+    (signature symbol)           ; Cryptographic photonic hash
+    (origin-waveguide symbol)    ; Where the dot strand was forged
+    (trust-level float)          ; 0.0 (Untrusted) to 1.0 (Master)
+    (issued-at int)
+    (is-sovereign bool)           ; Does the dot protect itself autonomously?
+    (biometric-hash symbol)       ; Hardware-linked resonance
+  )))
+
+;; ============================================================
+;; VERIFICATION OPERATIONS
+;; ============================================================
+
+(def-fn biometric-verify! (identity)
+  "Checks the optical resonance signature of a dot against its UID and hardware biometric"
+  (print (str "🔍 🪪 [VERIFY] Analyzing signature for identity: " (identity.uid identity)))
+  (let ((is-valid (verify-photonic-hash (identity.signature identity)))
+        (bio-valid (verify-hardware-resonance (identity.biometric-hash identity))))
+    (if (and is-valid bio-valid)
+      (do
+        (print "✅ Signature and Biometric resonance matched.")
+        true)
+      (do
+        (print "❌ SECURITY BREACH: Identity or Biometric mismatch!")
+        false))))
+
+(def-fn activate-sovereign-protocols! (identity)
+  "Enables autonomous self-defense for a dot strand"
+  (if (identity.is-sovereign identity)
+    (do
+      (print (str "🛡️ 🪪 [SOVEREIGN] Activating self-protection for " (identity.uid identity)))
+      (attach-autonomous-firewall! (identity.uid identity)))
+    (error "Identity is not marked as sovereign.")))
+
+(def-fn grant-access! (identity resource-id permissions)
+  "Assigns specific permissions to an identity if trust is sufficient"
+  (print (str "🔑 🪪 [ACCESS] Evaluating " (identity.uid identity) " for resource: " resource-id))
+  (if (> (identity.trust-level identity) 0.7)
+    (do
+      (print (str "✅ Access Granted: " permissions))
+      (attach-permission-token! identity resource-id permissions))
+    (error (str "🚫 Access Denied: Insufficient trust level (" (identity.trust-level identity) ")"))))
+
+;; ============================================================
+;; INITIALIZATION
+;; ============================================================
+
+(def-fn forge-master-id! (waveguide)
+  "Generates a Root/Master identity for a new module"
+  (print (str "⚒️ 🪪 [FORGE] Creating Master Identity on strand " waveguide))
+  (DotIdentity 
+    (gensym 'M-ID)
+    (generate-root-signature waveguide)
+    waveguide
+    1.0
+    (time-now)))
+
+;; ============================================================
+;; IDENTITY UTILITIES
+;; ============================================================
+
+(def-fn view-trust-mesh! ()
+  "Returns a map of all verified identities and their relationships"
+  (print "🪪 🕸️ [TRUST-MAP] Querying identification lattice...")
+  (get-identity-graph))
+
+(def-fn revoke-all-expired-ids! ()
+  "Cleanup tool to purge identities that no longer resonate"
+  (print "🪪 🧹 [PURGE] Cleaning up expired signatures...")
+  (let ((purged-count (purge-stale-identities!)))
+    (print (str "✅ Purged " purged-count " identities."))
+    purged-count))
+
+(export
+  biometric-verify!
+  activate-sovereign-protocols!
+  view-trust-mesh!
+  revoke-all-expired-ids!
+  grant-access!
+  forge-master-id!)

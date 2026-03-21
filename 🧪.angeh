@@ -1,0 +1,21 @@
+(def-module integrated-tests
+  "🧪 Angeh Test: High-Fidelity Logic & Integrity Verification")
+
+(import test-suite)
+(import dotflow-highway)
+
+(def-fn run-integrated-tests! ()
+  "Executes the full suite of bio-swarm and quantum tests"
+  (print "🧪 🚦 [START] Initiating integrated test session...")
+  (when (defined? current-highway)
+    (highway-broadcast! current-highway 'TESTING (struct ((event 'SESSION_START)))))
+  
+  (let ((suites (run-all-tests)))
+    (print-test-results suites)
+    
+    (when (defined? current-highway)
+      (highway-broadcast! current-highway 'TESTING (struct ((event 'SESSION_COMPLETE)))))
+    (print "✅ ALL INTEGRATED TESTS TERMINATED.")))
+
+(export
+  run-integrated-tests!)

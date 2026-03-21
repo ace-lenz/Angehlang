@@ -1,0 +1,50 @@
+#!/usr/bin/env python3
+"""
+🧹 Universal Angeh Cleanup Script
+Works on any device with Python.
+"""
+
+import platform
+import shutil
+import os
+import sys
+
+def detect_os():
+    system = platform.system().lower()
+    if system == "windows":
+        return "windows"
+    elif system == "linux":
+        return "linux"
+    elif system == "darwin":
+        return "macos"
+    else:
+        return "unknown"
+
+def cleanup_directories():
+    """Clean up cache directories based on OS"""
+    os_type = detect_os()
+    print(f"🧹 Cleaning Temporary Dimensions on {os_type}...")
+    
+    dirs_to_clean = ["__pycache__", ".quantum_cache"]
+    
+    for dir_name in dirs_to_clean:
+        if os.path.exists(dir_name):
+            try:
+                if os_type == "windows":
+                    # Use shutil for cross-platform
+                    shutil.rmtree(dir_name)
+                else:
+                    shutil.rmtree(dir_name)
+                print(f"  Removed {dir_name}")
+            except Exception as e:
+                print(f"  Failed to remove {dir_name}: {e}")
+        else:
+            print(f"  {dir_name} not found")
+    
+    print("✨ Workspace Purified.")
+
+def main():
+    cleanup_directories()
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,24 @@
+(def-module auditory-ears
+  "👂 Angeh Ears: Auditory Cortex & Sonic Recognition")
+
+(import audio)
+(import audio-dataset)
+
+(def-fn listen! (duration)
+  "Captures sonic vibrations and clusters them into frequency envelopes"
+  (print (str "👂 🎤 [LISTEN] Recording for " duration "ms..."))
+  (let ((stream (audio.start-capture duration)))
+    (print "✅ Sound captured. Processing frequencies...")
+    stream))
+
+(def-fn recognize-voice! (audio-stream)
+  "Matches the audio signature against known SI voice patterns"
+  (print "👂 👤 [RECOGNIZE] Analyzing vocal signature...")
+  (let ((signature (audio-dataset.extract-signature audio-stream)))
+    (if (identify-author signature)
+      (print "✅ Voice recognized: Authorized.")
+      (print "❌ Unknown voice detected."))))
+
+(export
+  listen!
+  recognize-voice!)

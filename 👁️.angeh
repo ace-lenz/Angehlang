@@ -1,0 +1,24 @@
+(def-module visual-eyes
+  "👁️ Angeh Eyes: Visual Cortex & Spatial Perception")
+
+(import dotflow-sensor)
+(import image-to-dots-dataset)
+
+(def-fn observe! (source)
+  "Ingests a visual frame and reifies it into a 4D dot-cloud"
+  (print (str "👁️ 🔍 [OBSERVE] Capturing frame from " source "..."))
+  (let ((raw (dotflow-sensor.capture source)))
+    (let ((dots (image-to-dots-dataset.process raw)))
+      (print "✅ Scene reified into 4D space-time dots.")
+      dots)))
+
+(def-fn interpret-scene! (dot-cloud)
+  "Performs real-time analysis of a spatial dot cloud for object/text detection"
+  (print "👁️ 🧠 [INTERPRET] Analyzing spatial patterns...")
+  (let ((results (analyze-with-cv-logic dot-cloud)))
+    (print (str "✅ Interpretation complete: " (results.summary results)))
+    results))
+
+(export
+  observe!
+  interpret-scene!)

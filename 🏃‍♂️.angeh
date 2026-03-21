@@ -1,0 +1,109 @@
+(def-module runner-system
+  "🏃‍♂️ Angeh Runner: High-Performance Dot Execution Path")
+
+(import parallel-dots-engine)
+(import hardware-optimizer)
+
+;; ============================================================
+;; ANIMATION SEQUENCES
+;; ============================================================
+
+(def-const RUN-ANIMATION '("🏃" "🏃💨" "🏃‍♂️✨" "🚀"))
+
+(def-fn display-run-animation! (cycles speed)
+  "Visual feedback for dot execution motion"
+  (let ((frames RUN-ANIMATION))
+    (dotimes (i cycles)
+      (for-each frame frames
+        (do
+          (print (str "\r" frame " [EXECUTING]"))
+          (sleep speed))))
+    (print "\r✅ [PATH CLEAR]")))
+
+;; ============================================================
+;; EXECUTION MODES
+;; ============================================================
+
+(def-fn sprint! (dot-strand)
+  "Executes a dot strand with maximum photonic pressure for minimum latency"
+  (let ((temp (read-thermal- sensors)))
+    (if (> temp 340)
+      (do
+        (print "⚠️ 🏃‍♂️ [PACING] Thermal threshold near. Switching to balanced velocity.")
+        (marathon! dot-strand 10))
+      (do
+        (print "⚡ 🏃‍♂️ [SPRINT] Overclocking waveguides for near-instant execution...")
+        (display-run-animation! 1 20)
+        (let ((optimized-strand (optimize-for-latency dot-strand))
+              (start-fs (time-femto)))
+          (ndot-execute-parallel optimized-strand)
+          (print (str "✅ Sprint complete in " (- (time-femto) start-fs) " fs.")))))))
+
+(def-fn relay! (strand-a strand-b)
+  "Performs a sub-femtosecond handover from one execution strand to another"
+  (print "🏃‍♂️ 🤝 [RELAY] Handing off baton between strands...")
+  (let ((token (generate-handover-token strand-a)))
+    (execute-handover! token strand-b)
+    (print "✅ Relay successful. Momentum maintained.")))
+
+(def-fn teleport! (dot-strand remote-host)
+  "Encapsulates and beams a dot strand to a remote photonic node"
+  (print (str "🌌 🏃‍♂️ [TELEPORT] Beaming execution to: " remote-host))
+  (let ((packet (quantum-encapsulate dot-strand)))
+    (📡.broadcast-pulse! packet 999.0) ; High frequency for teleport
+    (print "✅ Strand successfully teleported.")))
+
+(def-fn marathon! (dot-strand duration)
+  "Executes a long-running dot strand with balanced resource allocation"
+  (print (str "⏳ 🏃‍♂️ [MARATHON] Initiating sustained execution for " duration " cycles..."))
+  (display-run-animation! 5 100)
+  (let ((job-id (schedule-persistent-job dot-strand)))
+    (monitor-thermal-load job-id)
+    (print "✅ Marathon is underway. Monitoring stability.")))
+
+(def-fn pause-breath! (duration)
+  "Temporarily slows down execution for photonic recovery"
+  (print (str "🌬️ 🏃‍♂️ [BREATH] Pausing for " duration "ms..."))
+  (sleep duration))
+
+;; ============================================================
+;; RUNNER UTILITIES
+;; ============================================================
+
+(def-fn strand-balancer! ()
+  "Dynamically redistributes execution load across available waveguides"
+  (print "⚖️ 🏃‍♂️ [BALANCE] Calculating load distribution...")
+  (let ((load-map (detect-all-waveguide-stress)))
+    (for-each stress-point load-map
+      (when (> stress-point 0.8)
+        (migrate-strand-load! stress-point)))
+    (print "✅ Strands balanced for uniform photonic pressure.")))
+
+(def-fn execution-log-viewer! (strand-id)
+  "Displays a high-fidelity history of operations for a specific strand"
+  (print (str "📖 🏃‍♂️ [LOGS] Reading history for strand: " strand-id))
+  (let ((logs (query-strand-history strand-id)))
+    (for-each entry logs
+      (print (str "[" (entry.timestamp entry) "] " (entry.msg entry))))))
+
+;; ============================================================
+;; SYSTEM SCHEDULING
+;; ============================================================
+
+(def-fn detect-traffic! ()
+  "Analyzes current photonic mesh congestion"
+  (let ((load (get-mesh-load)))
+    (print (str "📊 🏃‍♂️ [STATUS] Mesh Load: " (* load 100) "%"))
+    (if (> load 0.8)
+      (print "⚠️  Congestion detected. Recommending 'pause-breath!'.")
+      (print "🟢 Mesh clear for 'sprint!'. "))))
+
+(export
+  sprint!
+  marathon!
+  relay!
+  teleport!
+  pause-breath!
+  strand-balancer!
+  execution-log-viewer!
+  detect-traffic!)

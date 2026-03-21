@@ -1,0 +1,24 @@
+(def-module context-lungs
+  "🫁 Angeh Lungs: Multi-Dimensional Contextual Respiration")
+
+(import angeh-bridge)
+(import universal-interpreter-bridge)
+
+(def-fn inhale! (data-stream)
+  "Ingests raw data and expands it into a fully qualified holographic context"
+  (print "🫁 🌬️ [INHALE] Drawing in data stream...")
+  (let ((reified (universal-interpreter-bridge.reify data-stream)))
+    (push-context-stack! reified)
+    (print "✅ Context oxygenated and ready for processing.")))
+
+(def-fn exhale! (summary-level)
+  "Compresses the current context stack into dense, portable tokens"
+  (print "🫁 🌬️ [EXHALE] Compressing active context...")
+  (let ((compressed (compress-context-stack summary-level)))
+    (pop-context-stack!) ; Clear the bulk
+    (print "✅ Summary tokens released to long-term storage.")
+    compressed))
+
+(export
+  inhale!
+  exhale!)

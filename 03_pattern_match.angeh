@@ -1,0 +1,48 @@
+;; ============================================================
+;; 03_pattern_match.angeh — Angehlang v2.0
+;; NEW FEATURE: match form with structural destructuring
+;; ============================================================
+
+(begin
+  ;; Basic value matching
+  (defn day-name (n)
+    (match n
+      (1 "Monday")    (2 "Tuesday")   (3 "Wednesday")
+      (4 "Thursday")  (5 "Friday")    (6 "Saturday")
+      (7 "Sunday")    (else "Unknown")))
+
+  (print "── Day names ──")
+  (def i 1)
+  (while (<= i 7)
+    (print (day-name i))
+    (set! i (+ i 1)))
+
+  ;; List pattern destructuring
+  (defn describe-list (lst)
+    (match lst
+      (()        "empty")
+      ((x)       (string-append "one item: " (->string x)))
+      ((x y)     (string-append "pair: " (->string x) ", " (->string y)))
+      ((x ... _) (string-append "many, starts with: " (->string x)))))
+
+  (print "")
+  (print "── List patterns ──")
+  (print (describe-list (list)))
+  (print (describe-list (list 42)))
+  (print (describe-list (list 1 2)))
+  (print (describe-list (list 10 20 30 40)))
+
+  ;; FizzBuzz via match
+  (print "")
+  (print "── FizzBuzz via match ──")
+  (defn fizzbuzz (n)
+    (match (list (= (mod n 3) 0) (= (mod n 5) 0))
+      ((#t #t) "FizzBuzz")
+      ((#t #f) "Fizz")
+      ((#f #t) "Buzz")
+      (else    (number->string n))))
+
+  (def i 1)
+  (while (<= i 15)
+    (print (fizzbuzz i))
+    (set! i (+ i 1))))

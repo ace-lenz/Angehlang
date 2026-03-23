@@ -1,0 +1,64 @@
+;; ============================================================
+;; 04_macros.angeh — Angehlang v2.0
+;; NEW FEATURE: defmacro — extend the language itself
+;; ============================================================
+
+(begin
+  ;; 'when' — if without else
+  (defmacro when (cond body)
+    (list 'if cond body 'nil))
+
+  ;; 'unless' — inverted if
+  (defmacro unless (cond body)
+    (list 'if (list 'not cond) body 'nil))
+
+  ;; 'swap!' — exchange two variables
+  (defmacro swap! (a b)
+    (list 'begin
+      (list 'def '_tmp a)
+      (list 'set! a b)
+      (list 'set! b '_tmp)))
+
+  ;; 'inc!' — increment in place
+  (defmacro inc! (x)
+    (list 'set! x (list '+ x 1)))
+
+  ;; 'dec!' — decrement in place
+  (defmacro dec! (x)
+    (list 'set! x (list '- x 1)))
+
+  ;; 'assert-equal' — testing macro
+  (defmacro assert-equal (a b)
+    (list 'if (list '= (list '->string a) (list '->string b))
+      (list 'print (list 'string-append "✓ PASS: " (list '->string a)))
+      (list 'print (list 'string-append "✗ FAIL: " (list '->string a) " != " (list '->string b)))))
+
+  ;; Test when/unless
+  (print "── when / unless ──")
+  (def score 92)
+  (when   (>= score 90) (print "Excellent score!"))
+  (unless (< score 50)  (print "Passed the exam"))
+
+  ;; Test swap!
+  (print "")
+  (print "── swap! ──")
+  (def a 100) (def b 999)
+  (print (format "before: a={} b={}" (number->string a) (number->string b)))
+  (swap! a b)
+  (print (format "after:  a={} b={}" (number->string a) (number->string b)))
+
+  ;; Test inc!/dec!
+  (print "")
+  (print "── inc! / dec! ──")
+  (def counter 0)
+  (inc!) (inc!) (inc!) (inc!) (inc!)
+  (print (format "after 5 inc!: {}" (number->string counter)))
+  (dec!) (dec!)
+  (print (format "after 2 dec!: {}" (number->string counter)))
+
+  ;; Test assert-equal
+  (print "")
+  (print "── assert-equal tests ──")
+  (assert-equal (+ 2 2) 4)
+  (assert-equal (* 6 7) 42)
+  (assert-equal (string-append "ang" "eh") "angeh"))

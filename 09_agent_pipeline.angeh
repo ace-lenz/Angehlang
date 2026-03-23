@@ -1,0 +1,32 @@
+;; ============================================================
+;; 09_agent_pipeline.angeh — Angehlang v2.0
+;; NEW FEATURE: agent-pipe — chain AI agents
+;; ============================================================
+
+(begin
+  (intend "Building a multi-stage AI processing pipeline")
+
+  ;; Define pipeline agents
+  (agent-spawn "Extractor"
+    "You extract the core insight from any text. Output exactly 1 crisp sentence.")
+
+  (agent-spawn "Expander"
+    "You take a single insight and expand it into 3 bullet points. Be concise.")
+
+  (agent-spawn "Summarizer"
+    "You take bullet points and write a single compelling tweet-length summary (under 280 chars).")
+
+  (a2a-broadcast "Pipeline agents ready" "ALL" "OmniBrain")
+
+  ;; Run pipeline
+  (def raw-text
+    "Angehlang was created by Longbian Lennon from the Bayyo indigenous community in the Cordillera, Philippines. The name comes from the word 'angeh' meaning breath in the Bayyo dialect. The language is designed to be AI-native, treating artificial intelligence as a first-class citizen in the programming language itself.")
+
+  (print "Input text:")
+  (print raw-text)
+  (print "")
+
+  (def final (agent-pipe raw-text "Extractor" "Expander" "Summarizer"))
+  (print "")
+  (print "Final pipeline output:")
+  (print final))

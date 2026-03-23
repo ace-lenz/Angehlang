@@ -1,0 +1,52 @@
+;; ============================================================
+;; 07_higher_order.angeh — Angehlang v2.0
+;; map, filter, reduce — full functional programming
+;; ============================================================
+
+(begin
+  (print "── map ──")
+  (def nums (range 1 11))
+  (def squares (map (lambda (x) (* x x)) nums))
+  (print (->string squares))
+
+  (print "")
+  (print "── filter ──")
+  (def evens (filter (lambda (x) (even? x)) nums))
+  (print (->string evens))
+  (def primes (filter (lambda (x)
+    (if (< x 2) #f
+      (begin
+        (def is-p #t)
+        (def i 2)
+        (while (<= (* i i) x)
+          (if (= (mod x i) 0) (set! is-p #f) nil)
+          (set! i (+ i 1)))
+        is-p)))
+    (range 2 30)))
+  (print (string-append "primes < 30: " (->string primes)))
+
+  (print "")
+  (print "── reduce ──")
+  (def total (reduce (lambda (acc x) (+ acc x)) nums 0))
+  (print (format "sum 1-10: {}" (number->string total)))
+  (def product-all (reduce (lambda (acc x) (* acc x)) (range 1 6) 1))
+  (print (format "5! via reduce: {}" (number->string product-all)))
+
+  ;; Compose: sum of squares of odd numbers
+  (print "")
+  (print "── composition ──")
+  (def result
+    (reduce
+      (lambda (acc x) (+ acc x))
+      (map
+        (lambda (x) (* x x))
+        (filter odd? (range 1 11)))
+      0))
+  (print (format "sum(squares(odds(1..10))): {}" (number->string result)))
+
+  ;; for-each
+  (print "")
+  (print "── for-each ──")
+  (def fruits (list "mango" "banana" "papaya" "durian"))
+  (for-each fruit fruits
+    (print (string-append "  🍑 " fruit))))

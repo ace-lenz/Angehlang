@@ -1,0 +1,37 @@
+;; ============================================================
+;; 08_agent_memory.angeh — Angehlang v2.0
+;; NEW FEATURE: persistent agent memory + recall
+;; ============================================================
+
+(begin
+  (intend "Exploring memory-persistent AI conversations")
+
+  ;; Spawn a scholar that remembers
+  (agent-spawn "Scholar"
+    "You are a wise scholar with perfect memory. Reference prior exchanges naturally. Answer in 1-2 sentences max.")
+
+  ;; Build a multi-turn conversation
+  (print "── Multi-turn conversation ──")
+  (def r1 (agent-ask "Scholar" "What is the essence of recursion?"))
+  (print (string-append "[Scholar] " r1))
+
+  (def r2 (agent-ask "Scholar" "Can you give me a real-world analogy for what you just described?"))
+  (print (string-append "[Scholar] " r2))
+
+  (def r3 (agent-ask "Scholar" "How does that concept appear in nature?"))
+  (print (string-append "[Scholar] " r3))
+
+  (def r4 (agent-ask "Scholar" "Summarize everything you've shared in this conversation."))
+  (print (string-append "[Scholar] " r4))
+
+  ;; Inspect memory
+  (print "")
+  (print "── Agent memory log ──")
+  (def mem (agent-memory "Scholar"))
+  (print (format "Stored exchanges: {}" (number->string (length mem))))
+
+  ;; Clear and restart
+  (print "")
+  (agent-forget "Scholar")
+  (def r5 (agent-ask "Scholar" "What did we talk about before?"))
+  (print (string-append "[Scholar after forget] " r5)))

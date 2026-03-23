@@ -1,0 +1,91 @@
+;; ============================================================
+;; 11_full_program.angeh — Angehlang v2.0
+;; Student Grade Tracker — uses ALL v2 features
+;; ============================================================
+
+(begin
+  (import math)
+  (import string)
+  (import list)
+
+  ;; ── Data ──
+  (def students (list
+    (list "Maria"   (list 95 88 92 97 91))
+    (list "Jose"    (list 78 82 75 80 77))
+    (list "Ana"     (list 60 55 70 65 62))
+    (list "Lenz"    (list 100 98 99 97 100))
+    (list "Bayyo"   (list 85 90 88 92 87))))
+
+  ;; ── Functions ──
+  (defn avg (scores)
+    (/ (sum scores) (length scores)))
+
+  (defn grade (n)
+    (match #t
+      ((>= n 97) "A+")
+      ((>= n 93) "A")
+      ((>= n 90) "A-")
+      ((>= n 87) "B+")
+      ((>= n 83) "B")
+      ((>= n 80) "B-")
+      ((>= n 70) "C")
+      ((>= n 60) "D")
+      (else      "F")))
+
+  (defmacro when (cond body)
+    (list 'if cond body 'nil))
+
+  ;; ── Report ──
+  (print "╔═══════════════════════════════════╗")
+  (print "║     ANGEHLANG GRADE REPORT v2     ║")
+  (print "╚═══════════════════════════════════╝")
+  (print "")
+
+  (for-each student students
+    (try
+      (let ((name   (car student))
+            (scores (car (cdr student))))
+        (let ((average (avg scores))
+              (rounded (round (avg scores))))
+          (print (format "  {} │ avg: {} │ grade: {} │ scores: {}"
+            (pad-right (->string name) 7 " ")
+            (pad-left (->string rounded) 3 " ")
+            (grade average)
+            (->string scores)))))
+      (catch e
+        (print (string-append "  Error: " e)))))
+
+  (print "")
+
+  ;; ── Statistics ──
+  (def all-avgs
+    (map (lambda (s) (avg (car (cdr s)))) students))
+
+  (def class-avg (/ (sum all-avgs) (length all-avgs)))
+
+  (def top-student
+    (reduce
+      (lambda (best s)
+        (if (> (avg (car (cdr s))) (avg (car (cdr best)))) s best))
+      students (car students)))
+
+  (def low-student
+    (reduce
+      (lambda (worst s)
+        (if (< (avg (car (cdr s))) (avg (car (cdr worst)))) s worst))
+      students (car students)))
+
+  (print (format "Class average:  {}" (number->string (round class-avg))))
+  (print (format "Top student:    {} ({})" (->string (car top-student)) (number->string (round (avg (car (cdr top-student)))))))
+  (print (format "Needs support:  {} ({})" (->string (car low-student)) (number->string (round (avg (car (cdr low-student)))))))
+  (print "")
+
+  ;; Honor roll
+  (print "Honor Roll:")
+  (for-each student students
+    (when (>= (round (avg (car (cdr student)))) 90)
+      (print (string-append "  🌟 " (->string (car student))))))
+
+  (print "")
+  (breathe "Every grade is a breath of effort.")
+  (breathe "Every student, a universe unfolding."))

@@ -1,0 +1,65 @@
+;; ============================================================
+;; 05_error_handling.angeh — Angehlang v2.0
+;; NEW FEATURE: try/catch with descriptive errors + line info
+;; ============================================================
+
+(begin
+  ;; Safe division
+  (defn safe-div (a b)
+    (try
+      (/ a b)
+      (catch err
+        (begin
+          (print (string-append "  caught: " err))
+          0))))
+
+  (print "── Safe division ──")
+  (print (number->string (safe-div 100 4)))
+  (print (number->string (safe-div 10 0)))
+
+  ;; Validation with custom errors
+  (defn validate-age (age)
+    (try
+      (begin
+        (if (< age 0)   (error "Age cannot be negative"))
+        (if (> age 150) (error "Age exceeds realistic limit"))
+        (if (not (number? age)) (error "Age must be a number"))
+        (print (format "  Valid age: {}" (number->string age))))
+      (catch e
+        (print (string-append "  Invalid: " e)))))
+
+  (print "")
+  (print "── Age validation ──")
+  (validate-age 25)
+  (validate-age -3)
+  (validate-age 999)
+
+  ;; Nested try/catch
+  (defn risky-computation (x)
+    (try
+      (try
+        (/ 100 (- x 5))
+        (catch inner-err
+          (begin
+            (print (string-append "  inner catch: " inner-err))
+            (error "Propagating upward"))))
+      (catch outer-err
+        (begin
+          (print (string-append "  outer catch: " outer-err))
+          -1))))
+
+  (print "")
+  (print "── Nested try/catch ──")
+  (print (number->string (risky-computation 10)))
+  (print (number->string (risky-computation 5)))
+
+  ;; assert
+  (print "")
+  (print "── Assertions ──")
+  (try
+    (begin
+      (assert (= (+ 1 1) 2) "Basic math")
+      (print "  assert 1+1=2: OK")
+      (assert (> 10 100) "Ten is greater than hundred"))
+    (catch e
+      (print (string-append "  assertion: " e)))))

@@ -1,0 +1,31 @@
+;; ============================================================
+;; 10_roundtable.angeh — Angehlang v2.0
+;; NEW FEATURE: agent-roundtable — multi-agent discussion
+;; ============================================================
+
+(begin
+  (intend "Convening a roundtable of minds")
+
+  (agent-spawn "Philosopher"
+    "You are a Socratic philosopher. Challenge ideas and seek deeper truth. 1 sentence only.")
+
+  (agent-spawn "Scientist"
+    "You are an empirical scientist. Focus on evidence and testability. 1 sentence only.")
+
+  (agent-spawn "Artist"
+    "You are a creative artist. See beauty and meaning in everything. 1 sentence only.")
+
+  (a2a-broadcast "Roundtable assembling..." "ALL" "OmniBrain")
+  (print "")
+
+  ;; 2 rounds of discussion
+  (agent-roundtable
+    "Is code a form of art or a form of science?"
+    "Philosopher"
+    "Scientist"
+    "Artist"
+    2)
+
+  (print "")
+  (a2a-broadcast "Roundtable concluded." "ALL" "OmniBrain")
+  (breathe "The breath of many minds, in one program."))

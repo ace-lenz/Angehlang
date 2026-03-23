@@ -1,0 +1,53 @@
+;; ============================================================
+;; 06_modules.angeh — Angehlang v2.0
+;; NEW FEATURE: import system with built-in modules
+;; ============================================================
+
+(begin
+  ;; ── math module ──
+  (print "═══════════════════════════")
+  (print "  math module")
+  (print "═══════════════════════════")
+  (import math)
+
+  (print (format "PHI (golden ratio):  {}" (number->string PHI)))
+  (print (format "EULER constant:      {}" (number->string EULER)))
+  (print (format "5!  = {}" (number->string (factorial 5))))
+  (print (format "10! = {}" (number->string (factorial 10))))
+  (print (format "gcd(48,18) = {}" (number->string (gcd 48 18))))
+  (print (format "lcm(4, 6)  = {}" (number->string (lcm 4 6))))
+  (print (format "97 prime?  = {}" (->string (prime? 97))))
+  (print (format "100 prime? = {}" (->string (prime? 100))))
+  (print (format "lerp(0,100,0.3) = {}" (number->string (lerp 0 100 0.3))))
+  (print (format "clamp(150,0,100) = {}" (number->string (clamp 150 0 100))))
+
+  ;; ── string module ──
+  (print "")
+  (print "═══════════════════════════")
+  (print "  string module")
+  (print "═══════════════════════════")
+  (import string)
+
+  (print (capitalize "every language has breath"))
+  (print (pad-left "42" 8 "0"))
+  (print (pad-right "angeh" 12 "."))
+  (print (->string (words "the universe breathes code")))
+  (print (->string (lines "line one\nline two\nline three")))
+  (print (reverse-str "angehlang"))
+  (print (number->string (count-substr "mississippi" "ss")))
+  (print (->string (starts-with? "angehlang" "angeh")))
+
+  ;; ── list module ──
+  (print "")
+  (print "═══════════════════════════")
+  (print "  list module")
+  (print "═══════════════════════════")
+  (import list)
+
+  (def nums (list 1 2 3 4 5 6))
+  (def letters (list "a" "b" "c"))
+
+  (print (->string (zip nums letters)))
+  (print (->string (chunk nums 2)))
+  (def nested (list (list 1 2) (list 3 4) (list 5 6)))
+  (print (->string (flatten-deep nested))))

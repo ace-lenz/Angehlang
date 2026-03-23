@@ -1,0 +1,182 @@
+;; ================================================================
+;; examples/advanced/11_self_hosting_demo.angeh
+;; Author contribution: Claude (Anthropic)
+;;
+;; This example demonstrates Angehlang's self-hosting capability:
+;; the language evaluating, compiling, and introspecting itself
+;; — entirely in .angeh, no Python required at this stage.
+;; ================================================================
+
+(import evaluator)
+(import parser)
+(import lexer)
+(import types)
+(import collections)
+(import async)
+
+;; ── § 1  Meta-circular self-evaluation ──────────────────────────
+;; Evaluate a snippet of Angehlang inside Angehlang
+
+(print "\n=== § 1 Meta-circular evaluation ===")
+
+(def inner-source
+  "(begin
+     (def-fn square (x) (* x x))
+     (map square (list 1 2 3 4 5)))")
+
+(def inner-env (make-global-env))
+(def result (evaluate-source inner-source inner-env))
+
+(print (str "  Input  : " inner-source))
+(print (str "  Result : " result))
+;; Expected: (1 4 9 16 25)
+
+;; ── § 2  Runtime type inference ─────────────────────────────────
+
+(print "\n=== § 2 Live type inference ===")
+
+(def-fn show-type (expr-str)
+  (let* ((ast  (car (parse-source expr-str)))
+         (te   (make-type-env nil))
+         (s    (make-subst))
+         (t    (apply-subst (cadr (infer ast te s))
+                            (car (infer ast te s)))))
+    (print (str "  " expr-str " :: " t))))
+
+(show-type "42")
+(show-type "\"hello\"")
+(show-type "(lambda (x) (* x x))")
+(show-type "(list 1 2 3)")
+(show-type "(if true 1 2.0)")
+
+;; ── § 3  Persistent vector benchmark ────────────────────────────
+
+(print "\n=== § 3 Persistent Vector (10,000 elements) ===")
+
+(let* ((t0  (native-time-ms))
+       (v   (reduce vec-conj (vec-new) (range 0 10000)))
+       (t1  (native-time-ms))
+       (mid (vec-nth v 5000))
+       (t2  (native-time-ms)))
+  (print (str "  Build  : " (- t1 t0) " ms"))
+  (print (str "  Access : " (- t2 t1) " ms"))
+  (print (str "  v[5000]: " mid)))
+
+;; ── § 4  Graph algorithms ────────────────────────────────────────
+
+(print "\n=== § 4 Dijkstra shortest paths ===")
+
+(def city-map
+  (let* ((g  (graph-new))
+         (g  (graph-add-node g 'A "Manila"))
+         (g  (graph-add-node g 'B "Cebu"))
+         (g  (graph-add-node g 'C "Davao"))
+         (g  (graph-add-node g 'D "Iloilo"))
+         (g  (graph-add-edge g 'A 'B 45))
+         (g  (graph-add-edge g 'A 'D 90))
+         (g  (graph-add-edge g 'B 'C 60))
+         (g  (graph-add-edge g 'D 'C 50))
+         (g  (graph-add-edge g 'B 'D 20)))
+    g))
+
+(def distances (graph-dijkstra city-map 'A))
+(for-each (hash-keys distances)
+  (lambda (city)
+    (print (str "  A → " city " : " (hash-get distances city) " km"))))
+
+;; ── § 5  Concurrent channels ─────────────────────────────────────
+
+(print "\n=== § 5 Concurrent producer/consumer ===")
+
+(def results-ch (make-channel 100))
+
+(go
+  ;; Producer: compute squares concurrently
+  (for-each (range 1 6)
+    (lambda (n)
+      (chan! results-ch (* n n)))))
+
+(go
+  ;; Consumer: print them
+  (for-each (range 1 6)
+    (lambda (_)
+      (print (str "  received: " (chan? results-ch))))))
+
+(run-all)
+
+;; ── § 6  Hygienic macros ─────────────────────────────────────────
+
+(print "\n=== § 6 Hygienic macros ===")
+
+(def-macro while (test body)
+  `(let loop ()
+     (when ,test
+       ,body
+       (loop))))
+
+(def counter 0)
+(while (< counter 5)
+  (begin
+    (print (str "  counter = " counter))
+    (set! counter (+ counter 1))))
+
+;; ── § 7  Pattern matching ─────────────────────────────────────────
+
+(print "\n=== § 7 Pattern matching ===")
+
+(def-fn describe (shape)
+  (match shape
+    ((list 'circle r)
+     (str "Circle with radius " r
+          ", area = " (* pi (* r r))))
+    ((list 'rect w h)
+     (str "Rectangle " w "×" h
+          ", area = " (* w h)))
+    ((list 'triangle a b c)
+     (let ((s (/ (+ a b c) 2)))
+       (str "Triangle, area = "
+            (sqrt (* s (- s a) (- s b) (- s c))))))
+    (_
+     "Unknown shape")))
+
+(print (str "  " (describe (list 'circle 5))))
+(print (str "  " (describe (list 'rect 4 6))))
+(print (str "  " (describe (list 'triangle 3 4 5))))
+
+;; ── § 8  Self-tokenizing ─────────────────────────────────────────
+
+(print "\n=== § 8 Angehlang tokenizing itself ===")
+
+(def self-snippet "(def-fn fib (n) (if (<= n 1) n (+ (fib (- n 1)) (fib (- n 2)))))")
+(def tokens (tokenize self-snippet))
+(print (str "  Tokenized " (length tokens) " tokens from self-snippet"))
+(print (str "  First 5 : "
+            (map (lambda (t) (hash-get t 'value))
+                 (take tokens 5))))
+
+;; ── § 9  Trie autocomplete ───────────────────────────────────────
+
+(print "\n=== § 9 Trie autocomplete ===")
+
+(def keywords
+  (list "def" "def-fn" "def-macro" "def-module"
+        "define" "do" "dotflow" "delay"
+        "lambda" "let" "let*" "letrec"
+        "list" "log-info" "load"))
+
+(def kw-trie
+  (reduce (lambda (t kw) (trie-insert t kw kw))
+          (trie-new)
+          keywords))
+
+(def completions (trie-prefix-search kw-trie "de"))
+(print (str "  Completions for 'de': "
+            (map car completions)))
+
+;; ── § 10  Introspection summary ───────────────────────────────────
+
+(print "\n=== § 10 Environment introspection ===")
+(print (str "  Global env symbols: " (length (env-all-keys inner-env))))
+(print (str "  square = " (env-lookup inner-env 'square)))
+
+(print "\n🌌 Self-hosting demo complete.\n")

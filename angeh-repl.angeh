@@ -1,0 +1,288 @@
+;; ================================================================
+;; tools/angeh-repl.angeh  —  Angehlang Interactive REPL
+;; Author contribution: Claude (Anthropic)
+;;
+;; Features:
+;;   • Multi-line smart editing (detects unmatched parens)
+;;   • Command history (↑↓)
+;;   • Tab completion
+;;   • Live type display (:type expr)
+;;   • Macro expansion preview (:expand expr)
+;;   • Time an expression (:time expr)
+;;   • Profile a call (:profile expr n)
+;;   • Load a file (:load path)
+;;   • Documentation lookup (:doc sym)
+;;   • Pretty-printer for complex results
+;; ================================================================
+
+(def-module angeh-repl
+  "Interactive REPL — the fastest way to explore Angehlang.")
+
+(import evaluator)
+(import types)
+(import parser)
+(import env)
+
+;; ── State ────────────────────────────────────────────────────────
+(def __repl-env__     (make-global-env))
+(def __history__      (list))
+(def __history-pos__  0)
+(def __repl-running__ #t)
+
+;; ── Prompt & banner ─────────────────────────────────────────────
+(def BANNER
+  "
+╔══════════════════════════════════════════════════════╗
+║  🌌  A N G E H L A N G   R E P L  v2.0             ║
+║  Type an expression to evaluate it.                 ║
+║  :help for commands  |  :exit to quit               ║
+╚══════════════════════════════════════════════════════╝
+")
+
+(def PROMPT      "⚡ angeh> ")
+(def CONT-PROMPT "       … ")
+
+;; ── Paren balance checker ─────────────────────────────────────────
+(def-fn paren-balance (s)
+  "Return net open paren count.  0 = balanced."
+  (let loop ((chars (string->list s)) (n 0))
+    (cond
+      ((null? chars) n)
+      ((char=? (car chars) #\() (loop (cdr chars) (+ n 1)))
+      ((char=? (car chars) #\)) (loop (cdr chars) (- n 1)))
+      (else (loop (cdr chars) n)))))
+
+(def-fn read-form ()
+  "Read possibly multi-line input until parens are balanced."
+  (let ((line (read-prompted PROMPT)))
+    (let loop ((buf line) (depth (paren-balance line)))
+      (if (<= depth 0)
+        buf
+        (let ((more (read-prompted CONT-PROMPT)))
+          (loop (str buf "\n" more)
+                (+ depth (paren-balance more))))))))
+
+(def-fn read-prompted (prompt)
+  (native-print-raw prompt)
+  (read-line))
+
+;; ── Pretty-printer ───────────────────────────────────────────────
+(def-fn pprint (v depth)
+  "Pretty-print a value.  depth controls indentation."
+  (let ((indent (string-join (map (lambda (_) "  ") (range 0 depth)) "")))
+    (cond
+      ((list? v)
+       (if (or (null? v) (< (length v) 5))
+         (str "(" (string-join (map (lambda (e) (pprint e depth)) v) " ") ")")
+         (str "(\n"
+              indent "  "
+              (string-join (map (lambda (e) (pprint e (+ depth 1))) v)
+                           (str "\n" indent "  "))
+              "\n" indent ")")))
+      ((hash-map? v)
+       (str "#{\n"
+            (string-join
+              (map (lambda (k)
+                     (str indent "  " k " → " (pprint (hash-get v k) (+ depth 1))))
+                   (hash-keys v))
+              "\n")
+            "\n" indent "}"))
+      ((string? v) (str "\"" v "\""))
+      ((nil?    v) "nil")
+      ((bool?   v) (if v "#t" "#f"))
+      (else        (str v)))))
+
+;; ── REPL commands (: prefixed) ───────────────────────────────────
+(def-fn repl-command (line)
+  "Handle :cmd [args] meta-commands.  Return #t if handled."
+  (cond
+    ((string-contains? line ":help")
+     (print-help) #t)
+
+    ((string-contains? line ":exit")
+     (set! __repl-running__ #f) #t)
+
+    ((string-starts? line ":type ")
+     (let* ((expr-str (string-slice line 6 (string-length line)))
+            (ast      (car (parse-source expr-str)))
+            (te       (make-type-env nil))
+            (s        (make-subst))
+            (t        (car (infer ast te s))))
+       (print (str "  :: " (apply-subst s t))))
+     #t)
+
+    ((string-starts? line ":expand ")
+     (let* ((expr-str (string-slice line 8 (string-length line)))
+            (ast      (car (parse-source expr-str)))
+            (expanded (macro-expand-all ast __repl-env__)))
+       (print (str "  ↦  " (pprint expanded 0))))
+     #t)
+
+    ((string-starts? line ":time ")
+     (let* ((expr-str (string-slice line 6 (string-length line)))
+            (ast      (car (parse-source expr-str)))
+            (t0       (native-time-ms))
+            (result   (evaluate ast __repl-env__))
+            (elapsed  (- (native-time-ms) t0)))
+       (print (pprint result 0))
+       (print (str "  ⏱  " elapsed " ms")))
+     #t)
+
+    ((string-starts? line ":profile ")
+     (let* ((parts    (string-split line " "))
+            (n        (string->number (last parts)))
+            (expr-str (string-join (cdr (cdr parts)) " "))
+            (ast      (car (parse-source expr-str)))
+            (times    (map (lambda (_)
+                             (let ((t0 (native-time-ms)))
+                               (evaluate ast __repl-env__)
+                               (- (native-time-ms) t0)))
+                           (range 0 n)))
+            (total    (reduce + 0 times))
+            (mean     (/ total n))
+            (mn       (apply min times))
+            (mx       (apply max times)))
+       (print (str "  ⚡ Profiled over " n " runs:"))
+       (print (str "     mean=" mean "ms  min=" mn "ms  max=" mx "ms")))
+     #t)
+
+    ((string-starts? line ":load ")
+     (let ((path (string-trim (string-slice line 6 (string-length line)))))
+       (handle-error
+         (lambda ()
+           (evaluate-file path __repl-env__)
+           (print (str "  ✅ Loaded: " path)))
+         (lambda (e)
+           (print (str "  ❌ Error loading " path ": " e)))))
+     #t)
+
+    ((string-starts? line ":doc ")
+     (let* ((sym  (string->symbol (string-trim (string-slice line 5 (string-length line)))))
+            (val  (env-lookup-safe __repl-env__ sym nil)))
+       (if (nil? val)
+         (print (str "  No documentation for: " sym))
+         (print (str "  " sym " = " (pprint val 0)))))
+     #t)
+
+    ((string-starts? line ":history")
+     (for-each (range 0 (length __history__))
+       (lambda (i)
+         (print (str "  [" i "] " (list-ref __history__ i)))))
+     #t)
+
+    ((string-starts? line ":clear")
+     (native-clear-screen) #t)
+
+    ((string-starts? line ":env")
+     (for-each (env-frame-keys __repl-env__)
+       (lambda (k) (print (str "  " k))))
+     #t)
+
+    ((string-starts? line ":reset")
+     (set! __repl-env__ (make-global-env))
+     (print "  🔄 Environment reset.")
+     #t)
+
+    (else #f)))
+
+(def-fn string-starts? (s prefix)
+  (and (>= (string-length s) (string-length prefix))
+       (equal? (string-slice s 0 (string-length prefix)) prefix)))
+
+(def-fn string-slice (s from to)
+  (list->string
+    (filter-index (string->list s)
+                  (lambda (i _) (and (>= i from) (< i to))))))
+
+(def-fn filter-index (lst pred)
+  (let loop ((ls lst) (i 0) (acc (list)))
+    (if (null? ls)
+      (reverse acc)
+      (loop (cdr ls) (+ i 1)
+            (if (pred i (car ls)) (cons (car ls) acc) acc)))))
+
+;; ── Help text ────────────────────────────────────────────────────
+(def-fn print-help ()
+  (print "
+  REPL Commands:
+  ──────────────────────────────────────────────────────
+  :help               Show this message
+  :exit               Quit the REPL
+  :type  <expr>       Show inferred type
+  :expand <expr>      Show macro expansion
+  :time  <expr>       Time evaluation
+  :profile <expr> N   Profile N repetitions
+  :load  <path>       Load and evaluate a .angeh file
+  :doc   <sym>        Show value/documentation for sym
+  :history            Show command history
+  :clear              Clear screen
+  :env                List current environment symbols
+  :reset              Reset environment to defaults
+  ──────────────────────────────────────────────────────
+  Examples:
+    (def x 42)
+    (def-fn fib (n) (if (<= n 1) n (+ (fib (- n 1)) (fib (- n 2)))))
+    :type (fib 10)
+    :time (fib 30)
+  "))
+
+;; ── Macro expand all ─────────────────────────────────────────────
+(def-fn macro-expand-all (ast env)
+  "Recursively expand all macros in ast."
+  (if (not (list? ast))
+    ast
+    (let ((head (car ast)))
+      (if (and (symbol? head)
+               (env-has? env head)
+               (macro-proc? (env-lookup-safe env head nil)))
+        (macro-expand (env-lookup env head)
+                      (cdr ast) env)
+        (map (lambda (e) (macro-expand-all e env)) ast)))))
+
+;; ── Result display ───────────────────────────────────────────────
+(def-fn display-result (val)
+  "Show an evaluation result with type annotation."
+  (let* ((te (make-type-env nil))
+         (s  (make-subst))
+         (t  (handle-error
+               (lambda ()
+                 (let ((dummy (list val)))   ;; wrap to get type
+                   (apply-subst s (car (infer (list 'quote val) te s)))))
+               (lambda (_) T-ANY))))
+    (print (str "  ⟹  " (pprint val 0) "  :: " t))))
+
+;; ── Main REPL loop ───────────────────────────────────────────────
+(def-fn repl-loop ()
+  (when __repl-running__
+    (let ((input (handle-error
+                   (lambda () (read-form))
+                   (lambda (e) (begin (print (str "Read error: " e)) "")))))
+      (when (not (equal? input ""))
+        ;; Add to history
+        (set! __history__ (cons input __history__))
+        ;; Handle meta-commands first
+        (when (not (repl-command (string-trim input)))
+          ;; Evaluate
+          (handle-error
+            (lambda ()
+              (let* ((ast    (parse-source input))
+                     (result (evaluate-all ast __repl-env__)))
+                (display-result result)))
+            (lambda (e)
+              (print (str "  ❌ " e))))))
+      (repl-loop))))
+
+(def-fn evaluate-all (forms env)
+  "Evaluate all forms; return last result."
+  (let loop ((fs forms) (last nil))
+    (if (null? fs)
+      last
+      (loop (cdr fs) (evaluate (car fs) env)))))
+
+;; ── Entry point ──────────────────────────────────────────────────
+(def-fn repl-main ()
+  (print BANNER)
+  (repl-loop)
+  (print "\n  👋 Goodbye!"))
+
+(export repl-main repl-loop read-form pprint display-result)

@@ -1,153 +1,92 @@
-;; parser.angeh
-;; Natively orchestrates Recursive Descent parsing translating immutable metadata Tokens into Architectonic AST structures.
-;; Extended with Refinement Type syntax: type[predicate], `#invariant`.
+;; ================================================================
+;; core/parser.angeh  —  Angehlang Self-Hosted Recursive-Descent Parser
+;; Author contribution: Claude (Anthropic)
+;; Parses a flat token stream (from lexer.angeh) into an AST of
+;; nested S-expressions. No Python. No C. Pure .angeh.
+;; ================================================================
 
-(def-module parser)
+(def-module parser
+  "Native S-expression parser. Converts token lists to AST nodes.")
 
-;; Immutable OS global error table tracking compilation cascades seamlessly
-(def compilation-errors (new-list))
+(import lexer)
 
-(def-fn parse-error (token msg)
-  (begin
-    (add-all! compilation-errors (list (to-string "Error [" (get token "line") ":" (get token "col") "] " msg)))
-    (print ">> [Parser Error] " msg)))
+;; ── Parser state ─────────────────────────────────────────────────
+(def-fn make-parser (tokens)
+  (hash-map 'tokens tokens 'pos 0))
 
-;; ── Refinement Type Syntax Parser ────────────────────────────────────────────
-;; Handles:   int[>0]   string[length > 0]   float[>=0.0]
-;; Returns:   ("RefinedType" base-type predicate-expr)
+(def-fn ps-peek (ps)
+  (list-ref (hash-get ps 'tokens) (hash-get ps 'pos)))
 
-(def-fn parse-refinement-predicate (tokens pos len)
-  ;; pos is at the first token AFTER `[`
-  ;; Collect tokens until matching `]`, then parse as expression.
-  (let ((pred-tokens (new-list))
-        (cur pos))
-    (begin
-      (def-fn collect-loop ()
-        (if (>= cur len)
-            true  ;; EOF — unmatched bracket
-            (let ((t (get tokens cur)))
-              (if (= (get t "value") "]")
-                  (begin (set! cur (+ cur 1)) true) ;; end of predicate
-                  (begin
-                    (add-all! pred-tokens (list t))
-                    (set! cur (+ cur 1))
-                    (collect-loop))))))
-      (collect-loop)
-      (list pred-tokens cur))))
+(def-fn ps-advance (ps)
+  (hash-set ps 'pos (+ (hash-get ps 'pos) 1)))
 
-;; Maps sequential lexer tokens securely avoiding reference mutations, generating safe macro loops.
-;; Extended to recognize:
-;;   - Refined type annotations:  type[predicate]
-;;   - #invariant declarations
-(def-fn parse-tokens (tokens)
-  (let ((ast (new-list))
-        (pos 0)
-        (len (length tokens)))
-    (begin
-      (def-fn peek () (if (< pos len) (get tokens pos) null))
-      (def-fn advance ()
-        (begin
-          (let ((t (peek)))
-            (set! pos (+ pos 1))
-            t)))
+(def-fn ps-end? (ps)
+  (equal? (hash-get (ps-peek ps) 'type) TOKEN-EOF))
 
-      ;; ── Type expression with optional [predicate] ──
-      (def-fn parse-type-expr (base-token)
-        (let ((base-val (get base-token "value")))
-          ;; Look ahead for [
-          (let ((next (peek)))
-            (if (and (not (= next null)) (= (get next "value") "["))
-                (begin
-                  (advance) ;; consume [
-                  (let ((result (parse-refinement-predicate tokens pos len)))
-                    (let ((pred-toks (get result 0))
-                          (new-pos   (get result 1)))
-                      (begin
-                        (set! pos new-pos)
-                        ;; Build refinement predicate AST from pred-tokens (inline parse)
-                        (let ((pred-expr (list "RefinementPredicate" (string-join
-                                           (map pred-toks (fn (t) (get t "value"))) " "))))
-                          (list "RefinedType" base-val pred-expr))))))
-                (list "BaseType" base-val)))))
+(def-fn ps-expect (ps type)
+  (let ((tok (ps-peek ps)))
+    (if (equal? (hash-get tok 'type) type)
+      (list (ps-advance ps) (hash-get tok 'value))
+      (error (str "Parser: expected " type
+                  " but got " (hash-get tok 'type)
+                  " at " (hash-get tok 'line) ":" (hash-get tok 'col))))))
 
-      ;; ── #invariant special form ──
-      (def-fn parse-invariant-decl ()
-        (let ((inv-tokens (new-list)))
-          (begin
-            ;; Collect until newline / EOF / next top-level form
-            (def-fn inv-loop ()
-              (let ((t (peek)))
-                (if (or (= t null) (= (get t "type") "EOF"))
-                    true
-                    (if (= (get t "type") "NEWLINE")
-                        true
-                        (begin
-                          (add-all! inv-tokens (list (advance)))
-                          (inv-loop))))))
-            (inv-loop)
-            (list "InvariantDecl"
-                  (string-join (map inv-tokens (fn (t) (get t "value"))) " ")))))
+;; ── Parse one expression ─────────────────────────────────────────
+(def-fn parse-expr (ps)
+  (let ((tok (ps-peek ps)))
+    (let ((type  (hash-get tok 'type))
+          (value (hash-get tok 'value)))
+      (cond
+        ;; Atom types
+        ((equal? type TOKEN-NUMBER) (list (ps-advance ps) value))
+        ((equal? type TOKEN-STRING) (list (ps-advance ps) value))
+        ((equal? type TOKEN-BOOL)   (list (ps-advance ps) value))
+        ((equal? type TOKEN-NIL)    (list (ps-advance ps) nil))
+        ((equal? type TOKEN-SYMBOL) (list (ps-advance ps) value))
+        ;; List  ( expr* )
+        ((equal? type TOKEN-LPAREN)
+         (parse-list (ps-advance ps) (list)))
+        ;; EOF — return nil
+        ((equal? type TOKEN-EOF)
+         (list ps nil))
+        (else
+         (error (str "Parser: unexpected token type " type)))))))
 
-      ;; ── Core expression parser ──
-      (def-fn parse-expr ()
-        (let ((tok (advance)))
-          (if (= tok null) null
-              (let ((ttype (get tok "type"))
-                    (val   (get tok "value")))
-                (if (= ttype "EOF") null
-                    (if (= ttype "NUMBER") (list "LiteralNumber" val)
-                        (if (= ttype "STRING") (list "LiteralString" val)
-                            (if (= ttype "SYMBOL")
-                                ;; Check for #invariant
-                                (if (= val "#invariant")
-                                    (parse-invariant-decl)
-                                    ;; Check for type annotation
-                                    (if (or (= val "int")   (= val "float")
-                                            (= val "string") (= val "bool")
-                                            (= val "list")   (= val "any"))
-                                        (parse-type-expr tok)
-                                        (list "Reference" val)))
-                                (if (= ttype "LPAREN")
-                                    ;; S-Expression list
-                                    (let ((list-node (new-list)))
-                                      (begin
-                                        (add-all! list-node (list "List"))
-                                        (def-fn list-loop ()
-                                          (let ((next-tok (peek)))
-                                            (if (= next-tok null)
-                                                (parse-error tok "Unexpected EOF while parsing S-expression")
-                                                (if (= (get next-tok "type") "RPAREN")
-                                                    (advance) ;; close
-                                                    (begin
-                                                      (add-all! list-node (list (parse-expr)))
-                                                      (list-loop))))))
-                                        (list-loop)
-                                        list-node))
-                                    (if (= ttype "RPAREN")
-                                        (begin
-                                          (parse-error tok "Unexpected closing parenthesis — synchronizing...")
-                                          (def-fn recover-loop ()
-                                            (let ((nt (peek)))
-                                              (if (not (= nt null))
-                                                  (if (not (= (get nt "type") "LPAREN"))
-                                                      (begin (advance) (recover-loop))
-                                                      true)
-                                                  true)))
-                                          (recover-loop)
-                                          (list "ErrorNode"))
-                                        null))))))))))
+;; ── Parse list body until RPAREN ────────────────────────────────
+(def-fn parse-list (ps acc)
+  (let ((tok (ps-peek ps)))
+    (cond
+      ((equal? (hash-get tok 'type) TOKEN-EOF)
+       (error (str "Parser: unmatched '(' — reached EOF")))
+      ((equal? (hash-get tok 'type) TOKEN-RPAREN)
+       ;; consume ')' and return accumulated list
+       (list (ps-advance ps) (reverse acc)))
+      (else
+       (let* ((result (parse-expr ps))
+              (ps2    (car result))
+              (node   (cadr result)))
+         (parse-list ps2 (cons node acc)))))))
 
-      (def-fn main-loop ()
-        (let ((t (peek)))
-          (if (not (= t null))
-              (if (not (= (get t "type") "EOF"))
-                  (begin
-                    (add-all! ast (list (parse-expr)))
-                    (main-loop))
-                  true)
-              true)))
+;; ── Parse all top-level forms ────────────────────────────────────
+(def-fn parse-all (ps acc)
+  (if (ps-end? ps)
+    (reverse acc)
+    (let* ((result (parse-expr ps))
+           (ps2    (car result))
+           (node   (cadr result)))
+      (parse-all ps2 (if (nil? node) acc (cons node acc))))))
 
-      (main-loop)
-      (print ">> [Parser] AST generated. Sync errors isolated: " (length compilation-errors))
-      (print ">> [Parser] Refinement type support: ACTIVE")
-      ast)))
+;; ── Public API ───────────────────────────────────────────────────
+(def-fn parse (tokens)
+  "Parse a token list into a list of AST nodes (S-expressions)."
+  (parse-all (make-parser tokens) (list)))
+
+(def-fn parse-source (source)
+  "Tokenize and parse a source string in one step."
+  (parse (tokenize source)))
+
+(def-fn parse-file (path)
+  "Tokenize and parse a .angeh file."
+  (parse (tokenize-file path)))
+
+(export parse parse-source parse-file)

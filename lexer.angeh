@@ -1,91 +1,197 @@
-;; lexer.angeh
-;; The Absolute Native Character Scanner mapping LISP strings into Immutable Metadata Tokens.
+;; ================================================================
+;; core/lexer.angeh  —  Angehlang Self-Hosted Lexer
+;; Author contribution: Claude (Anthropic)
+;; Purpose: Tokenize .angeh source code without any Python or C.
+;;          This is the Stage-0 self-hosting seed.
+;; ================================================================
 
-(def-module lexer)
+(def-module lexer
+  "Native photonic tokenizer — converts raw source into a token stream.")
 
-;; Constructs an immutable token mapping preventing AST reference mutations
-(def-fn create-token (t-type t-value t-line t-col)
-  (let ((tok (new-map)))
-    (begin
-      (put! tok "type" t-type)
-      (put! tok "value" t-value)
-      (put! tok "line" t-line)
-      (put! tok "col" t-col)
-      tok)))
+;; ── Token types ────────────────────────────────────────────────
+(def TOKEN-LPAREN   'LPAREN)
+(def TOKEN-RPAREN   'RPAREN)
+(def TOKEN-SYMBOL   'SYMBOL)
+(def TOKEN-NUMBER   'NUMBER)
+(def TOKEN-STRING   'STRING)
+(def TOKEN-BOOL     'BOOL)
+(def TOKEN-NIL      'NIL)
+(def TOKEN-COMMENT  'COMMENT)
+(def TOKEN-EOF      'EOF)
 
-;; Iterative Character Scanner 
+;; ── Character predicates ────────────────────────────────────────
+(def-fn whitespace? (ch)
+  (or (char=? ch #\space)
+      (char=? ch #\newline)
+      (char=? ch #\return)
+      (char=? ch #\tab)))
+
+(def-fn digit? (ch)
+  (and (char>=? ch #\0) (char<=? ch #\9)))
+
+(def-fn sign? (ch)
+  (or (char=? ch #\+) (char=? ch #\-)))
+
+(def-fn symbol-start? (ch)
+  (not (or (whitespace? ch)
+           (char=? ch #\()
+           (char=? ch #\))
+           (char=? ch #\")
+           (char=? ch #\;))))
+
+(def-fn symbol-continue? (ch)
+  (symbol-start? ch))
+
+;; ── Token constructor ───────────────────────────────────────────
+(def-fn make-token (type value line col)
+  (hash-map
+    'type  type
+    'value value
+    'line  line
+    'col   col))
+
+;; ── Lexer state ─────────────────────────────────────────────────
+(def-fn make-lexer-state (src)
+  (hash-map
+    'src    src
+    'pos    0
+    'line   1
+    'col    1
+    'tokens (list)))
+
+(def-fn ls-src   (s) (hash-get s 'src))
+(def-fn ls-pos   (s) (hash-get s 'pos))
+(def-fn ls-line  (s) (hash-get s 'line))
+(def-fn ls-col   (s) (hash-get s 'col))
+(def-fn ls-peek  (s) (string-ref (ls-src s) (ls-pos s)))
+(def-fn ls-end?  (s) (>= (ls-pos s) (string-length (ls-src s))))
+
+(def-fn ls-advance (s)
+  (let ((ch (ls-peek s)))
+    (if (char=? ch #\newline)
+      (hash-set* s 'pos (+ (ls-pos s) 1) 'line (+ (ls-line s) 1) 'col 1)
+      (hash-set* s 'pos (+ (ls-pos s) 1) 'col  (+ (ls-col  s) 1)))))
+
+;; ── Skip whitespace & line comments ─────────────────────────────
+(def-fn skip-ws (s)
+  (cond
+    ((ls-end? s) s)
+    ((whitespace? (ls-peek s)) (skip-ws (ls-advance s)))
+    ((char=? (ls-peek s) #\;)
+     ;; line comment — skip to newline
+     (let loop ((s2 (ls-advance s)))
+       (cond
+         ((ls-end? s2) s2)
+         ((char=? (ls-peek s2) #\newline) (ls-advance s2))
+         (else (loop (ls-advance s2))))))
+    (else s)))
+
+;; ── Read string literal ──────────────────────────────────────────
+(def-fn read-string (s acc)
+  ;; called after opening "
+  (cond
+    ((ls-end? s) (error "Unterminated string literal" (ls-line s)))
+    ((char=? (ls-peek s) #\")
+     (list (ls-advance s) (list->string (reverse acc))))
+    ((char=? (ls-peek s) #\\)
+     (let* ((s2  (ls-advance s))
+            (esc (ls-peek s2))
+            (s3  (ls-advance s2))
+            (ch  (cond
+                   ((char=? esc #\n) #\newline)
+                   ((char=? esc #\t) #\tab)
+                   ((char=? esc #\r) #\return)
+                   ((char=? esc #\\) #\\)
+                   ((char=? esc #\") #\")
+                   (else esc))))
+       (read-string s3 (cons ch acc))))
+    (else
+     (read-string (ls-advance s) (cons (ls-peek s) acc)))))
+
+;; ── Read number ──────────────────────────────────────────────────
+(def-fn read-number (s acc)
+  (cond
+    ((ls-end? s) (list s (string->number (list->string (reverse acc)))))
+    ((or (digit? (ls-peek s)) (char=? (ls-peek s) #\.))
+     (read-number (ls-advance s) (cons (ls-peek s) acc)))
+    (else
+     (list s (string->number (list->string (reverse acc)))))))
+
+;; ── Read symbol ──────────────────────────────────────────────────
+(def-fn read-symbol (s acc)
+  (cond
+    ((ls-end? s) (list s (list->string (reverse acc))))
+    ((symbol-continue? (ls-peek s))
+     (read-symbol (ls-advance s) (cons (ls-peek s) acc)))
+    (else
+     (list s (list->string (reverse acc))))))
+
+;; ── Classify symbol text into a token type ───────────────────────
+(def-fn classify-symbol (text)
+  (cond
+    ((equal? text "true")  (make-token TOKEN-BOOL #t 0 0))
+    ((equal? text "false") (make-token TOKEN-BOOL #f 0 0))
+    ((equal? text "nil")   (make-token TOKEN-NIL  nil 0 0))
+    (else                  (make-token TOKEN-SYMBOL (string->symbol text) 0 0))))
+
+;; ── Main tokenize loop ───────────────────────────────────────────
+(def-fn tokenize-loop (s tokens)
+  (let ((s2 (skip-ws s)))
+    (if (ls-end? s2)
+      (reverse (cons (make-token TOKEN-EOF 'eof (ls-line s2) (ls-col s2)) tokens))
+      (let ((ch   (ls-peek s2))
+            (line (ls-line s2))
+            (col  (ls-col  s2)))
+        (cond
+          ;; LPAREN
+          ((char=? ch #\()
+           (tokenize-loop
+             (ls-advance s2)
+             (cons (make-token TOKEN-LPAREN 'lparen line col) tokens)))
+          ;; RPAREN
+          ((char=? ch #\))
+           (tokenize-loop
+             (ls-advance s2)
+             (cons (make-token TOKEN-RPAREN 'rparen line col) tokens)))
+          ;; STRING
+          ((char=? ch #\")
+           (let* ((result (read-string (ls-advance s2) (list)))
+                  (s3     (car result))
+                  (text   (cadr result)))
+             (tokenize-loop s3 (cons (make-token TOKEN-STRING text line col) tokens))))
+          ;; NUMBER (possibly with leading sign)
+          ((or (digit? ch)
+               (and (sign? ch)
+                    (not (ls-end? (ls-advance s2)))
+                    (digit? (ls-peek (ls-advance s2)))))
+           (let* ((result (read-number s2 (list)))
+                  (s3     (car result))
+                  (num    (cadr result)))
+             (tokenize-loop s3 (cons (make-token TOKEN-NUMBER num line col) tokens))))
+          ;; SYMBOL / keyword
+          ((symbol-start? ch)
+           (let* ((result (read-symbol s2 (list)))
+                  (s3     (car result))
+                  (text   (cadr result))
+                  (tok    (classify-symbol text)))
+             (tokenize-loop s3
+               (cons (hash-set* tok 'line line 'col col) tokens))))
+          ;; Unknown character — skip with warning
+          (else
+           (begin
+             (log-warn (str "Lexer: unknown char '" ch "' at " line ":" col))
+             (tokenize-loop (ls-advance s2) tokens))))))))
+
+;; ── Public API ──────────────────────────────────────────────────
 (def-fn tokenize (source)
-  (let ((tokens (new-list))
-        (src-len (string-length source))
-        (pos 0)
-        (line 1)
-        (col 1))
-    (begin
-      (print ">> [Lexer] Initializing Source Scanning Matrix on " src-len " characters...")
-      
-      (def-fn loop ()
-        (if (< pos src-len)
-            (let ((char (char-at source pos)))
-              (begin
-                (if (is-whitespace? char)
-                    (begin
-                      (if (= char "\n")
-                          (begin
-                            (inc! line)
-                            (set! col 1))
-                          (inc! col))
-                      (inc! pos))
-                    (if (= char "(")
-                        (begin
-                          (add-all! tokens (list (create-token "LPAREN" "(" line col)))
-                          (inc! pos)
-                          (inc! col))
-                        (if (= char ")")
-                            (begin
-                              (add-all! tokens (list (create-token "RPAREN" ")" line col)))
-                              (inc! pos)
-                              (inc! col))
-                            (if (= char (code-char 34))
-                                (let ((start-pos pos)
-                                      (start-col col))
-                                  (begin
-                                    (inc! pos)
-                                    (inc! col)
-                                    (def-fn str-loop ()
-                                      (if (< pos src-len)
-                                          (if (not (= (char-at source pos) (code-char 34)))
-                                              (begin
-                                                (inc! pos)
-                                                (inc! col)
-                                                (str-loop))
-                                              true)
-                                          true))
-                                    (str-loop)
-                                    (add-all! tokens (list (create-token "STRING" (substring source (+ start-pos 1) pos) line start-col)))
-                                    (inc! pos)
-                                    (inc! col))))
-                                (let ((start-pos pos)
-                                      (start-col col))
-                                  (begin
-                                    (def-fn id-loop ()
-                                      (if (< pos src-len)
-                                          (let ((c (char-at source pos)))
-                                            (if (not (or (is-whitespace? c) (or (= c "(") (= c ")"))))
-                                                (begin
-                                                  (inc! pos)
-                                                  (inc! col)
-                                                  (id-loop))
-                                                true))
-                                          true))
-                                    (id-loop)
-                                    (let ((value (substring source start-pos pos)))
-                                      (if (is-digit? (char-at value 0))
-                                          (add-all! tokens (list (create-token "NUMBER" value line start-col)))
-                                          (add-all! tokens (list (create-token "SYMBOL" value line start-col))))))))))
-                (loop)))
-            true))
-      
-      (loop)
-      (add-all! tokens (list (create-token "EOF" "" line col)))
-      (print ">> [Lexer] Scanning Successful. Generated " (length tokens) " structural dependencies.")
-      tokens)))
+  "Convert a source string into a flat list of tokens."
+  (tokenize-loop (make-lexer-state source) (list)))
+
+(def-fn tokenize-file (path)
+  "Read a .angeh file and return its token stream."
+  (tokenize (vfs-read-file path)))
+
+(export tokenize tokenize-file
+        make-token
+        TOKEN-LPAREN TOKEN-RPAREN TOKEN-SYMBOL TOKEN-NUMBER
+        TOKEN-STRING TOKEN-BOOL TOKEN-NIL TOKEN-EOF)

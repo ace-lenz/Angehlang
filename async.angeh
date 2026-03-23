@@ -1,0 +1,347 @@
+;; ================================================================
+;; lib/async.angeh  —  Angehlang Concurrency & Async Runtime
+;; Author contribution: Claude (Anthropic)
+;;
+;; Green-thread-based concurrency:
+;;   • Channels   — typed, buffered, synchronous or async
+;;   • Coroutines — cooperative yield/resume
+;;   • Promises   — deferred computation with then/catch
+;;   • Actors     — message-passing actors with mailboxes
+;;   • Async/Await sugar
+;;   • Select     — wait on multiple channels
+;; ================================================================
+
+(def-module async
+  "Native async runtime — channels, coroutines, actors, promises.")
+
+;; ────────────────────────────────────────────────────────────────
+;; § 1  CHANNELS
+;; ────────────────────────────────────────────────────────────────
+
+(def-fn make-channel (capacity)
+  "Create a buffered channel.  capacity = 0 → synchronous."
+  (hash-map
+    'type      'channel
+    'buf       (list)
+    'capacity  capacity
+    'senders   (list)    ;; waiting send continuations
+    'receivers (list)    ;; waiting recv continuations
+    'closed    #f))
+
+(def-fn chan! (ch val)
+  "Send val into ch.  Blocks (yields) if buffer is full."
+  (cond
+    ((hash-get ch 'closed)
+     (error "send on closed channel"))
+    ;; Receiver is waiting — hand off directly
+    ((not (null? (hash-get ch 'receivers)))
+     (let ((recv (car (hash-get ch 'receivers))))
+       (hash-set! ch 'receivers (cdr (hash-get ch 'receivers)))
+       (recv val)))
+    ;; Buffer has space
+    ((< (length (hash-get ch 'buf)) (hash-get ch 'capacity))
+     (hash-set! ch 'buf (append (hash-get ch 'buf) (list val))))
+    ;; Block: add ourselves to senders queue
+    (else
+     (coroutine-yield
+       (lambda (k)
+         (hash-set! ch 'senders
+           (append (hash-get ch 'senders) (list (list val k)))))))))
+
+(def-fn chan? (ch val)
+  "Receive a value from ch.  Blocks if empty."
+  (cond
+    ;; Buffer has data
+    ((not (null? (hash-get ch 'buf)))
+     (let ((v (car (hash-get ch 'buf))))
+       (hash-set! ch 'buf (cdr (hash-get ch 'buf)))
+       ;; Resume a waiting sender if any
+       (when (not (null? (hash-get ch 'senders)))
+         (let ((sender (car (hash-get ch 'senders))))
+           (hash-set! ch 'senders (cdr (hash-get ch 'senders)))
+           (hash-set! ch 'buf
+             (append (hash-get ch 'buf) (list (car sender))))
+           ((cadr sender) nil)))
+       v))
+    ;; Channel closed and empty
+    ((hash-get ch 'closed) nil)
+    ;; Sender is waiting
+    ((not (null? (hash-get ch 'senders)))
+     (let ((sender (car (hash-get ch 'senders))))
+       (hash-set! ch 'senders (cdr (hash-get ch 'senders)))
+       ((cadr sender) nil)
+       (car sender)))
+    ;; Block: add ourselves to receivers queue
+    (else
+     (coroutine-yield
+       (lambda (k)
+         (hash-set! ch 'receivers
+           (append (hash-get ch 'receivers) (list k))))))))
+
+(def-fn chan-close! (ch)
+  "Close a channel; wake all waiting receivers with nil."
+  (hash-set! ch 'closed #t)
+  (for-each (hash-get ch 'receivers) (lambda (r) (r nil)))
+  (hash-set! ch 'receivers (list)))
+
+(def-fn chan-closed? (ch)
+  (hash-get ch 'closed))
+
+;; ── Select: wait on multiple channel operations ──────────────────
+(def-fn select (cases)
+  "cases = list of (channel op handler).
+   op = 'recv | 'send.  Picks the first ready case."
+  ;; Try each case without blocking
+  (let loop ((cs cases))
+    (if (null? cs)
+      ;; None ready — block until one fires
+      (coroutine-yield
+        (lambda (k)
+          (for-each cases
+            (lambda (c)
+              (let ((ch (car c)) (op (cadr c)) (h (caddr c)))
+                (cond
+                  ((eq? op 'recv)
+                   (hash-set! ch 'receivers
+                     (append (hash-get ch 'receivers)
+                             (list (lambda (v) (k (h v)))))))
+                  ((eq? op 'send)
+                   (hash-set! ch 'senders
+                     (append (hash-get ch 'senders)
+                             (list (list (cadddr c)
+                                         (lambda (_) (k (h nil)))))))))))))
+      ;; Check if this case is immediately ready
+      (let* ((c (car cs))
+             (ch (car c)) (op (cadr c)) (h (caddr c)))
+        (cond
+          ((and (eq? op 'recv)
+                (not (null? (hash-get ch 'buf))))
+           (h (chan? ch)))
+          ((and (eq? op 'send)
+                (< (length (hash-get ch 'buf)) (hash-get ch 'capacity)))
+           (chan! ch (cadddr c))
+           (h nil))
+          (else (loop (cdr cs))))))))
+
+;; ────────────────────────────────────────────────────────────────
+;; § 2  COROUTINES  (cooperative green threads)
+;; ────────────────────────────────────────────────────────────────
+
+(def __run-queue__ (list))
+(def __current-coro__ nil)
+
+(def-fn spawn (thunk)
+  "Schedule thunk as a new green thread."
+  (set! __run-queue__
+    (append __run-queue__ (list thunk)))
+  nil)
+
+(def-fn coroutine-yield (fn)
+  "Yield current coroutine.  fn receives the continuation."
+  ;; Implemented via the substrate's native continuation capture.
+  (native-call/cc
+    (lambda (k)
+      (fn k)
+      (run-scheduler))))
+
+(def-fn run-scheduler ()
+  "Run one step of the cooperative scheduler."
+  (if (null? __run-queue__)
+    nil
+    (let ((next (car __run-queue__)))
+      (set! __run-queue__ (cdr __run-queue__))
+      (set! __current-coro__ next)
+      (next))))
+
+(def-fn run-all ()
+  "Run until all green threads complete."
+  (let loop ()
+    (when (not (null? __run-queue__))
+      (run-scheduler)
+      (loop))))
+
+;; ── Async / Await sugar ──────────────────────────────────────────
+;; (async (lambda () body)) → spawns a promise-backed coroutine
+;; (await promise)          → yields until resolved
+
+(def-fn async-run (thunk)
+  "Run thunk in a new green thread and return a Promise."
+  (let ((p (make-promise)))
+    (spawn
+      (lambda ()
+        (handle-error
+          (lambda ()
+            (promise-resolve! p (thunk)))
+          (lambda (err)
+            (promise-reject! p err)))))
+    p))
+
+(def-macro async (body)
+  `(async-run (lambda () ,body)))
+
+(def-macro await (promise-expr)
+  `(promise-await ,promise-expr))
+
+;; ── Sleep ────────────────────────────────────────────────────────
+(def-fn sleep-ms (ms)
+  "Yield for approximately ms milliseconds."
+  (native-sleep-ms ms))
+
+;; ────────────────────────────────────────────────────────────────
+;; § 3  PROMISES  (deferred / future values)
+;; ────────────────────────────────────────────────────────────────
+
+(def-fn make-promise ()
+  (hash-map
+    'state     'pending   ;; pending | resolved | rejected
+    'value     nil
+    'callbacks (list)     ;; (on-resolve on-reject) pairs
+    'type      'promise))
+
+(def-fn promise? (x)
+  (and (hash-map? x) (equal? (hash-get x 'type) 'promise)))
+
+(def-fn promise-resolve! (p val)
+  (when (equal? (hash-get p 'state) 'pending)
+    (hash-set! p 'state 'resolved)
+    (hash-set! p 'value val)
+    (for-each (hash-get p 'callbacks)
+      (lambda (cb) ((car cb) val)))))
+
+(def-fn promise-reject! (p err)
+  (when (equal? (hash-get p 'state) 'pending)
+    (hash-set! p 'state 'rejected)
+    (hash-set! p 'value err)
+    (for-each (hash-get p 'callbacks)
+      (lambda (cb) ((cadr cb) err)))))
+
+(def-fn promise-then (p on-resolve on-reject)
+  "Chain a handler.  Returns a new promise."
+  (let ((next (make-promise)))
+    (let ((wrap-resolve
+           (lambda (v)
+             (handle-error
+               (lambda () (promise-resolve! next (on-resolve v)))
+               (lambda (e) (promise-reject! next e)))))
+          (wrap-reject
+           (if (nil? on-reject)
+             (lambda (e) (promise-reject! next e))
+             (lambda (e)
+               (handle-error
+                 (lambda () (promise-resolve! next (on-reject e)))
+                 (lambda (e2) (promise-reject! next e2)))))))
+      (cond
+        ((equal? (hash-get p 'state) 'resolved)
+         (wrap-resolve (hash-get p 'value)))
+        ((equal? (hash-get p 'state) 'rejected)
+         (wrap-reject  (hash-get p 'value)))
+        (else
+         (hash-set! p 'callbacks
+           (append (hash-get p 'callbacks)
+                   (list (list wrap-resolve wrap-reject))))))
+      next)))
+
+(def-fn promise-await (p)
+  "Block the current coroutine until p resolves or rejects."
+  (cond
+    ((equal? (hash-get p 'state) 'resolved) (hash-get p 'value))
+    ((equal? (hash-get p 'state) 'rejected) (raise (hash-get p 'value)))
+    (else
+     (coroutine-yield
+       (lambda (k)
+         (promise-then p
+           (lambda (v) (spawn (lambda () (k v))))
+           (lambda (e) (spawn (lambda () (raise e))))))))))
+
+;; ── Promise.all ──────────────────────────────────────────────────
+(def-fn promise-all (promises)
+  "Resolve when all promises resolve; reject on first rejection."
+  (let ((p      (make-promise))
+        (results (make-vector (length promises) nil))
+        (count   (list 0)))   ;; mutable counter
+    (for-each (range 0 (length promises))
+      (lambda (i)
+        (promise-then (list-ref promises i)
+          (lambda (v)
+            (vector-set! results i v)
+            (set! (car count) (+ (car count) 1))
+            (when (= (car count) (length promises))
+              (promise-resolve! p (vector->list results))))
+          (lambda (e)
+            (promise-reject! p e)))))
+    p))
+
+;; ────────────────────────────────────────────────────────────────
+;; § 4  ACTORS
+;; ────────────────────────────────────────────────────────────────
+
+(def-fn make-actor (behavior)
+  "Create an actor with the given behaviour function.
+   behavior = (lambda (state msg) new-state)"
+  (let ((mailbox (make-channel 1024))
+        (actor   (hash-map
+                   'mailbox  nil
+                   'state    nil
+                   'alive    #t
+                   'type     'actor)))
+    (hash-set! actor 'mailbox mailbox)
+    (spawn
+      (lambda ()
+        (let loop ((state nil))
+          (when (hash-get actor 'alive)
+            (let ((msg (chan? mailbox)))
+              (when (not (nil? msg))
+                (let ((new-state (behavior state msg)))
+                  (hash-set! actor 'state new-state)
+                  (loop new-state))))))))
+    actor))
+
+(def-fn actor-send! (actor msg)
+  "Send a message to an actor's mailbox."
+  (chan! (hash-get actor 'mailbox) msg))
+
+(def-fn actor-kill! (actor)
+  (hash-set! actor 'alive #f)
+  (chan-close! (hash-get actor 'mailbox)))
+
+(def-fn actor-state (actor)
+  (hash-get actor 'state))
+
+;; ── Convenience: request/reply ───────────────────────────────────
+(def-fn actor-ask (actor msg timeout-ms)
+  "Send a message and wait for a reply.  Returns reply value."
+  (let ((reply-ch (make-channel 1)))
+    (actor-send! actor (hash-map 'msg msg 'reply reply-ch))
+    ;; TODO: integrate timeout-ms with scheduler
+    (chan? reply-ch)))
+
+;; ────────────────────────────────────────────────────────────────
+;; § 5  CONVENIENCE MACROS
+;; ────────────────────────────────────────────────────────────────
+
+(def-macro go (body)
+  "Spawn a green thread."
+  `(spawn (lambda () ,body)))
+
+(def-macro with-channel (name cap body)
+  `(let ((,name (make-channel ,cap)))
+     ,body))
+
+(def-macro actor-loop (state-var msg-var behavior)
+  "Define an actor in place with named state and message variables."
+  `(make-actor
+     (lambda (,state-var ,msg-var)
+       ,behavior)))
+
+(export
+  ;; Channels
+  make-channel chan! chan? chan-close! chan-closed? select
+  ;; Coroutines / scheduler
+  spawn coroutine-yield run-scheduler run-all sleep-ms
+  ;; Promises
+  make-promise promise? promise-resolve! promise-reject!
+  promise-then promise-await promise-all
+  ;; Actors
+  make-actor actor-send! actor-kill! actor-state actor-ask
+  ;; Macros
+  go with-channel actor-loop async await)

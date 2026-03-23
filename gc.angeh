@@ -1,0 +1,264 @@
+;; ================================================================
+;; lib/gc.angeh  —  Angehlang Generational Garbage Collector
+;; Author contribution: Claude (Anthropic)
+;;
+;; Implements a tri-color mark-and-sweep GC with:
+;;   • Young / Old / Permanent generations
+;;   • Write barriers
+;;   • Weak references
+;;   • Finalizers
+;;   • Compaction (optional)
+;;   • GC statistics & tuning
+;;
+;; When Angehlang runs on its own runtime, the substrate will call
+;; gc-collect! at safe points.  This module also exposes a manual
+;; API for deterministic resource management.
+;; ================================================================
+
+(def-module gc
+  "Generational tri-color GC — written entirely in Angehlang.")
+
+;; ── Color constants ─────────────────────────────────────────────
+(def GC-WHITE 0)  ;; unreachable (candidate for collection)
+(def GC-GRAY  1)  ;; reachable but children not yet scanned
+(def GC-BLACK 2)  ;; reachable and fully scanned
+
+;; ── Generation IDs ───────────────────────────────────────────────
+(def GEN-YOUNG 0)
+(def GEN-OLD   1)
+(def GEN-PERM  2)   ;; never collected (interned strings, etc.)
+
+;; ── Object header ────────────────────────────────────────────────
+;; Every managed object has:
+;;   { id, color, gen, refs, finalizer, weak-count, mark-epoch }
+
+(def __next-id__    0)
+(def __mark-epoch__ 0)
+
+(def-fn gc-alloc (refs finalizer gen)
+  "Allocate a new managed object."
+  (set! __next-id__ (+ __next-id__ 1))
+  (let ((obj (hash-map
+               'id        __next-id__
+               'color     GC-WHITE
+               'gen       gen
+               'refs      refs      ;; list of child objects
+               'finalizer finalizer
+               'alive     #t
+               'epoch     0)))
+    (heap-register! obj)
+    obj))
+
+;; ── Heap registry ────────────────────────────────────────────────
+(def __heap__  (hash-map))   ;; id → object
+(def __roots__ (list))       ;; root set (global env refs, stack frames)
+
+(def-fn heap-register! (obj)
+  (hash-set! __heap__ (hash-get obj 'id) obj))
+
+(def-fn heap-deregister! (obj)
+  (hash-set! __heap__ (hash-get obj 'id) nil))
+
+(def-fn add-root! (obj)
+  "Add an object to the GC root set."
+  (set! __roots__ (cons obj __roots__)))
+
+(def-fn remove-root! (obj)
+  (set! __roots__
+    (filter (lambda (r) (not (= (hash-get r 'id) (hash-get obj 'id))))
+            __roots__)))
+
+;; ── Write barrier ─────────────────────────────────────────────────
+;; When a BLACK object is updated to reference a WHITE object,
+;; re-color the WHITE to GRAY (Dijkstra write barrier).
+(def-fn write-barrier! (parent child)
+  (when (and (= (hash-get parent 'color) GC-BLACK)
+             (= (hash-get child  'color) GC-WHITE))
+    (hash-set! child 'color GC-GRAY)
+    (gray-queue-add! child)))
+
+(def __gray-queue__ (list))
+
+(def-fn gray-queue-add! (obj)
+  (set! __gray-queue__ (cons obj __gray-queue__)))
+
+;; ── Mark phase ───────────────────────────────────────────────────
+(def-fn gc-mark-roots! ()
+  "Color all roots GRAY and enqueue them."
+  (for-each __roots__
+    (lambda (root)
+      (when (= (hash-get root 'color) GC-WHITE)
+        (hash-set! root 'color GC-GRAY)
+        (gray-queue-add! root)))))
+
+(def-fn gc-drain-gray! ()
+  "Process the gray queue until empty (tri-color invariant)."
+  (let loop ()
+    (when (not (null? __gray-queue__))
+      (let ((obj (car __gray-queue__)))
+        (set! __gray-queue__ (cdr __gray-queue__))
+        ;; Mark all children GRAY
+        (for-each (hash-get obj 'refs)
+          (lambda (child)
+            (when (and (hash-map? child)
+                       (hash-has? child 'color)
+                       (= (hash-get child 'color) GC-WHITE))
+              (hash-set! child 'color GC-GRAY)
+              (gray-queue-add! child))))
+        ;; Mark this object BLACK
+        (hash-set! obj 'color GC-BLACK))
+      (loop))))
+
+;; ── Sweep phase ──────────────────────────────────────────────────
+(def-fn gc-sweep! ()
+  "Free all WHITE objects; reset BLACK → WHITE for next cycle.
+   Returns the number of objects collected."
+  (let ((collected 0))
+    (for-each (hash-vals __heap__)
+      (lambda (obj)
+        (when (not (nil? obj))
+          (cond
+            ((= (hash-get obj 'color) GC-WHITE)
+             ;; Collect: run finalizer, deregister
+             (when (not (nil? (hash-get obj 'finalizer)))
+               (handle-error
+                 (lambda () ((hash-get obj 'finalizer) obj))
+                 (lambda (e) (log-warn (str "GC finalizer error: " e)))))
+             (hash-set! obj 'alive #f)
+             (heap-deregister! obj)
+             (set! collected (+ collected 1)))
+            ((= (hash-get obj 'color) GC-BLACK)
+             ;; Reset for next cycle
+             (hash-set! obj 'color GC-WHITE))))))
+    collected))
+
+;; ── Full collection ──────────────────────────────────────────────
+(def __gc-stats__
+  (hash-map
+    'collections    0
+    'total-freed    0
+    'total-alloc    0
+    'last-freed     0
+    'pause-ms       0))
+
+(def-fn gc-collect! ()
+  "Run a full mark-and-sweep collection.  Returns # objects freed."
+  (let ((t0 (native-time-ms)))
+    (set! __mark-epoch__ (+ __mark-epoch__ 1))
+    ;; Reset all reachable counters? No — we use color state.
+    (gc-mark-roots!)
+    (gc-drain-gray!)
+    (let ((freed (gc-sweep!)))
+      (let ((elapsed (- (native-time-ms) t0)))
+        (hash-set! __gc-stats__ 'collections
+          (+ (hash-get __gc-stats__ 'collections) 1))
+        (hash-set! __gc-stats__ 'total-freed
+          (+ (hash-get __gc-stats__ 'total-freed) freed))
+        (hash-set! __gc-stats__ 'last-freed freed)
+        (hash-set! __gc-stats__ 'pause-ms   elapsed)
+        freed))))
+
+;; ── Generational promotion ───────────────────────────────────────
+(def __young-threshold__ 3)  ;; collections before promoting to OLD
+
+(def __survival-counts__ (hash-map))
+
+(def-fn gc-minor-collect! ()
+  "Collect young generation only.  Promotes survivors."
+  (gc-mark-roots!)
+  (gc-drain-gray!)
+  ;; Sweep only young objects; promote survivors
+  (for-each (hash-vals __heap__)
+    (lambda (obj)
+      (when (and (not (nil? obj))
+                 (= (hash-get obj 'gen) GEN-YOUNG))
+        (cond
+          ((= (hash-get obj 'color) GC-WHITE)
+           (when (not (nil? (hash-get obj 'finalizer)))
+             (handle-error
+               (lambda () ((hash-get obj 'finalizer) obj))
+               (lambda (_) nil)))
+           (heap-deregister! obj))
+          ((= (hash-get obj 'color) GC-BLACK)
+           ;; Track survivals
+           (let ((n (+ 1 (hash-get-safe __survival-counts__
+                                         (hash-get obj 'id) 0))))
+             (if (>= n __young-threshold__)
+               (begin
+                 (hash-set! obj 'gen GEN-OLD)
+                 (hash-del __survival-counts__ (hash-get obj 'id)))
+               (hash-set! __survival-counts__ (hash-get obj 'id) n)))
+           (hash-set! obj 'color GC-WHITE)))))))
+
+;; ── Weak references ──────────────────────────────────────────────
+(def-fn make-weak-ref (obj)
+  "Create a weak reference.  Does not prevent collection."
+  (hash-map 'type 'weak-ref 'target obj))
+
+(def-fn weak-ref-get (wr)
+  "Dereference a weak ref.  Returns nil if target was collected."
+  (let ((tgt (hash-get wr 'target)))
+    (if (and (hash-map? tgt) (hash-get tgt 'alive))
+      tgt
+      nil)))
+
+;; ── Finalizers ───────────────────────────────────────────────────
+(def-fn gc-register-finalizer! (obj fn)
+  "Register fn to be called when obj is collected."
+  (hash-set! obj 'finalizer fn))
+
+;; ── Compaction (optional) ────────────────────────────────────────
+(def-fn gc-compact! ()
+  "Compact the heap by re-assigning contiguous IDs.
+   Expensive — only call during low-activity periods."
+  (let ((live-objs
+         (filter (lambda (o) (and (not (nil? o)) (hash-get o 'alive)))
+                 (hash-vals __heap__))))
+    (set! __heap__ (hash-map))
+    (set! __next-id__ 0)
+    (for-each live-objs
+      (lambda (obj)
+        (set! __next-id__ (+ __next-id__ 1))
+        (hash-set! obj 'id __next-id__)
+        (hash-set! __heap__ __next-id__ obj)))))
+
+;; ── Statistics ───────────────────────────────────────────────────
+(def-fn gc-stats ()
+  "Return current GC statistics as a hash-map."
+  (hash-set* __gc-stats__
+    'live-objects (length
+                    (filter (lambda (o) (and (not (nil? o))
+                                             (hash-get o 'alive)))
+                            (hash-vals __heap__)))
+    'heap-size    (hash-get __next-id__ __next-id__)))
+
+(def-fn gc-print-stats ()
+  (let ((s (gc-stats)))
+    (print (str "── GC Stats ──────────────────────────"))
+    (print (str "  Collections  : " (hash-get s 'collections)))
+    (print (str "  Total freed  : " (hash-get s 'total-freed)))
+    (print (str "  Last freed   : " (hash-get s 'last-freed)))
+    (print (str "  Live objects : " (hash-get s 'live-objects)))
+    (print (str "  Last pause   : " (hash-get s 'pause-ms) " ms"))
+    (print (str "──────────────────────────────────────"))))
+
+;; ── Tuning ───────────────────────────────────────────────────────
+(def-fn gc-set-young-threshold! (n)
+  (set! __young-threshold__ n))
+
+(export
+  ;; Allocation
+  gc-alloc add-root! remove-root!
+  ;; Collection
+  gc-collect! gc-minor-collect! gc-compact!
+  ;; Write barrier
+  write-barrier!
+  ;; Weak refs
+  make-weak-ref weak-ref-get
+  ;; Finalizers
+  gc-register-finalizer!
+  ;; Stats & tuning
+  gc-stats gc-print-stats gc-set-young-threshold!
+  ;; Constants
+  GEN-YOUNG GEN-OLD GEN-PERM
+  GC-WHITE GC-GRAY GC-BLACK)

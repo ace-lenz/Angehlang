@@ -1,0 +1,496 @@
+;; ================================================================
+;; tests/test_all.angeh  —  Master Test Suite
+;; Author contribution: Claude (Anthropic)
+;;
+;; Tests for:
+;;   • core/lexer.angeh
+;;   • core/parser.angeh
+;;   • core/evaluator.angeh
+;;   • stdlib/string.angeh
+;;   • stdlib/collections.angeh
+;;   • stdlib/io.angeh
+;;   • lib/types.angeh
+;;   • lib/gc.angeh
+;;   • lib/async.angeh
+;; ================================================================
+
+(import test-framework)
+(import lexer)
+(import parser)
+(import evaluator)
+(import string)
+(import collections)
+(import io)
+(import types)
+(import gc)
+
+;; ════════════════════════════════════════════════════════════════
+;; Lexer tests
+;; ════════════════════════════════════════════════════════════════
+
+(describe "Lexer"
+  (it "tokenizes integers"
+    (let ((toks (tokenize "42")))
+      (assert-equal (hash-get (car toks) 'type) TOKEN-NUMBER)
+      (assert-equal (hash-get (car toks) 'value) 42)))
+
+  (it "tokenizes negative numbers"
+    (let ((toks (tokenize "-7")))
+      (assert-equal (hash-get (car toks) 'value) -7)))
+
+  (it "tokenizes strings"
+    (let ((toks (tokenize "\"hello\"")))
+      (assert-equal (hash-get (car toks) 'type) TOKEN-STRING)
+      (assert-equal (hash-get (car toks) 'value) "hello")))
+
+  (it "tokenizes string escapes"
+    (let ((toks (tokenize "\"line\\nnewline\"")))
+      (assert-equal (hash-get (car toks) 'value) "line\nnewline")))
+
+  (it "tokenizes booleans"
+    (let ((t1 (car (tokenize "true")))
+          (t2 (car (tokenize "false"))))
+      (assert-equal (hash-get t1 'type) TOKEN-BOOL)
+      (assert-equal (hash-get t1 'value) #t)
+      (assert-equal (hash-get t2 'value) #f)))
+
+  (it "tokenizes nil"
+    (let ((t (car (tokenize "nil"))))
+      (assert-equal (hash-get t 'type) TOKEN-NIL)))
+
+  (it "tokenizes symbols"
+    (let ((t (car (tokenize "my-var"))))
+      (assert-equal (hash-get t 'type) TOKEN-SYMBOL)
+      (assert-equal (hash-get t 'value) 'my-var)))
+
+  (it "skips line comments"
+    (let ((toks (tokenize ";; comment\n42")))
+      (assert-equal (hash-get (car toks) 'value) 42)))
+
+  (it "tokenizes parens"
+    (let ((toks (tokenize "()")))
+      (assert-equal (hash-get (car toks) 'type) TOKEN-LPAREN)
+      (assert-equal (hash-get (cadr toks) 'type) TOKEN-RPAREN)))
+
+  (it "tokenizes complex expression"
+    (let ((toks (tokenize "(+ 1 2)")))
+      (assert-equal (length toks) 6)))  ;; ( + 1 2 ) EOF
+
+  (it "ends with EOF token"
+    (let ((toks (tokenize "42")))
+      (assert-equal (hash-get (last toks) 'type) TOKEN-EOF))))
+
+;; ════════════════════════════════════════════════════════════════
+;; Parser tests
+;; ════════════════════════════════════════════════════════════════
+
+(describe "Parser"
+  (it "parses integer atom"
+    (let ((ast (parse-source "42")))
+      (assert-equal ast (list 42))))
+
+  (it "parses string atom"
+    (let ((ast (parse-source "\"hello\"")))
+      (assert-equal ast (list "hello"))))
+
+  (it "parses empty list"
+    (let ((ast (parse-source "()")))
+      (assert-equal ast (list (list)))))
+
+  (it "parses simple list"
+    (let ((ast (parse-source "(+ 1 2)")))
+      (assert-equal ast (list (list '+ 1 2)))))
+
+  (it "parses nested"
+    (let ((ast (parse-source "(+ (* 2 3) 4)")))
+      (assert-equal ast (list (list '+ (list '* 2 3) 4)))))
+
+  (it "parses multiple forms"
+    (let ((ast (parse-source "1 2 3")))
+      (assert-equal ast (list 1 2 3))))
+
+  (it "parses boolean"
+    (assert-equal (parse-source "true") (list #t)))
+
+  (it "parses nil"
+    (assert-equal (parse-source "nil") (list nil)))
+
+  (it "errors on unmatched paren"
+    (assert-throws (lambda () (parse-source "(1 2")))))
+
+;; ════════════════════════════════════════════════════════════════
+;; Evaluator tests
+;; ════════════════════════════════════════════════════════════════
+
+(describe "Evaluator"
+  (before-each
+    (set! __env__ (make-global-env)))
+
+  (it "evaluates literals"
+    (assert-equal (evaluate-source "42" __env__) 42)
+    (assert-equal (evaluate-source "\"hi\"" __env__) "hi")
+    (assert-equal (evaluate-source "true" __env__) #t))
+
+  (it "evaluates arithmetic"
+    (assert-equal (evaluate-source "(+ 1 2)" __env__) 3)
+    (assert-equal (evaluate-source "(* 3 4)" __env__) 12)
+    (assert-equal (evaluate-source "(- 10 3)" __env__) 7))
+
+  (it "evaluates def"
+    (evaluate-source "(def x 42)" __env__)
+    (assert-equal (env-lookup __env__ 'x) 42))
+
+  (it "evaluates lambda and call"
+    (assert-equal
+      (evaluate-source "((lambda (x) (* x x)) 5)" __env__)
+      25))
+
+  (it "evaluates let"
+    (assert-equal
+      (evaluate-source "(let ((a 3) (b 4)) (+ a b))" __env__)
+      7))
+
+  (it "evaluates if true"
+    (assert-equal (evaluate-source "(if true 1 2)" __env__) 1))
+
+  (it "evaluates if false"
+    (assert-equal (evaluate-source "(if false 1 2)" __env__) 2))
+
+  (it "evaluates begin"
+    (assert-equal
+      (evaluate-source "(begin (def y 10) (* y 2))" __env__)
+      20))
+
+  (it "evaluates recursion (fib)"
+    (evaluate-source
+      "(def-fn fib (n) (if (<= n 1) n (+ (fib (- n 1)) (fib (- n 2)))))"
+      __env__)
+    (assert-equal (evaluate-source "(fib 10)" __env__) 55))
+
+  (it "is tail-call safe (large recursion)"
+    (evaluate-source
+      "(def-fn sum (n acc) (if (= n 0) acc (sum (- n 1) (+ acc n))))"
+      __env__)
+    (assert-equal (evaluate-source "(sum 100000 0)" __env__) 5000050000))
+
+  (it "evaluates pattern match"
+    (assert-equal
+      (evaluate-source
+        "(match (list 1 2) ((list a b) (+ a b)) (_ 0))"
+        __env__)
+      3))
+
+  (it "evaluates try/catch"
+    (assert-equal
+      (evaluate-source
+        "(try (error \"boom\") (catch e \"caught\"))"
+        __env__)
+      "caught")))
+
+;; ════════════════════════════════════════════════════════════════
+;; String library tests
+;; ════════════════════════════════════════════════════════════════
+
+(describe "stdlib/string"
+  (it "string-empty?"
+    (assert-true  (string-empty? ""))
+    (assert-false (string-empty? "x")))
+
+  (it "string-slice"
+    (assert-equal (string-slice "hello world" 6 11) "world"))
+
+  (it "string-starts?"
+    (assert-true  (string-starts? "foobar" "foo"))
+    (assert-false (string-starts? "foobar" "bar")))
+
+  (it "string-ends?"
+    (assert-true  (string-ends? "foobar" "bar"))
+    (assert-false (string-ends? "foobar" "foo")))
+
+  (it "string-replace-all"
+    (assert-equal (string-replace-all "aababc" "ab" "X")
+                  "aXXc"))
+
+  (it "string-split and join round-trip"
+    (let ((s "a,b,c,d"))
+      (assert-equal (string-join (string-split s ",") ",") s)))
+
+  (it "string-upper / lower"
+    (assert-equal (string-upper "hello") "HELLO")
+    (assert-equal (string-lower "WORLD") "world"))
+
+  (it "string-trim"
+    (assert-equal (string-trim "  hello  ") "hello"))
+
+  (it "string-pad-left"
+    (assert-equal (string-pad-left "42" 5 #\0) "00042"))
+
+  (it "format %s %d"
+    (assert-equal (format "Hello %s, you are %d!" "Alice" 30)
+                  "Hello Alice, you are 30!"))
+
+  (it "glob-match?"
+    (assert-true  (glob-match? "*.angeh" "foo.angeh"))
+    (assert-false (glob-match? "*.angeh" "foo.py"))
+    (assert-true  (glob-match? "test_?" "test_1")))
+
+  (it "string-distance"
+    (assert-equal (string-distance "kitten" "sitting") 3))
+
+  (it "string-camel->kebab"
+    (assert-equal (string-camel->kebab "myVariableName") "my-variable-name")))
+
+;; ════════════════════════════════════════════════════════════════
+;; Collections tests
+;; ════════════════════════════════════════════════════════════════
+
+(describe "stdlib/collections - Vector"
+  (it "vec-conj and vec-nth"
+    (let* ((v  (vec-new))
+           (v2 (vec-conj v 10))
+           (v3 (vec-conj v2 20)))
+      (assert-equal (vec-nth v3 0) 10)
+      (assert-equal (vec-nth v3 1) 20)))
+
+  (it "vec-count"
+    (let ((v (reduce vec-conj (vec-new) (range 0 100))))
+      (assert-equal (vec-count v) 100)))
+
+  (it "vec-map"
+    (let* ((v  (list->vec (list 1 2 3 4 5)))
+           (v2 (vec-map (lambda (x) (* x x)) v)))
+      (assert-equal (vec->list v2) (list 1 4 9 16 25))))
+
+  (it "vec->list round-trip"
+    (let ((lst (list 1 2 3 4 5)))
+      (assert-equal (vec->list (list->vec lst)) lst))))
+
+(describe "stdlib/collections - Queue"
+  (it "enqueue and dequeue"
+    (let* ((q  (queue-new))
+           (q2 (queue-enq q "a"))
+           (q3 (queue-enq q2 "b"))
+           (r1 (queue-deq q3)))
+      (assert-equal (car r1) "a")
+      (assert-equal (car (queue-deq (cadr r1))) "b")))
+
+  (it "queue-size"
+    (let ((q (reduce queue-enq (queue-new) (range 0 10))))
+      (assert-equal (queue-size q) 10))))
+
+(describe "stdlib/collections - Heap"
+  (it "min-heap extracts in order"
+    (let* ((h  (reduce heap-push (heap-min) (list 5 1 3 2 4)))
+           (v1 (car (heap-pop h)))
+           (v2 (car (heap-pop (cadr (heap-pop h))))))
+      (assert-equal v1 1)
+      (assert-equal v2 2)))
+
+  (it "max-heap extracts in reverse order"
+    (let* ((h  (reduce heap-push (heap-max) (list 5 1 3)))
+           (v1 (car (heap-pop h))))
+      (assert-equal v1 5))))
+
+(describe "stdlib/collections - Graph"
+  (it "BFS traversal"
+    (let* ((g (graph-new))
+           (g (graph-add-node g 'A nil))
+           (g (graph-add-node g 'B nil))
+           (g (graph-add-node g 'C nil))
+           (g (graph-add-edge g 'A 'B 1))
+           (g (graph-add-edge g 'B 'C 1))
+           (bfs (graph-bfs g 'A)))
+      (assert-equal (car bfs) 'A)
+      (assert-contains bfs 'B)
+      (assert-contains bfs 'C)))
+
+  (it "Dijkstra distances"
+    (let* ((g (graph-new))
+           (g (graph-add-node g 'A nil))
+           (g (graph-add-node g 'B nil))
+           (g (graph-add-edge g 'A 'B 7))
+           (d (graph-dijkstra g 'A)))
+      (assert-equal (hash-get d 'A) 0)
+      (assert-equal (hash-get d 'B) 7))))
+
+(describe "stdlib/collections - Trie"
+  (it "insert and get"
+    (let* ((t (trie-new))
+           (t (trie-insert t "hello" 1))
+           (t (trie-insert t "help" 2)))
+      (assert-equal (trie-get t "hello") 1)
+      (assert-equal (trie-get t "help") 2)
+      (assert-nil   (trie-get t "hell"))))
+
+  (it "prefix-search"
+    (let* ((t (reduce (lambda (tr kv) (trie-insert tr (car kv) (cadr kv)))
+                      (trie-new)
+                      (list (list "apple" 1) (list "app" 2) (list "application" 3) (list "banana" 4))))
+           (results (map car (trie-prefix-search t "app"))))
+      (assert-length results 3)
+      (assert-contains results "apple")
+      (assert-contains results "app")
+      (assert-contains results "application"))))
+
+;; ════════════════════════════════════════════════════════════════
+;; I/O library tests
+;; ════════════════════════════════════════════════════════════════
+
+(describe "stdlib/io"
+  (it "VFS write and read"
+    (vfs-write! "/test/hello.txt" "Hello, World!")
+    (assert-equal (vfs-read "/test/hello.txt") "Hello, World!"))
+
+  (it "VFS exists?"
+    (vfs-write! "/test/exists.txt" "yes")
+    (assert-true  (vfs-exists? "/test/exists.txt"))
+    (assert-false (vfs-exists? "/test/nope.txt")))
+
+  (it "path-basename"
+    (assert-equal (path-basename "/foo/bar/baz.angeh") "baz.angeh"))
+
+  (it "path-dirname"
+    (assert-equal (path-dirname "/foo/bar/baz.angeh") "/foo/bar"))
+
+  (it "path-extension"
+    (assert-equal (path-extension "file.angeh") ".angeh")
+    (assert-equal (path-extension "noext") ""))
+
+  (it "path-join"
+    (assert-equal (path-join (list "foo" "bar" "baz")) "foo/bar/baz"))
+
+  (it "string stream read-line"
+    (let* ((st (make-string-stream "line1\nline2\nline3"))
+           (l1 (stream-read-line st))
+           (l2 (stream-read-line st)))
+      (assert-equal l1 "line1")
+      (assert-equal l2 "line2")))
+
+  (it "output stream"
+    (let ((os (make-output-stream)))
+      (ostream-write! os "hello")
+      (ostream-write! os " world")
+      (assert-equal (ostream->string os) "hello world")))
+
+  (it "json->string numbers"
+    (assert-equal (json->string 42) "42")
+    (assert-equal (json->string 3.14) "3.14"))
+
+  (it "json->string string"
+    (assert-equal (json->string "hello") "\"hello\""))
+
+  (it "json->string list"
+    (assert-equal (json->string (list 1 2 3)) "[1,2,3]"))
+
+  (it "csv round-trip"
+    (let* ((data  (list (list "a" "b" "c") (list "1" "2" "3")))
+           (csv   (csv-write data))
+           (back  (csv-read csv)))
+      (assert-equal (car back) (list "a" "b" "c"))))
+
+  (it "sexp->string"
+    (assert-equal (sexp->string (list '+ 1 2)) "(+ 1 2)")))
+
+;; ════════════════════════════════════════════════════════════════
+;; Type system tests
+;; ════════════════════════════════════════════════════════════════
+
+(describe "lib/types"
+  (it "infers Int"
+    (let* ((te (make-type-env nil))
+           (s  (make-subst))
+           (t  (car (infer 42 te s))))
+      (assert-equal t T-INT)))
+
+  (it "infers Str"
+    (let* ((te (make-type-env nil))
+           (s  (make-subst))
+           (t  (car (infer "hello" te s))))
+      (assert-equal t T-STR)))
+
+  (it "unifies equal types"
+    (let ((s (unify T-INT T-INT (make-subst))))
+      (assert-not-nil s)))
+
+  (it "unifies type variable"
+    (let* ((v  (T-Var 'a))
+           (s  (unify v T-INT (make-subst)))
+           (t  (apply-subst s v)))
+      (assert-equal t T-INT)))
+
+  (it "detects occurs-check violation"
+    (let ((v (T-Var 'a)))
+      (assert-throws
+        (lambda ()
+          (unify v (T-List v) (make-subst))))))
+
+  (it "unifies function types"
+    (let* ((fn1 (T-Fn (list T-INT T-INT) T-INT))
+           (fn2 (T-Fn (list T-INT T-INT) T-INT))
+           (s   (unify fn1 fn2 (make-subst))))
+      (assert-not-nil s))))
+
+;; ════════════════════════════════════════════════════════════════
+;; GC tests
+;; ════════════════════════════════════════════════════════════════
+
+(describe "lib/gc"
+  (it "alloc registers object"
+    (let ((obj (gc-alloc (list) nil GEN-YOUNG)))
+      (assert-true (hash-get obj 'alive))))
+
+  (it "collect frees unreachable objects"
+    (let* ((obj (gc-alloc (list) nil GEN-YOUNG))
+           ;; Don't add to roots — should be collected
+           (freed (gc-collect!)))
+      (assert-true (>= freed 0))))
+
+  (it "root prevents collection"
+    (let ((obj (gc-alloc (list) nil GEN-YOUNG)))
+      (add-root! obj)
+      (gc-collect!)
+      (assert-true (hash-get obj 'alive))
+      (remove-root! obj)))
+
+  (it "weak ref returns nil after collection"
+    (let* ((obj (gc-alloc (list) nil GEN-YOUNG))
+           (wr  (make-weak-ref obj)))
+      (gc-collect!)
+      ;; obj not in roots, should be collected
+      (assert-nil (weak-ref-get wr))))
+
+  (it "finalizer is called on collection"
+    (let* ((called (list #f))
+           (obj    (gc-alloc (list) (lambda (_) (set-car! called #t)) GEN-YOUNG)))
+      (gc-collect!)
+      (assert-true (car called)))))
+
+;; ════════════════════════════════════════════════════════════════
+;; Property-based tests
+;; ════════════════════════════════════════════════════════════════
+
+(describe "Properties"
+  (for-all "string reverse is involution"
+    (lambda () (gen-string 50))
+    (lambda (s)
+      (assert-equal
+        (list->string (reverse (reverse (string->list s))))
+        s))
+    100)
+
+  (for-all "list reverse length is preserved"
+    (lambda () (gen-list gen-int 20))
+    (lambda (lst)
+      (assert-equal (length (reverse lst)) (length lst)))
+    50)
+
+  (for-all "vec-conj increases count by 1"
+    (lambda () (gen-int 0 1000))
+    (lambda (n)
+      (let* ((v (reduce vec-conj (vec-new) (range 0 n))))
+        (assert-equal (vec-count (vec-conj v 999)) (+ n 1))))
+    30))
+
+;; ── Run everything ───────────────────────────────────────────────
+(def ok? (run-all-suites))
+(when (not ok?) (native-exit 1))

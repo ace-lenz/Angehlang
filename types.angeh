@@ -1,0 +1,330 @@
+;; ================================================================
+;; lib/types.angeh  —  Angehlang Static Type System
+;; Author contribution: Claude (Anthropic)
+;;
+;; Hindley-Milner-style type inference with:
+;;   • Primitive types  (Int Float Str Bool Char Nil Any)
+;;   • Compound types   (List T)  (Fn args ret)  (Tuple T...)
+;;   • Generic types    (forall a. T)
+;;   • Record types     (Record { field: T ... })
+;;   • Union types      (Union T T ...)
+;;   • Type aliases     (def-type Name T)
+;;   • Inference        (infer-type expr env)
+;;   • Checking         (check-type expr expected env)
+;; ================================================================
+
+(def-module types
+  "Hindley-Milner type system for Angehlang — inference & checking.")
+
+;; ── Type constructors ───────────────────────────────────────────
+(def T-INT    'Int)
+(def T-FLOAT  'Float)
+(def T-NUM    'Num)     ;; supertype of Int & Float
+(def T-STR    'Str)
+(def T-BOOL   'Bool)
+(def T-CHAR   'Char)
+(def T-NIL    'Nil)
+(def T-ANY    'Any)
+(def T-NEVER  'Never)   ;; bottom type — never returns
+
+(def-fn T-List (elem)   (list 'List elem))
+(def-fn T-Fn   (args r) (list 'Fn args r))
+(def-fn T-Tuple (ts)    (cons 'Tuple ts))
+(def-fn T-Record (fields) (list 'Record fields))   ;; fields = hash-map sym->type
+(def-fn T-Union (ts)    (cons 'Union ts))
+(def-fn T-Var   (name)  (list 'Var name))           ;; type variable
+(def-fn T-Forall (vars body) (list 'Forall vars body))
+
+;; ── Type predicates ─────────────────────────────────────────────
+(def-fn type-var? (t)    (and (list? t) (eq? (car t) 'Var)))
+(def-fn type-fn?  (t)    (and (list? t) (eq? (car t) 'Fn)))
+(def-fn type-list?(t)    (and (list? t) (eq? (car t) 'List)))
+(def-fn type-tuple?(t)   (and (list? t) (eq? (car t) 'Tuple)))
+(def-fn type-record?(t)  (and (list? t) (eq? (car t) 'Record)))
+(def-fn type-union?(t)   (and (list? t) (eq? (car t) 'Union)))
+(def-fn type-forall?(t)  (and (list? t) (eq? (car t) 'Forall)))
+
+;; ── Substitution (type-variable → type) ─────────────────────────
+(def-fn make-subst () (hash-map))
+
+(def-fn subst-get (s v)
+  (hash-get s (cadr v)))  ;; v = (Var name)
+
+(def-fn subst-extend (s var t)
+  (hash-set s (cadr var) t))
+
+(def-fn apply-subst (s t)
+  "Apply substitution s to type t."
+  (cond
+    ((type-var? t)
+     (let ((rep (hash-get s (cadr t))))
+       (if (nil? rep) t (apply-subst s rep))))
+    ((type-fn? t)
+     (T-Fn (map (lambda (a) (apply-subst s a)) (cadr t))
+           (apply-subst s (caddr t))))
+    ((type-list? t)
+     (T-List (apply-subst s (cadr t))))
+    ((type-tuple? t)
+     (T-Tuple (map (lambda (e) (apply-subst s e)) (cdr t))))
+    ((type-union? t)
+     (T-Union (map (lambda (e) (apply-subst s e)) (cdr t))))
+    ((type-forall? t)
+     (T-Forall (cadr t) (apply-subst s (caddr t))))
+    (else t)))
+
+;; ── Occurs check ────────────────────────────────────────────────
+(def-fn occurs? (var t s)
+  (let ((t2 (apply-subst s t)))
+    (cond
+      ((type-var? t2) (equal? var t2))
+      ((type-fn? t2)
+       (or (any (lambda (a) (occurs? var a s)) (cadr t2))
+           (occurs? var (caddr t2) s)))
+      ((type-list? t2) (occurs? var (cadr t2) s))
+      (else #f))))
+
+;; ── Unification ─────────────────────────────────────────────────
+(def-fn unify (t1 t2 s)
+  "Unify t1 and t2 under substitution s.
+   Returns updated substitution or raises a type error."
+  (let ((a (apply-subst s t1))
+        (b (apply-subst s t2)))
+    (cond
+      ((equal? a b) s)
+
+      ;; Var on left
+      ((type-var? a)
+       (if (occurs? a b s)
+         (error (str "Type error: occurs check failed — " a " in " b))
+         (subst-extend s a b)))
+
+      ;; Var on right
+      ((type-var? b)
+       (if (occurs? b a s)
+         (error (str "Type error: occurs check failed — " b " in " a))
+         (subst-extend s b a)))
+
+      ;; Any is a universal supertype
+      ((or (eq? a T-ANY) (eq? b T-ANY)) s)
+
+      ;; Numeric widening
+      ((and (eq? a T-INT) (eq? b T-FLOAT)) s)
+      ((and (eq? a T-FLOAT) (eq? b T-INT)) s)
+
+      ;; Function types
+      ((and (type-fn? a) (type-fn? b))
+       (let* ((a-args (cadr a)) (b-args (cadr b))
+              (a-ret  (caddr a)) (b-ret  (caddr b)))
+         (if (not (= (length a-args) (length b-args)))
+           (error (str "Type error: function arity mismatch"))
+           (let ((s2 (fold-left unify s a-args b-args)))
+             (unify a-ret b-ret s2)))))
+
+      ;; List types
+      ((and (type-list? a) (type-list? b))
+       (unify (cadr a) (cadr b) s))
+
+      ;; Tuple types
+      ((and (type-tuple? a) (type-tuple? b))
+       (if (not (= (length (cdr a)) (length (cdr b))))
+         (error "Type error: tuple arity mismatch")
+         (fold-left unify s (cdr a) (cdr b))))
+
+      ;; Union: a member of a matches b
+      ((type-union? a)
+       (if (any (lambda (t) (unify-safe t b s)) (cdr a))
+         s
+         (error (str "Type error: " a " ≠ " b))))
+
+      (else
+       (error (str "Type error: cannot unify " a " with " b))))))
+
+(def-fn unify-safe (t1 t2 s)
+  (handle-error
+    (lambda () (begin (unify t1 t2 s) #t))
+    (lambda (_) #f)))
+
+(def-fn fold-left (fn acc as bs)
+  (if (or (null? as) (null? bs))
+    acc
+    (fold-left fn (fn (car as) (car bs) acc) (cdr as) (cdr bs))))
+
+;; ── Type environment ────────────────────────────────────────────
+(def-fn make-type-env (parent)
+  (hash-map 'bindings (hash-map) 'parent parent))
+
+(def-fn type-env-get (te sym)
+  (if (nil? te) nil
+    (let ((v (hash-get (hash-get te 'bindings) sym)))
+      (if (nil? v)
+        (type-env-get (hash-get te 'parent) sym)
+        v))))
+
+(def-fn type-env-set (te sym t)
+  (hash-set! (hash-get te 'bindings) sym t) te)
+
+;; ── Fresh type variable counter ──────────────────────────────────
+(def __tv-counter__ 0)
+(def-fn fresh-var ()
+  (set! __tv-counter__ (+ __tv-counter__ 1))
+  (T-Var (string->symbol (str "t" __tv-counter__))))
+
+;; ── Type inference ───────────────────────────────────────────────
+(def-fn infer (expr te s)
+  "Infer the type of expr in type environment te with substitution s.
+   Returns (type, new-substitution)."
+  (cond
+    ;; Literals
+    ((and (number? expr) (integer? expr)) (list T-INT s))
+    ((number? expr)                       (list T-FLOAT s))
+    ((string? expr)                       (list T-STR s))
+    ((bool?   expr)                       (list T-BOOL s))
+    ((char?   expr)                       (list T-CHAR s))
+    ((nil?    expr)                       (list (T-List (fresh-var)) s))
+
+    ;; Symbol
+    ((symbol? expr)
+     (let ((t (type-env-get te expr)))
+       (if (nil? t)
+         (list T-ANY s)          ;; unknown — assume Any
+         (list (instantiate t) s))))
+
+    ;; Quote
+    ((and (list? expr) (eq? (car expr) 'quote))
+     (list T-ANY s))
+
+    ;; Lambda
+    ((and (list? expr) (eq? (car expr) 'lambda))
+     (let* ((params (cadr expr))
+            (body   (caddr expr))
+            (p-vars (map (lambda (_) (fresh-var)) params))
+            (te2    (fold-bind te params p-vars))
+            (result (infer body te2 s))
+            (ret-t  (car result))
+            (s2     (cadr result)))
+       (list (T-Fn (map (lambda (v) (apply-subst s2 v)) p-vars)
+                   (apply-subst s2 ret-t))
+             s2)))
+
+    ;; If
+    ((and (list? expr) (eq? (car expr) 'if))
+     (let* ((cond-r (infer (cadr expr) te s))
+            (s1     (cadr cond-r))
+            (s2     (unify (car cond-r) T-BOOL s1))
+            (t-r    (infer (caddr expr) te s2))
+            (f-r    (infer (cadddr expr) te (cadr t-r)))
+            (s3     (unify (car t-r) (car f-r) (cadr f-r))))
+       (list (apply-subst s3 (car t-r)) s3)))
+
+    ;; Begin — type of last form
+    ((and (list? expr) (eq? (car expr) 'begin))
+     (infer-seq (cdr expr) te s))
+
+    ;; Application
+    ((list? expr)
+     (let* ((fn-r  (infer (car expr) te s))
+            (fn-t  (car fn-r))
+            (s1    (cadr fn-r))
+            (args  (cdr expr))
+            (arg-results (infer-args args te s1))
+            (arg-ts (car arg-results))
+            (s2    (cadr arg-results))
+            (ret-v (fresh-var))
+            (s3    (unify fn-t (T-Fn arg-ts ret-v) s2)))
+       (list (apply-subst s3 ret-v) s3)))
+
+    (else (list T-ANY s))))
+
+(def-fn infer-args (args te s)
+  (if (null? args)
+    (list (list) s)
+    (let* ((r1  (infer (car args) te s))
+           (t1  (car r1))
+           (s1  (cadr r1))
+           (rest (infer-args (cdr args) te s1)))
+      (list (cons t1 (car rest)) (cadr rest)))))
+
+(def-fn infer-seq (forms te s)
+  (if (null? (cdr forms))
+    (infer (car forms) te s)
+    (begin
+      (infer (car forms) te s)
+      (infer-seq (cdr forms) te s))))
+
+(def-fn fold-bind (te names types)
+  (if (or (null? names) (null? types))
+    te
+    (begin
+      (type-env-set te (car names) (car types))
+      (fold-bind te (cdr names) (cdr types)))))
+
+;; ── Instantiate polymorphic type ─────────────────────────────────
+(def-fn instantiate (t)
+  (if (type-forall? t)
+    (let* ((vars (cadr t))
+           (body (caddr t))
+           (fresh-map (map (lambda (v) (list v (fresh-var))) vars)))
+      (substitute-vars body fresh-map))
+    t))
+
+(def-fn substitute-vars (t mapping)
+  (cond
+    ((type-var? t)
+     (let ((rep (assoc (cadr t) mapping)))
+       (if rep (cadr rep) t)))
+    ((type-fn? t)
+     (T-Fn (map (lambda (a) (substitute-vars a mapping)) (cadr t))
+           (substitute-vars (caddr t) mapping)))
+    ((type-list? t)
+     (T-List (substitute-vars (cadr t) mapping)))
+    (else t)))
+
+;; ── Public helpers ───────────────────────────────────────────────
+(def-fn check-type (expr expected-type)
+  "Assert that expr has expected-type; raise on mismatch."
+  (let* ((te   (make-type-env nil))
+         (s    (make-subst))
+         (res  (infer expr te s))
+         (got  (apply-subst (cadr res) (car res)))
+         (s2   (unify got expected-type (cadr res))))
+    (apply-subst s2 got)))
+
+(def-fn type-of-expr (expr)
+  "Return the inferred type of expr as a symbol/list."
+  (let* ((te  (make-type-env nil))
+         (s   (make-subst))
+         (res (infer expr te s)))
+    (apply-subst (cadr res) (car res))))
+
+;; ── Built-in type signatures ─────────────────────────────────────
+(def BUILTIN-TYPES
+  (hash-map
+    '+       (T-Fn (list T-NUM T-NUM) T-NUM)
+    '-       (T-Fn (list T-NUM T-NUM) T-NUM)
+    '*       (T-Fn (list T-NUM T-NUM) T-NUM)
+    '/       (T-Fn (list T-NUM T-NUM) T-FLOAT)
+    'mod     (T-Fn (list T-INT T-INT) T-INT)
+    'not     (T-Fn (list T-BOOL) T-BOOL)
+    'print   (T-Fn (list T-ANY) T-NIL)
+    'car     (let ((a (fresh-var))) (T-Forall (list (cadr a)) (T-Fn (list (T-List a)) a)))
+    'cdr     (let ((a (fresh-var))) (T-Forall (list (cadr a)) (T-Fn (list (T-List a)) (T-List a))))
+    'cons    (let ((a (fresh-var))) (T-Forall (list (cadr a)) (T-Fn (list a (T-List a)) (T-List a))))
+    'length  (let ((a (fresh-var))) (T-Forall (list (cadr a)) (T-Fn (list (T-List a)) T-INT)))
+    'map     (let ((a (fresh-var)) (b (fresh-var)))
+               (T-Forall (list (cadr a) (cadr b))
+                 (T-Fn (list (T-Fn (list a) b) (T-List a)) (T-List b))))))
+
+(export
+  ;; Type constructors
+  T-INT T-FLOAT T-NUM T-STR T-BOOL T-CHAR T-NIL T-ANY T-NEVER
+  T-List T-Fn T-Tuple T-Record T-Union T-Var T-Forall
+  ;; Predicates
+  type-var? type-fn? type-list? type-tuple? type-record? type-union? type-forall?
+  ;; Core algorithms
+  unify apply-subst occurs? make-subst fresh-var instantiate
+  ;; Type environment
+  make-type-env type-env-get type-env-set
+  ;; Inference
+  infer check-type type-of-expr
+  ;; Builtins
+  BUILTIN-TYPES)

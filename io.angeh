@@ -1,0 +1,401 @@
+;; ================================================================
+;; stdlib/io.angeh  —  Angehlang I/O Library
+;; Author contribution: Claude (Anthropic)
+;;
+;; Covers:
+;;   • Virtual File System (VFS) — in-memory + native passthrough
+;;   • Streams              — lazy, composable byte/char streams
+;;   • Buffered I/O         — read-line, read-all, write, flush
+;;   • Path utilities       — join, basename, dirname, extension
+;;   • File watching        — on-change callback
+;;   • Serialization        — S-expression, JSON, CSV read/write
+;;   • Standard ports       — stdin, stdout, stderr
+;; ================================================================
+
+(def-module io
+  "Unified I/O subsystem — VFS, streams, paths, serialization.")
+
+(import string)
+
+;; ════════════════════════════════════════════════════════════════
+;; § 1  VIRTUAL FILE SYSTEM
+;; ════════════════════════════════════════════════════════════════
+
+(def __vfs__
+  (hash-map
+    'type  'vfs
+    'files (hash-map)    ;; path → bytes/string
+    'dirs  (hash-map)))  ;; path → #t
+
+(def-fn vfs-mkdir! (path)
+  (hash-set! (hash-get __vfs__ 'dirs) path #t))
+
+(def-fn vfs-write! (path content)
+  "Write content (string) to path in the VFS."
+  (vfs-mkdir! (path-dirname path))
+  (hash-set! (hash-get __vfs__ 'files) path content))
+
+(def-fn vfs-read (path)
+  "Read content from VFS.  Falls back to native FS."
+  (let ((v (hash-get (hash-get __vfs__ 'files) path)))
+    (if (nil? v)
+      (native-fs-read path)   ;; substrate native call
+      v)))
+
+(def-fn vfs-exists? (path)
+  (or (hash-has? (hash-get __vfs__ 'files) path)
+      (native-fs-exists? path)))
+
+(def-fn vfs-delete! (path)
+  (hash-del (hash-get __vfs__ 'files) path))
+
+(def-fn vfs-list (dir)
+  "List files in dir (VFS + native)."
+  (let ((vfs-files
+         (filter (lambda (p) (string-starts? p dir))
+                 (hash-keys (hash-get __vfs__ 'files))))
+        (native-files
+         (handle-error
+           (lambda () (native-fs-list dir))
+           (lambda (_) (list)))))
+    (append vfs-files native-files)))
+
+(def-fn vfs-copy! (src dst)
+  (vfs-write! dst (vfs-read src)))
+
+(def-fn vfs-move! (src dst)
+  (vfs-copy! src dst)
+  (vfs-delete! src))
+
+;; Convenience aliases used throughout the codebase
+(def vfs-read-file  vfs-read)
+(def vfs-write-file vfs-write!)
+
+;; ════════════════════════════════════════════════════════════════
+;; § 2  PATH UTILITIES
+;; ════════════════════════════════════════════════════════════════
+
+(def PATH-SEP "/")
+
+(def-fn path-join (parts)
+  "Join path components."
+  (string-join (filter (lambda (p) (not (string-empty? p))) parts) PATH-SEP))
+
+(def-fn path-basename (p)
+  "Last component of path."
+  (let ((parts (string-split p PATH-SEP)))
+    (if (null? parts) "" (last parts))))
+
+(def-fn path-dirname (p)
+  "Directory containing p."
+  (let ((parts (string-split p PATH-SEP)))
+    (if (<= (length parts) 1)
+      "."
+      (string-join (take parts (- (length parts) 1)) PATH-SEP))))
+
+(def-fn path-extension (p)
+  "File extension including dot, e.g. '.angeh'."
+  (let ((base (path-basename p))
+        (dot  (string-last-index-of (path-basename p) ".")))
+    (if (<= dot 0) "" (string-drop base dot))))
+
+(def-fn path-stem (p)
+  "Filename without extension."
+  (let* ((base (path-basename p))
+         (dot  (string-last-index-of base ".")))
+    (if (<= dot 0) base (string-take base dot))))
+
+(def-fn path-normalize (p)
+  "Collapse . and .. in path."
+  (let loop ((parts (string-split p PATH-SEP)) (acc (list)))
+    (if (null? parts)
+      (path-join (reverse acc))
+      (cond
+        ((equal? (car parts) ".")  (loop (cdr parts) acc))
+        ((equal? (car parts) "..")
+         (loop (cdr parts) (if (null? acc) acc (cdr acc))))
+        (else
+         (loop (cdr parts) (cons (car parts) acc)))))))
+
+(def-fn path-relative (base target)
+  "Compute path of target relative to base directory."
+  (let ((bp (string-split (path-normalize base)   PATH-SEP))
+        (tp (string-split (path-normalize target) PATH-SEP)))
+    (let loop ((b bp) (t tp))
+      (cond
+        ((or (null? b) (null? t) (not (equal? (car b) (car t))))
+         (path-join (append (map (lambda (_) "..") b) t)))
+        (else (loop (cdr b) (cdr t)))))))
+
+(def-fn last (lst)
+  (if (null? (cdr lst)) (car lst) (last (cdr lst))))
+
+(def-fn take (lst n)
+  (if (or (null? lst) (= n 0)) (list)
+    (cons (car lst) (take (cdr lst) (- n 1)))))
+
+;; ════════════════════════════════════════════════════════════════
+;; § 3  STREAMS  (lazy sequences of characters or bytes)
+;; ════════════════════════════════════════════════════════════════
+
+(def-fn make-string-stream (s)
+  "Create an input stream over string s."
+  (hash-map
+    'type    'stream
+    'buf     (string->list s)
+    'pos     0
+    'source  'string))
+
+(def-fn make-file-stream (path)
+  "Create an input stream backed by a file (lazy)."
+  (hash-map
+    'type    'stream
+    'buf     (string->list (vfs-read path))
+    'pos     0
+    'source  path))
+
+(def-fn stream-read-char (st)
+  "Read one character.  Returns nil at EOF."
+  (let ((buf (hash-get st 'buf))
+        (pos (hash-get st 'pos)))
+    (if (>= pos (length buf))
+      nil
+      (begin
+        (hash-set! st 'pos (+ pos 1))
+        (list-ref buf pos)))))
+
+(def-fn stream-peek-char (st)
+  "Peek without consuming."
+  (let ((buf (hash-get st 'buf))
+        (pos (hash-get st 'pos)))
+    (if (>= pos (length buf)) nil (list-ref buf pos))))
+
+(def-fn stream-read-line (st)
+  "Read until newline (not included).  Returns nil at EOF."
+  (if (nil? (stream-peek-char st))
+    nil
+    (let loop ((acc (list)))
+      (let ((ch (stream-read-char st)))
+        (cond
+          ((nil? ch)         (list->string (reverse acc)))
+          ((char=? ch #\newline) (list->string (reverse acc)))
+          (else (loop (cons ch acc))))))))
+
+(def-fn stream-read-all (st)
+  "Read entire remaining content as a string."
+  (let loop ((acc (list)))
+    (let ((ch (stream-read-char st)))
+      (if (nil? ch)
+        (list->string (reverse acc))
+        (loop (cons ch acc))))))
+
+(def-fn stream-eof? (st)
+  (>= (hash-get st 'pos) (length (hash-get st 'buf))))
+
+;; ── Output stream ────────────────────────────────────────────────
+(def-fn make-output-stream ()
+  (hash-map 'type 'ostream 'buf (list) 'flushed ""))
+
+(def-fn ostream-write! (os s)
+  (hash-set! os 'buf (append (hash-get os 'buf) (string->list s))))
+
+(def-fn ostream-writeln! (os s)
+  (ostream-write! os (str s "\n")))
+
+(def-fn ostream-flush! (os)
+  "Flush buffer to flushed string and clear."
+  (let ((content (list->string (hash-get os 'buf))))
+    (hash-set! os 'flushed (str (hash-get os 'flushed) content))
+    (hash-set! os 'buf (list))
+    content))
+
+(def-fn ostream->string (os)
+  (str (hash-get os 'flushed) (list->string (hash-get os 'buf))))
+
+;; ════════════════════════════════════════════════════════════════
+;; § 4  BUFFERED I/O
+;; ════════════════════════════════════════════════════════════════
+
+(def STDIN  (hash-map 'type 'port 'dir 'in  'name "stdin"))
+(def STDOUT (hash-map 'type 'port 'dir 'out 'name "stdout"))
+(def STDERR (hash-map 'type 'port 'dir 'err 'name "stderr"))
+
+(def-fn port-write (port s)
+  (cond
+    ((equal? (hash-get port 'name) "stdout") (native-print s))
+    ((equal? (hash-get port 'name) "stderr") (native-print-err s))
+    (else (error "Cannot write to this port"))))
+
+(def-fn port-read-line (port)
+  (cond
+    ((equal? (hash-get port 'name) "stdin") (native-read-line))
+    (else (error "Cannot read from this port"))))
+
+;; ════════════════════════════════════════════════════════════════
+;; § 5  SERIALIZATION — S-expressions
+;; ════════════════════════════════════════════════════════════════
+
+(def-fn sexp->string (v)
+  "Serialize an Angehlang value to S-expression string."
+  (cond
+    ((nil?    v) "nil")
+    ((bool?   v) (if v "true" "false"))
+    ((number? v) (number->string v))
+    ((string? v) (str "\"" (sexp-escape-string v) "\""))
+    ((symbol? v) (symbol->string v))
+    ((list?   v) (str "(" (string-join (map sexp->string v) " ") ")"))
+    ((hash-map? v)
+     (str "(hash-map "
+          (string-join
+            (map (lambda (k) (str (sexp->string k) " " (sexp->string (hash-get v k))))
+                 (hash-keys v))
+            " ")
+          ")"))
+    (else (str v))))
+
+(def-fn sexp-escape-string (s)
+  (string-replace-all
+    (string-replace-all
+      (string-replace-all s "\\" "\\\\")
+      "\"" "\\\"")
+    "\n" "\\n"))
+
+;; ════════════════════════════════════════════════════════════════
+;; § 6  JSON SERIALIZATION
+;; ════════════════════════════════════════════════════════════════
+
+(def-fn json->string (v)
+  "Serialize Angehlang value to JSON string."
+  (cond
+    ((nil?    v) "null")
+    ((bool?   v) (if v "true" "false"))
+    ((number? v) (if (integer? v)
+                   (number->string (floor v))
+                   (number->string v)))
+    ((string? v) (str "\"" (json-escape v) "\""))
+    ((list?   v) (str "[" (string-join (map json->string v) ",") "]"))
+    ((hash-map? v)
+     (str "{"
+          (string-join
+            (map (lambda (k)
+                   (str "\"" k "\":" (json->string (hash-get v k))))
+                 (hash-keys v))
+            ",")
+          "}"))
+    (else (str "\"" v "\""))))
+
+(def-fn json-escape (s)
+  (string-replace-all
+    (string-replace-all
+      (string-replace-all
+        (string-replace-all s "\\" "\\\\")
+        "\"" "\\\"")
+      "\n" "\\n")
+    "\t" "\\t"))
+
+;; ════════════════════════════════════════════════════════════════
+;; § 7  CSV SERIALIZATION
+;; ════════════════════════════════════════════════════════════════
+
+(def-fn csv-read (content)
+  "Parse CSV string into list of lists of strings."
+  (map (lambda (line)
+         (csv-split-line line))
+       (string-split-lines content)))
+
+(def-fn csv-split-line (line)
+  "Split a CSV line respecting quoted fields."
+  (let loop ((chars (string->list line)) (acc (list)) (curr "") (in-quote #f))
+    (cond
+      ((null? chars)
+       (reverse (cons curr acc)))
+      ((and in-quote (char=? (car chars) #\"))
+       (loop (cdr chars) acc curr #f))
+      ((and (not in-quote) (char=? (car chars) #\"))
+       (loop (cdr chars) acc curr #t))
+      ((and (not in-quote) (char=? (car chars) #\,))
+       (loop (cdr chars) (cons curr acc) "" #f))
+      (else
+       (loop (cdr chars) acc (str curr (car chars)) in-quote)))))
+
+(def-fn csv-write (rows)
+  "Serialize list of lists into CSV string."
+  (string-join
+    (map (lambda (row)
+           (string-join
+             (map (lambda (cell)
+                    (if (string-contains? (str cell) ",")
+                      (str "\"" cell "\"")
+                      (str cell)))
+                  row)
+             ","))
+         rows)
+    "\n"))
+
+;; ════════════════════════════════════════════════════════════════
+;; § 8  FILE WATCHING  (polling-based)
+;; ════════════════════════════════════════════════════════════════
+
+(def __watchers__ (hash-map))
+
+(def-fn watch-file! (path callback interval-ms)
+  "Call callback(path new-content) when file changes."
+  (let ((last-content (list (vfs-read path))))
+    (hash-set! __watchers__ path
+      (hash-map
+        'path     path
+        'callback callback
+        'interval interval-ms
+        'last     last-content
+        'active   #t))
+    ;; Start watcher loop
+    (go
+      (let loop ()
+        (let ((w (hash-get __watchers__ path)))
+          (when (hash-get w 'active)
+            (sleep-ms (hash-get w 'interval))
+            (let ((content (vfs-read path)))
+              (when (not (equal? content (car (hash-get w 'last))))
+                (hash-set! w 'last (list content))
+                ((hash-get w 'callback) path content)))
+            (loop)))))))
+
+(def-fn unwatch-file! (path)
+  (let ((w (hash-get __watchers__ path)))
+    (when w (hash-set! w 'active #f))
+    (hash-del __watchers__ path)))
+
+;; ════════════════════════════════════════════════════════════════
+;; § 9  CONVENIENCE MACROS
+;; ════════════════════════════════════════════════════════════════
+
+(def-macro with-open-file (name path body)
+  "Open file, execute body with stream bound to name, close."
+  `(let ((,name (make-file-stream ,path)))
+     ,body))
+
+(def-macro with-output-to-string (name body)
+  "Capture output to string."
+  `(let ((,name (make-output-stream)))
+     ,body
+     (ostream->string ,name)))
+
+(export
+  ;; VFS
+  vfs-read vfs-write! vfs-exists? vfs-delete! vfs-list vfs-copy! vfs-move!
+  vfs-read-file vfs-write-file vfs-mkdir!
+  ;; Paths
+  path-join path-basename path-dirname path-extension path-stem
+  path-normalize path-relative
+  ;; Streams
+  make-string-stream make-file-stream make-output-stream
+  stream-read-char stream-peek-char stream-read-line stream-read-all stream-eof?
+  ostream-write! ostream-writeln! ostream-flush! ostream->string
+  ;; Ports
+  STDIN STDOUT STDERR port-write port-read-line
+  ;; Serialization
+  sexp->string json->string csv-read csv-write
+  ;; File watching
+  watch-file! unwatch-file!
+  ;; Macros
+  with-open-file with-output-to-string)

@@ -1,0 +1,204 @@
+;; ============================================================
+;; angeh_reasoning.angeh — Reasoning Engine in Pure Angehlang
+;; Translates angeh_reasoning.py concepts into Angehlang itself
+;;
+;; Implements: Chain of Thought, Tree of Thoughts, HyperGraph
+;; Author: Claude (Anthropic) — contribution to Angehlang v3
+;; Based on: angeh_reasoning.py by Longbian Lennon
+;; ============================================================
+
+(def-module ReasoningEngine
+  "Angehlang Reasoning Engine — think in language, not just Python")
+
+;; ── STEP / THOUGHT PRIMITIVES ──
+
+(def-fn make-step (label description)
+  (make-hash
+    |> (lambda (h) (hash-set! h "label" label))
+    |> (lambda (h) (hash-set! h "desc" description))
+    |> (lambda (h) (hash-set! h "ts" (time-now)))))
+
+(def-fn make-branch (id hypothesis score)
+  (let ((h (make-hash)))
+    (hash-set! h "id" id)
+    (hash-set! h "hypothesis" hypothesis)
+    (hash-set! h "score" score)
+    (hash-set! h "explored" false)
+    h))
+
+(def-fn make-node (id concept)
+  (let ((h (make-hash)))
+    (hash-set! h "id" id)
+    (hash-set! h "concept" concept)
+    h))
+
+(def-fn make-edge (from to relation)
+  (list from to relation))
+
+;; ── REASONING STRATEGIES ──
+
+;; Chain of Thought: linear step-by-step reasoning
+(def-fn chain-of-thought (prompt steps-fn)
+  (print (str "🔗 Chain of Thought: " prompt))
+  (let ((steps (list
+                  "Analyzing request"
+                  "Identifying key variables"
+                  "Formulating solution plan"
+                  "Executing logical steps"
+                  "Synthesizing conclusion")))
+    (def result (make-hash))
+    (hash-set! result "strategy" "chain-of-thought")
+    (hash-set! result "prompt" prompt)
+    (hash-set! result "steps"
+      (map (lambda (s)
+        (begin
+          (print (str "  → " s))
+          s))
+        steps))
+    (def conclusion (if steps-fn (steps-fn prompt) (str "Solved: " prompt)))
+    (hash-set! result "conclusion" conclusion)
+    (print (str "  ✓ " conclusion))
+    result))
+
+;; Tree of Thoughts: branching exploration
+(def-fn tree-of-thoughts (prompt branches)
+  (print (str "🌳 Tree of Thoughts: " prompt))
+  (def explored
+    (map (lambda (branch)
+      (begin
+        (print (str "  Branch [" (hash-get branch "id") "]: "
+                    (hash-get branch "hypothesis")))
+        (hash-set! branch "explored" true)
+        branch))
+      branches))
+
+  ;; Select best branch by score
+  (def best
+    (reduce
+      (lambda (acc b)
+        (if (> (hash-get b "score") (hash-get acc "score")) b acc))
+      (cdr explored)
+      (car explored)))
+
+  (print (str "  ✦ Best path: " (hash-get best "hypothesis")
+              " (score: " (to-string (hash-get best "score")) ")"))
+
+  (let ((result (make-hash)))
+    (hash-set! result "strategy" "tree-of-thoughts")
+    (hash-set! result "prompt" prompt)
+    (hash-set! result "branches-explored" (length explored))
+    (hash-set! result "best-branch" best)
+    (hash-set! result "conclusion"
+      (str "Optimal: " (hash-get best "hypothesis")))
+    result))
+
+;; HyperGraph: relational reasoning across concepts
+(def-fn hypergraph-reason (prompt nodes edges)
+  (print (str "🕸 HyperGraph Reasoning: " prompt))
+  (print (str "  Nodes: " (to-string (length nodes))))
+  (print (str "  Edges: " (to-string (length edges))))
+
+  ;; Find most-connected node
+  (def connectivity
+    (map (lambda (node)
+      (let ((id (hash-get node "id"))
+            (conn (count-connections id edges)))
+        (list id conn)))
+      nodes))
+
+  (def most-connected
+    (reduce
+      (lambda (a b) (if (> (second a) (second b)) a b))
+      (cdr connectivity)
+      (car connectivity)))
+
+  (print (str "  ✦ Hub concept: " (car most-connected)
+              " (" (to-string (second most-connected)) " connections)"))
+
+  (let ((result (make-hash)))
+    (hash-set! result "strategy" "hypergraph")
+    (hash-set! result "prompt" prompt)
+    (hash-set! result "nodes" (length nodes))
+    (hash-set! result "edges" (length edges))
+    (hash-set! result "hub" (car most-connected))
+    (hash-set! result "insight"
+      (str "Hub concept '" (car most-connected) "' drives the reasoning graph."))
+    result))
+
+;; Helper: count connections for a node id
+(def-fn count-connections (node-id edges)
+  (length (filter
+    (lambda (edge)
+      (or (= (car edge) node-id)
+          (= (second edge) node-id)))
+    edges)))
+
+;; ── AUTO-SELECT STRATEGY ──
+
+(def-fn auto-reason (prompt)
+  (let ((p (string-downcase prompt)))
+    (cond
+      ((or (string-contains p "compare")
+           (string-contains p "best")
+           (string-contains p "choose"))
+       (tree-of-thoughts prompt
+         (list
+           (make-branch "A" (str "Approach A for: " prompt) 0.85)
+           (make-branch "B" (str "Approach B for: " prompt) 0.72)
+           (make-branch "C" (str "Approach C for: " prompt) 0.91))))
+
+      ((or (string-contains p "relationship")
+           (string-contains p "complex")
+           (string-contains p "network"))
+       (hypergraph-reason prompt
+         (list
+           (make-node "A" "Primary concept")
+           (make-node "B" "Secondary concept")
+           (make-node "C" "Linking concept")
+           (make-node "D" "Hidden variable"))
+         (list
+           (make-edge "A" "B" "correlation")
+           (make-edge "B" "C" "causation")
+           (make-edge "C" "D" "implication")
+           (make-edge "A" "D" "emergent"))))
+
+      (else
+       (chain-of-thought prompt nil)))))
+
+;; ── META-COGNITION ──
+
+(def-fn reflect (result)
+  (print "")
+  (print "🪞 Meta-Reflection:")
+  (print (str "  Strategy used: " (hash-get result "strategy")))
+  (print (str "  Conclusion: " (hash-get result "conclusion")))
+  (print "  Process: logical and consistent.")
+  result)
+
+;; ── REASONING PIPELINE ──
+
+(def-fn reason-pipeline (problem)
+  (print "")
+  (print (str "═══ Reasoning Pipeline: " problem " ═══"))
+  (checkpoint "pre-reasoning")
+  (let ((result (auto-reason problem)))
+    (reflect result)
+    result))
+
+;; ── EXPORT ──
+
+(export chain-of-thought tree-of-thoughts hypergraph-reason
+        auto-reason reflect reason-pipeline
+        make-branch make-node make-edge)
+
+;; ── DEMO ──
+
+(begin
+  (import ReasoningEngine)
+  (print "Angehlang Reasoning Engine v3.0")
+  (print "================================")
+
+  ;; Test all three strategies
+  (reason-pipeline "Calculate optimal trajectory")
+  (reason-pipeline "Compare three architectural patterns")
+  (reason-pipeline "Analyze complex system relationships"))

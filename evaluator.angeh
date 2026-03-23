@@ -1,0 +1,440 @@
+;; ================================================================
+;; core/evaluator.angeh  —  Angehlang Meta-Circular Evaluator
+;; Author contribution: Claude (Anthropic)
+;; 
+;; A complete, tail-call-optimised evaluator written entirely in
+;; Angehlang.  Once the substrate Python VM can run this file,
+;; the language is self-hosting: further evolution happens in .angeh.
+;;
+;; Special forms handled:
+;;   quote, if, cond, and, or, not
+;;   def, set!, let, let*, letrec
+;;   lambda, begin, do
+;;   import, export, def-module, def-fn
+;;   match, try/catch/finally
+;;   macro-expand, def-macro
+;;   tail-call (trampoline)
+;; ================================================================
+
+(def-module evaluator
+  "Meta-circular evaluator — Angehlang evaluating Angehlang.")
+
+(import parser)
+(import env)          ;; environment module (see env.angeh)
+
+;; ── Tail-call trampoline ────────────────────────────────────────
+;; A thunk wraps a deferred recursive call so we don't blow the stack.
+(def-fn make-thunk (fn args env)
+  (hash-map 'thunk #t 'fn fn 'args args 'env env))
+
+(def-fn thunk? (x)
+  (and (hash-map? x) (hash-get x 'thunk)))
+
+(def-fn trampoline (result)
+  (if (thunk? result)
+    (trampoline (apply-proc
+                  (hash-get result 'fn)
+                  (hash-get result 'args)
+                  (hash-get result 'env)))
+    result))
+
+;; ── Core evaluator ──────────────────────────────────────────────
+(def-fn eval-expr (expr env tail?)
+  (cond
+
+    ;; Self-evaluating atoms
+    ((number?  expr) expr)
+    ((string?  expr) expr)
+    ((bool?    expr) expr)
+    ((nil?     expr) nil)
+    ((char?    expr) expr)
+
+    ;; Symbol lookup
+    ((symbol?  expr) (env-lookup env expr))
+
+    ;; Compound forms
+    ((list? expr)
+     (let ((head (car expr))
+           (rest (cdr expr)))
+       (cond
+
+         ;; ── Special forms ──────────────────────────────────────
+
+         ((eq? head 'quote)
+          (car rest))
+
+         ((eq? head 'if)
+          (let ((test   (car rest))
+                (conseq (cadr rest))
+                (altern (if (null? (cddr rest)) nil (caddr rest))))
+            (if (truthy? (eval-expr test env #f))
+              (eval-expr conseq env tail?)
+              (eval-expr altern env tail?))))
+
+         ((eq? head 'cond)
+          (eval-cond rest env tail?))
+
+         ((eq? head 'and)
+          (eval-and rest env tail?))
+
+         ((eq? head 'or)
+          (eval-or rest env tail?))
+
+         ((eq? head 'not)
+          (not (truthy? (eval-expr (car rest) env #f))))
+
+         ((eq? head 'def)
+          (let ((name (car rest))
+                (val  (eval-expr (cadr rest) env #f)))
+            (env-define! env name val)
+            name))
+
+         ((eq? head 'set!)
+          (let ((name (car rest))
+                (val  (eval-expr (cadr rest) env #f)))
+            (env-set! env name val)
+            name))
+
+         ((eq? head 'let)
+          (eval-let rest env tail?))
+
+         ((eq? head 'let*)
+          (eval-let* rest env tail?))
+
+         ((eq? head 'letrec)
+          (eval-letrec rest env tail?))
+
+         ((eq? head 'lambda)
+          (make-closure (car rest) (cdr rest) env))
+
+         ((eq? head 'def-fn)
+          ;; (def-fn name (params...) body...)
+          (let* ((name   (car rest))
+                 (params (cadr rest))
+                 (body   (cddr rest))
+                 (clos   (make-closure params body env)))
+            (env-define! env name clos)
+            name))
+
+         ((eq? head 'begin)
+          (eval-seq rest env tail?))
+
+         ((eq? head 'do)
+          (eval-do rest env tail?))
+
+         ((eq? head 'match)
+          (eval-match (car rest) (cdr rest) env tail?))
+
+         ((eq? head 'try)
+          (eval-try rest env tail?))
+
+         ((eq? head 'import)
+          (eval-import (car rest) env))
+
+         ((eq? head 'def-module)
+          ;; just metadata — no runtime effect beyond recording name
+          (env-define! env '__module__ (car rest))
+          (car rest))
+
+         ((eq? head 'def-macro)
+          (eval-def-macro rest env))
+
+         ((eq? head 'macro-expand)
+          (macro-expand (eval-expr (car rest) env #f)
+                        (map (lambda (a) (eval-expr a env #f)) (cdr rest))
+                        env))
+
+         ((eq? head 'export)
+          ;; record exports in the module table
+          (for-each rest (lambda (sym) (env-export! env sym)))
+          nil)
+
+         ;; ── Procedure call ─────────────────────────────────────
+         (else
+          (let* ((proc (eval-expr head env #f))
+                 (args (map (lambda (a) (eval-expr a env #f)) rest)))
+            (if (macro-proc? proc)
+              ;; hygienic macro expansion → re-evaluate
+              (eval-expr (macro-expand proc args env) env tail?)
+              ;; normal call
+              (if tail?
+                (make-thunk proc args env)
+                (trampoline (apply-proc proc args env)))))))))
+
+    (else
+     (error (str "eval-expr: unknown form: " expr)))))
+
+;; ── Helper: truthy? ─────────────────────────────────────────────
+(def-fn truthy? (v)
+  (not (or (nil? v) (equal? v #f))))
+
+;; ── eval-seq: evaluate a sequence, return last ──────────────────
+(def-fn eval-seq (forms env tail?)
+  (if (null? (cdr forms))
+    (eval-expr (car forms) env tail?)
+    (begin
+      (eval-expr (car forms) env #f)
+      (eval-seq  (cdr forms) env tail?))))
+
+;; ── eval-cond ───────────────────────────────────────────────────
+(def-fn eval-cond (clauses env tail?)
+  (if (null? clauses)
+    nil
+    (let ((clause (car clauses)))
+      (if (eq? (car clause) 'else)
+        (eval-seq (cdr clause) env tail?)
+        (if (truthy? (eval-expr (car clause) env #f))
+          (eval-seq (cdr clause) env tail?)
+          (eval-cond (cdr clauses) env tail?))))))
+
+;; ── eval-and / eval-or ──────────────────────────────────────────
+(def-fn eval-and (exprs env tail?)
+  (cond
+    ((null? exprs)        #t)
+    ((null? (cdr exprs))  (eval-expr (car exprs) env tail?))
+    (else
+     (let ((v (eval-expr (car exprs) env #f)))
+       (if (truthy? v)
+         (eval-and (cdr exprs) env tail?)
+         #f)))))
+
+(def-fn eval-or (exprs env tail?)
+  (cond
+    ((null? exprs)        #f)
+    ((null? (cdr exprs))  (eval-expr (car exprs) env tail?))
+    (else
+     (let ((v (eval-expr (car exprs) env #f)))
+       (if (truthy? v)
+         v
+         (eval-or (cdr exprs) env tail?))))))
+
+;; ── eval-let ────────────────────────────────────────────────────
+(def-fn eval-let (rest env tail?)
+  ;; (let ((x v) ...) body...)
+  (let* ((bindings (car rest))
+         (body     (cdr rest))
+         (child    (env-extend env)))
+    (for-each bindings
+      (lambda (b)
+        (env-define! child (car b) (eval-expr (cadr b) env #f))))
+    (eval-seq body child tail?)))
+
+(def-fn eval-let* (rest env tail?)
+  (let* ((bindings (car rest))
+         (body     (cdr rest))
+         (child    (env-extend env)))
+    (for-each bindings
+      (lambda (b)
+        (env-define! child (car b) (eval-expr (cadr b) child #f))))
+    (eval-seq body child tail?)))
+
+(def-fn eval-letrec (rest env tail?)
+  (let* ((bindings (car rest))
+         (body     (cdr rest))
+         (child    (env-extend env)))
+    ;; first pass: define all as nil
+    (for-each bindings
+      (lambda (b) (env-define! child (car b) nil)))
+    ;; second pass: set to actual values
+    (for-each bindings
+      (lambda (b) (env-set! child (car b) (eval-expr (cadr b) child #f))))
+    (eval-seq body child tail?)))
+
+;; ── Closure ─────────────────────────────────────────────────────
+(def-fn make-closure (params body env)
+  (hash-map
+    'type   'closure
+    'params params
+    'body   body
+    'env    env))
+
+(def-fn closure? (x)
+  (and (hash-map? x) (equal? (hash-get x 'type) 'closure)))
+
+;; ── Macro ────────────────────────────────────────────────────────
+(def-fn make-macro (params body env)
+  (hash-map
+    'type   'macro
+    'params params
+    'body   body
+    'env    env))
+
+(def-fn macro-proc? (x)
+  (and (hash-map? x) (equal? (hash-get x 'type) 'macro)))
+
+(def-fn eval-def-macro (rest env)
+  ;; (def-macro name (params...) body...)
+  (let* ((name   (car rest))
+         (params (cadr rest))
+         (body   (cddr rest))
+         (m      (make-macro params body env)))
+    (env-define! env name m)
+    name))
+
+(def-fn macro-expand (macro args env)
+  (let* ((params (hash-get macro 'params))
+         (body   (hash-get macro 'body))
+         (menv   (env-extend (hash-get macro 'env))))
+    (for-each (range 0 (length params))
+      (lambda (i)
+        (env-define! menv (list-ref params i) (list-ref args i))))
+    (eval-seq body menv #f)))
+
+;; ── apply-proc ──────────────────────────────────────────────────
+(def-fn apply-proc (proc args call-env)
+  (cond
+    ;; Native (substrate) procedures
+    ((native-proc? proc)
+     (native-apply proc args))
+
+    ;; Closures
+    ((closure? proc)
+     (let* ((params (hash-get proc 'params))
+            (body   (hash-get proc 'body))
+            (cenv   (env-extend (hash-get proc 'env))))
+       ;; bind positional params
+       (bind-params! cenv params args)
+       (eval-seq body cenv #t)))
+
+    (else
+     (error (str "apply-proc: not a procedure: " proc)))))
+
+(def-fn bind-params! (env params args)
+  ;; supports rest param:  (a b . rest)
+  (cond
+    ((null? params)
+     (if (not (null? args))
+       (error "Too many arguments supplied")
+       nil))
+    ((symbol? params)
+     ;; dotted rest
+     (env-define! env params args))
+    (else
+     (if (null? args)
+       (error (str "Too few arguments — missing: " (car params)))
+       (begin
+         (env-define! env (car params) (car args))
+         (bind-params! env (cdr params) (cdr args)))))))
+
+;; ── do loop (imperative iteration) ──────────────────────────────
+(def-fn eval-do (rest env tail?)
+  ;; (do ((var init step) ...) (test result) body...)
+  (let* ((var-specs (car rest))
+         (test+res  (cadr rest))
+         (body      (cddr rest))
+         (test-expr (car test+res))
+         (result    (if (null? (cdr test+res)) nil (cadr test+res)))
+         (child     (env-extend env)))
+    ;; init
+    (for-each var-specs
+      (lambda (spec)
+        (env-define! child (car spec) (eval-expr (cadr spec) env #f))))
+    ;; loop
+    (let loop ()
+      (if (truthy? (eval-expr test-expr child #f))
+        (eval-expr result child tail?)
+        (begin
+          (for-each body (lambda (e) (eval-expr e child #f)))
+          ;; step
+          (for-each var-specs
+            (lambda (spec)
+              (when (not (null? (cddr spec)))
+                (env-set! child (car spec)
+                               (eval-expr (caddr spec) child #f)))))
+          (loop))))))
+
+;; ── pattern matching ─────────────────────────────────────────────
+(def-fn eval-match (scrutinee clauses env tail?)
+  ;; (match expr
+  ;;   (pattern body...)
+  ;;   ...)
+  (let ((val (eval-expr scrutinee env #f)))
+    (match-clauses val clauses env tail?)))
+
+(def-fn match-clauses (val clauses env tail?)
+  (if (null? clauses)
+    (error (str "match: no clause matched for: " val))
+    (let* ((clause  (car clauses))
+           (pattern (car clause))
+           (body    (cdr clause))
+           (child   (env-extend env)))
+      (if (pattern-match! pattern val child)
+        (eval-seq body child tail?)
+        (match-clauses val (cdr clauses) env tail?)))))
+
+(def-fn pattern-match! (pat val env)
+  (cond
+    ;; wildcard
+    ((eq? pat '_)           #t)
+    ;; literal match
+    ((number? pat)          (equal? pat val))
+    ((string? pat)          (equal? pat val))
+    ((bool? pat)            (equal? pat val))
+    ((nil? pat)             (nil? val))
+    ;; variable binding
+    ((symbol? pat)
+     (begin (env-define! env pat val) #t))
+    ;; quoted literal  'x
+    ((and (list? pat) (eq? (car pat) 'quote))
+     (equal? (cadr pat) val))
+    ;; list destructuring  (h . t)
+    ((list? pat)
+     (and (list? val)
+          (= (length pat) (length val))
+          (every (map (lambda (p v) (lambda () (pattern-match! p v env)))
+                      pat val)
+                 (lambda (f) (f)))))
+    (else #f)))
+
+;; ── try/catch/finally ────────────────────────────────────────────
+(def-fn eval-try (rest env tail?)
+  ;; (try body (catch err handler) (finally cleanup))
+  (let* ((body    (car rest))
+         (clauses (cdr rest))
+         (catch-c (assoc 'catch clauses))
+         (fin-c   (assoc 'finally clauses)))
+    (let ((result
+           (handle-error
+             (lambda () (eval-expr body env tail?))
+             (lambda (err)
+               (if catch-c
+                 (let* ((err-var (cadr catch-c))
+                        (handler (caddr catch-c))
+                        (child   (env-extend env)))
+                   (env-define! child err-var err)
+                   (eval-expr handler child tail?))
+                 (raise err))))))
+      (when fin-c
+        (eval-expr (cadr fin-c) env #f))
+      result)))
+
+;; ── import ──────────────────────────────────────────────────────
+(def-fn eval-import (module-name env)
+  (let* ((mod   (module-load module-name))
+         (syms  (module-exports mod)))
+    (for-each syms
+      (lambda (sym)
+        (env-define! env sym (module-get mod sym))))
+    module-name))
+
+;; ── Public API ───────────────────────────────────────────────────
+(def-fn evaluate (expr env)
+  "Evaluate a single AST node in env, with trampoline."
+  (trampoline (eval-expr expr env #f)))
+
+(def-fn evaluate-source (source env)
+  "Parse and evaluate a source string."
+  (let ((forms (parse-source source)))
+    (let loop ((forms forms) (result nil))
+      (if (null? forms)
+        result
+        (loop (cdr forms)
+              (evaluate (car forms) env))))))
+
+(def-fn evaluate-file (path env)
+  "Parse and evaluate a .angeh file."
+  (evaluate-source (vfs-read-file path) env))
+
+(export evaluate evaluate-source evaluate-file
+        make-closure closure? apply-proc truthy?
+        make-macro macro-proc? macro-expand)

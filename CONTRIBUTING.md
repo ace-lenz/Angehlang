@@ -131,4 +131,8 @@ Open an issue with:
 
 ---
 
-*Written with ❤️ by Longbian Lennon + Claude (Anthropic)*
+*Written with ❤️ by Longbian Lennon 
++Google
++Deepseek
++Ollama
++Claude (Anthropic)*

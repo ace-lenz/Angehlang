@@ -1,0 +1,27 @@
+;; =============================================================
+;; 04_swarm_roundtable.angeh
+;; Demonstrates multi-agent A2A swarm communication.
+;; Run: python core/interpreter.py examples/04_swarm_roundtable.angeh
+;; =============================================================
+
+(import dotflow-a2a)
+(import ai-bridge)
+
+(begin
+  ;; Spawn a team of 3 agents with the same shared intelligence prompt
+  (spawn-team (list "Alpha" "Beta" "Gamma")
+    "You are a reasoning agent in a collaborative AI swarm.")
+
+  ;; Broadcast a roundtable topic to all agents
+  (a2a-announce "OmniHost" "Starting roundtable discussion...")
+
+  ;; Collect all responses in parallel (sequential for now)
+  (def topic "What is the key to building reliable AI systems?")
+  (def responses (swarm-gather (list "Alpha" "Beta" "Gamma") topic))
+
+  (print "=== Swarm Roundtable Results ===")
+  (for-each print responses)
+
+  ;; Introspect the A2A bus history
+  (print "=== Last A2A Messages ===")
+  (print (reflect "a2a")))

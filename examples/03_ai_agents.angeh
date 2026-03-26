@@ -1,0 +1,29 @@
+;; =============================================================
+;; 03_ai_agents.angeh
+;; Demonstrates the native AI agent system.
+;; Requires Ollama running on localhost:11434 for real AI.
+;; Run: python core/interpreter.py examples/03_ai_agents.angeh
+;; =============================================================
+
+(import ai-bridge)
+
+(begin
+  ;; Spawn two AI agents with different personalities
+  (agent-spawn "Planner"  "You are a strategic project planner. Be concise.")
+  (agent-spawn "Reviewer" "You are a critical code reviewer. Point out flaws.")
+
+  ;; Ask each one a question
+  (def plan     (agent-ask "Planner"  "How would you design a todo-list app?"))
+  (def critique (agent-ask "Reviewer" "What could go wrong with a basic todo-list app?"))
+
+  (print "=== Planner says ===")
+  (print plan)
+  (print "=== Reviewer says ===")
+  (print critique)
+
+  ;; Broadcast to all agents
+  (a2a-broadcast "Session complete. Thank you." "ALL" "Host")
+
+  ;; Inspect the agent roster
+  (print "=== Active Agents ===")
+  (print (agent-list)))

@@ -1,0 +1,11 @@
+;; =============================================================
+;; 01_hello_world.angeh
+;; The simplest Angehlang program – your first "Hello, World!"
+;; Run: python core/interpreter.py examples/01_hello_world.angeh
+;; =============================================================
+
+(begin
+  (print "Hello, World!")
+  (print "Welcome to Angehlang – the Universe OS")
+  (def name "Longbian Lennon")
+  (print (string-append "Created by: " name)))

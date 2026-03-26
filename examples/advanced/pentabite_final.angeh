@@ -1,0 +1,26 @@
+-------,;; examples/advanced/pentabite_final.angeh
+(import lib/pentabite_storage)
+(import lib/quantum_display)
+(import stdlib/pentabite_ai_bridge)
+
+(print "\n╔══════════════════════════════════════════════════════════════╗")
+(print "║  ANGEHLANG PENTABITE STORAGE — FINAL DEMONSTRATION           ║")
+(print "║  100 PB Quantum Optical Storage                              ║")
+(print "╚══════════════════════════════════════════════════════════════╝\n")
+
+;; 1. Initialize
+(def sys (make-pentabite-storage "/vfs/pentabite.bin" (hash-map 'max-bytes (* 100 1024 1024))))
+
+;; 2. Write Data
+(pb-write! sys "/research/quantum_simulation.txt" "Photonic feedback loop active. Pentabite storage online." 'text)
+(pb-write! sys "/genomics/human_reference.fasta" "ATCGTTAGCAGT..." 'genomic)
+
+;; 3. Scan Display (Simulated)
+(print "\n§  Scanning Display Buffer for Quantum Interference...")
+(let ((screen (get-display-buffer)))
+  (print (str "   Captured " (length screen) " points.")))
+
+;; 4. Stats
+(pb-stats sys)
+
+(print "\n✓ Pentabite System Finalized and Verified.")

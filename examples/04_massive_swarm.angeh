@@ -1,0 +1,45 @@
+;; Angehlang Swarm Parallelism Demo
+;; This script demonstrates lightspeed A2A parallelism using the new 
+;; `agent-clone-swarm` and `agent-swarm-map` primitives.
+
+(print "=====================================================")
+(print "  ANGEHLANG: MASSIVE SWARM PARALLELISM DEMO          ")
+(print "=====================================================")
+
+;; 1. Spawn a base worker agent
+(agent-spawn "WORKER-BASE" 
+  "You are a hyper-efficient data processor. Calculate or answer the prompt as concisely as possible, returning only the primary fact or number.")
+
+;; 2. Clone it into a swarm of 10 parallel workers instantly
+(print "\n[1] Cloning 10 parallel workers from WORKER-BASE...")
+(let ((swarm (agent-clone-swarm "WORKER-BASE" "DATA-NODE" 10)))
+  (print "Spawned Swarm: " swarm)
+
+  ;; 3. Define a massive workload
+  (let ((workload (list 
+          "What is the capital of France?"
+          "What is 2 + 2?"
+          "Who wrote Hamlet?"
+          "What is the speed of light in vacuum (in m/s)?"
+          "What is the boiling point of water in Celsius?"
+          "What is the square root of 144?"
+          "How many planets are in the Solar System?"
+          "What is the chemical symbol for Gold?"
+          "What year did the Apollo 11 moon landing occur?"
+          "Translate 'Hello' to Spanish.")))
+
+    (print "\n[2] Distributing 10 workload tasks across the swarm in parallel...")
+    ;; 4. Execute all tasks in parallel across the agents using ThreadPoolExecutor natively
+    (let ((results (agent-swarm-map swarm workload)))
+      (print "\n[3] Swarm Results Gathered (Lightspeed Mode):")
+      (for-each 
+        (lambda (res) (print " -> " res))
+        results)
+      
+      (print "\n[4] Broadcasting completion to all agents via realtime A2A pipeline...")
+      (a2a-broadcast "Swarm execution completed successfully. Standing by for next massive workload." "ALL" "ORCHESTRATOR")
+      
+      (print "\nDONE.")
+    )
+  )
+)

@@ -1,0 +1,124 @@
+// Auto-Research skill for Angehlang
+// Purpose: discover new papers/code/ideas automatically, evaluate relevance, synthesize plans, propose actions
+
+module skills.auto_research
+
+// Configuration schema
+config AutoResearchConfig {
+  enabled: Bool = true
+  cadence: String = "daily"         // "hourly", "daily", "weekly", or cron-like
+  sources: List[String] = [
+    "internal-knowledge-base",
+    "arxiv:cs.AI",
+    "github:topic=quantum-storage"
+  ]
+  top_k: Int = 5
+  dry_run: Bool = false
+  artifact_path: String = "artifacts/auto_research"
+}
+
+// Minimal typed data structures
+type Finding {
+  id: String
+  title: String
+  summary: String
+  url: String
+  score: Float
+}
+
+type ResearchPlan {
+  id: String
+  name: String
+  steps: List[String]
+  provenance: List[String]
+  confidence: Float
+}
+
+// Internal helpers (pure logic)
+fn normalize_text(text: String) -> String {
+  // Simple normalizer: trim and collapse whitespace
+  return text.trim().replace(/\s+/, " ")
+}
+
+// Discovery stage: query configured sources and return raw findings.
+// This implementation is pure and emits a high-level description for each source.
+// Side-effecting network calls should be delegated to a runtime shim.
+fn discover(cfg: AutoResearchConfig, query: String) -> List[Finding] {
+  let srcs = cfg.sources
+  let out: List[Finding] = []
+  for (i, s) in enumerate(srcs) {
+    // Create a lightweight, deterministic "finding" placeholder.
+    let f = Finding {
+      id: "finding-" + i.to_string() + "-" + (query.hash_short()),
+      title: "Stubbed result from " + s,
+      summary: "Auto-research stub for query: " + normalize_text(query),
+      url: "about:anon",
+      score: 0.5 + (i as Float) * 0.1
+    }
+    out.push(f)
+  }
+  return out
+}
+
+// Evaluation stage: score and filter discoveries.
+fn evaluate(findings: List[Finding], top_k: Int) -> List[Finding] {
+  // Sort by score descending and take top_k
+  let sorted = findings.sort_by(|a,b| b.score - a.score)
+  return sorted.slice(0, top_k)
+}
+
+// Synthesis stage: transform findings into a research plan.
+fn synthesize(findings: List[Finding]) -> ResearchPlan {
+  let steps: List[String] = findings.map(|f| "Read and summarize: " + f.title + " (" + f.url + ")")
+  let plan = ResearchPlan {
+    id: "plan-" + (findings.length().to_string()).hash_short(),
+    name: "AutoResearch Plan - " + (now().date_string()),
+    steps: steps,
+    provenance: findings.map(|f| f.id),
+    confidence: findings.map(|f| f.score).fold(0.0, |acc,s| acc + s) / (findings.length() as Float + 1e-9)
+  }
+  return plan
+}
+
+// Action stage: produce an artifact describing the plan for downstream tooling.
+// This action is pure: it returns a serializable representation. The runtime should persist it.
+fn plan_to_artifact(plan: ResearchPlan) -> String {
+  // Minimal JSON-like serialization for portability
+  return json.serialize({
+    "id": plan.id,
+    "name": plan.name,
+    "steps": plan.steps,
+    "provenance": plan.provenance,
+    "confidence": plan.confidence
+  })
+}
+
+// Entrypoint for the skill. "context" contains runtime hints (e.g., dry_run, external shim path).
+fn run_auto_research(cfg: AutoResearchConfig, context: Map[String, String]) -> Map[String, String] {
+  if (!cfg.enabled) {
+    return {"status": "disabled"}
+  }
+
+  let query = context.get("query").unwrap_or("Angehlang: latest ideas")
+  let raw = discover(cfg, query)
+  let top = evaluate(raw, cfg.top_k)
+  let plan = synthesize(top)
+  let artifact = plan_to_artifact(plan)
+
+  // Emit result for runtime to persist
+  return {
+    "status": "ok",
+    "artifact": artifact,
+    "artifact_path": cfg.artifact_path + "/" + plan.id + ".json",
+    "plan_id": plan.id
+  }
+}
+
+// Example exports for runtime discovery
+export {
+  AutoResearchConfig,
+  run_auto_research,
+  discover,
+  evaluate,
+  synthesize
+}
